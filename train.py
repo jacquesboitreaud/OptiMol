@@ -33,7 +33,7 @@ if (__name__ == "__main__"):
     model_path= 'saved_model_w/g2s.pth'
     log_path='./saved_model_w/logs_g2s.npy'
     
-    load_model = True
+    load_model = False
 
     #Load train set and test set
     loaders = Loader(csv_path='../data/moses_train.csv',

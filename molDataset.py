@@ -57,9 +57,6 @@ class molDataset(Dataset):
             self.df = pd.read_csv(csv_path, nrows=n_mols)
             self.n = n_mols
             print('columns:', self.df.columns)
-            self.df = self.df.drop(columns=['Unnamed: 0','Unnamed: 0.1','key_0','Unnamed: 0.1.1',
-                               'Unnamed: 0.1.1.1'])
-            self.df.to_csv('../data/moses_train.csv')
         else:
             self.df = pd.read_csv(csv_path)
             self.n = self.df.shape[0]
