@@ -37,7 +37,7 @@ if (__name__ == "__main__"):
 
     #Load train set and test set
     loaders = Loader(csv_path='../data/moses_train.csv',
-                     n_mols=100,
+                     n_mols=100000,
                      num_workers=0, 
                      batch_size=batch_size, 
                      shuffled= True,
@@ -54,10 +54,10 @@ if (__name__ == "__main__"):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     parallel=False
     params ={'features_dim':loaders.dataset.emb_size, #node embedding dimension
-             'gcn_hdim':8,
-             'gcn_outdim':4,
+             'gcn_hdim':64,
+             'gcn_outdim':64,
              'num_rels':loaders.num_edge_types,
-             'l_size':50,
+             'l_size':64,
              'voc_size':loaders.dataset.n_chars,
              'N_properties':1,
              'N_targets':1,
