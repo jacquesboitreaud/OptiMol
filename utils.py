@@ -12,6 +12,8 @@ import dgl
 import torch
 import pandas as pd
 
+from rdkit import Chem
+
 
 def send_graph_to_device(g, device):
     """
@@ -61,6 +63,7 @@ class BeamSearchNode():
 
 def log_smiles(true_idces, probas, idx_to_char):
     # Return dataframe with two columns, input smiles and output smiles
+    # Returns fraction of valid smiles output
     probas = probas.to('cpu').numpy()
     true_idces = true_idces.to('cpu').numpy()
     N, voc_size, seq_len = probas.shape
@@ -72,5 +75,8 @@ def log_smiles(true_idces, probas, idx_to_char):
     d={'input smiles': in_smiles,
        'output smiles': out_smiles}
     df=pd.DataFrame.from_dict(d)
-    return df
+    valid = [Chem.MolFromSmiles(o.rstript('\n')) for o in out_smiles]
+    valid = [int(m!=None) for m in valid]
+    frac_valid = np.mean(valid)
+    return df, frac_valid
     

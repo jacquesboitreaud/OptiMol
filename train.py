@@ -83,7 +83,7 @@ if (__name__ == "__main__"):
     model.train()
     for epoch in range(1, n_epochs+1):
         print(f'Starting epoch {epoch}')
-        epoch_loss=0
+        epoch_rec, epoch_mse=0,0
 
         for batch_idx, (graph, smiles, target) in enumerate(train_loader):
             
@@ -92,12 +92,15 @@ if (__name__ == "__main__"):
             graph=send_graph_to_device(graph,device)
             
             # Forward pass
-            out = model(graph,smiles)
+            out_smi, out_p = model(graph,smiles)
             
             #Compute loss : change according to supervision 
-            t_loss = RecLoss(out, smiles)
-            #t_loss=F.mse_loss(out,target,reduction='sum')
-            epoch_loss+=t_loss.item()
+            rec = RecLoss(out_smi, smiles)
+            mse = F.mse_loss(out_p, target, reduction='sum')
+            epoch_rec+=rec.item()
+            epoch_mse+=mse.item()
+            
+            t_loss = rec + mse
             
             # backward loss 
             optimizer.zero_grad()
@@ -108,17 +111,18 @@ if (__name__ == "__main__"):
             #logs and monitoring
             if batch_idx % 100 == 0:
                 # log
-                print('ep {}, batch {}, loss : {:.2f} '.format(epoch, 
-                      batch_idx, t_loss.item()))
+                print('ep {}, batch {}, rec_loss {:.2f}, properties mse_loss {:.2f}'.format(epoch, 
+                      batch_idx, rec.item(),mse.item()))
               
             if(batch_idx==0):
-                reconstruction_dataframe = log_smiles(smiles, out.detach(), 
+                reconstruction_dataframe, frac_valid = log_smiles(smiles, out.detach(), 
                                                       loaders.dataset.index_to_char)
                 print(reconstruction_dataframe)
+                print('fraction of valid smiles in a training batch: ', frac_valid)
         
         # Validation pass
         model.eval()
-        t_loss = 0
+        t_rec, t_mse = 0
         with torch.no_grad():
             for batch_idx, (graph, smiles, target) in enumerate(test_loader):
                 
@@ -127,18 +131,28 @@ if (__name__ == "__main__"):
                 graph=send_graph_to_device(graph,device)
                 
                 
-                out = model(graph,smiles)
+                out_smi, out_p = model(graph,smiles)
             
                 #Compute loss : change according to supervision 
-                t_loss += RecLoss(out, smiles).item()
-                #t_loss+=F.mse_loss(out,target,reduction='sum')
+                rec = RecLoss(out_smi, smiles)
+                mse = F.mse_loss(out_p,target,reduction='sum')
+                t_rec += rec.item()
+                t_mse += mse.item()
                 
             #reconstruction_dataframe = log_smiles(smiles, out, loaders.dataset.index_to_char)
             #print(reconstruction_dataframe)
+            
+            t_rec, t_mse = t_rec/len(test_loader), t_mse/len(test_loader)
+            epoch_rec, epoch_mse = epoch_rec/len(train_loader), epoch_mse/len(train_loader)
                 
-            print(f'Validation loss at epoch {epoch}, per batch: {t_loss/len(test_loader)}')
-            logs_dict['test_mse'].append(t_loss/len(test_loader))
-            logs_dict['train_mse'].append(epoch_loss/len(train_loader))
+        print(f'Validation loss at epoch {epoch}, per batch: rec: {t_rec}, \
+                 mse: {t_mse}')
+            
+        # Add to logs : 
+        logs_dict['test_mse'].append(t_mse)
+        logs_dict['test_rec'].append(t_rec)
+        logs_dict['train_mse'].append(epoch_mse)
+        logs_dict['test_rec'].append(epoch_rec)
             
         if(epoch%2==0):
             #Save model : checkpoint      
