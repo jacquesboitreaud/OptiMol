@@ -26,18 +26,18 @@ if (__name__ == "__main__"):
     from utils import *
     
     # config
-    n_epochs = 30 # epochs to train
+    n_epochs = 3 # epochs to train
     batch_size = 64
     display_test=False
     SAVE_FILENAME='./saved_model_w/g2s.pth'
     model_path= 'saved_model_w/g2s.pth'
     log_path='./saved_model_w/logs_g2s.npy'
     
-    load_model = False
+    load_model = True
 
     #Load train set and test set
     loaders = Loader(csv_path='../data/moses_train.csv',
-                     n_mols=100000,
+                     n_mols=1000,
                      num_workers=0, 
                      batch_size=batch_size, 
                      shuffled= True,
@@ -47,7 +47,9 @@ if (__name__ == "__main__"):
     train_loader, _, test_loader = loaders.get_data()
     
     # Logs
-    logs_dict = {'train_mse':[],
+    logs_dict = {'train_rec':[],
+                 'test_rec':[],
+                 'train_mse':[],
                  'test_mse':[]}
     
     #Model & hparams
@@ -115,14 +117,14 @@ if (__name__ == "__main__"):
                       batch_idx, rec.item(),mse.item()))
               
             if(batch_idx==0):
-                reconstruction_dataframe, frac_valid = log_smiles(smiles, out.detach(), 
+                reconstruction_dataframe, frac_valid = log_smiles(smiles, out_smi.detach(), 
                                                       loaders.dataset.index_to_char)
                 print(reconstruction_dataframe)
                 print('fraction of valid smiles in a training batch: ', frac_valid)
         
         # Validation pass
         model.eval()
-        t_rec, t_mse = 0
+        t_rec, t_mse = 0,0
         with torch.no_grad():
             for batch_idx, (graph, smiles, target) in enumerate(test_loader):
                 
@@ -145,8 +147,7 @@ if (__name__ == "__main__"):
             t_rec, t_mse = t_rec/len(test_loader), t_mse/len(test_loader)
             epoch_rec, epoch_mse = epoch_rec/len(train_loader), epoch_mse/len(train_loader)
                 
-        print(f'Validation loss at epoch {epoch}, per batch: rec: {t_rec}, \
-                 mse: {t_mse}')
+        print(f'Validation loss at epoch {epoch}, per batch: rec: {t_rec}, mse: {t_mse}')
             
         # Add to logs : 
         logs_dict['test_mse'].append(t_mse)

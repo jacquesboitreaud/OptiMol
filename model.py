@@ -183,8 +183,9 @@ class Model(nn.Module):
         z= self.sample(mu, logv, train=False).squeeze() # train to true for stochastic sampling 
 
         out = self.decode(z, smiles) # teacher forced decoding 
+        properties = self.MLP(z)
         
-        return out
+        return out, properties
     
 
     

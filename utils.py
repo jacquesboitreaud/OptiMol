@@ -75,7 +75,7 @@ def log_smiles(true_idces, probas, idx_to_char):
     d={'input smiles': in_smiles,
        'output smiles': out_smiles}
     df=pd.DataFrame.from_dict(d)
-    valid = [Chem.MolFromSmiles(o.rstript('\n')) for o in out_smiles]
+    valid = [Chem.MolFromSmiles(o.rstrip('\n')) for o in out_smiles]
     valid = [int(m!=None) for m in valid]
     frac_valid = np.mean(valid)
     return df, frac_valid
