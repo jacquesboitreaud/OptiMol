@@ -92,7 +92,7 @@ class molDataset(Dataset):
         self.index_to_char= dict((i, c) for i, c in enumerate(self.char_list))
         self.n_chars=len(self.char_list)
         
-        self.max_smi_len = 100 # can be changed 
+        self.max_smi_len = 150 # can be changed 
         print(f"Loaded smiles characters file. Max smiles length is {self.max_smi_len}")
         
         if(debug):
