@@ -14,7 +14,7 @@ import pandas as pd
 
 from rdkit import Chem
 
-
+# ================= Pytorch utils ================================
 def send_graph_to_device(g, device):
     """
     Send dgl graph to device
@@ -60,7 +60,8 @@ class BeamSearchNode():
         # Eventuellement affiner en regardant les caractères de la séquence (pénaliser les cycles ?)
         return True
     
-
+# ============== Smiles handling utils ===============================
+        
 def log_smiles(true_idces, probas, idx_to_char):
     # Return dataframe with two columns, input smiles and output smiles
     # Returns fraction of valid smiles output
@@ -79,4 +80,24 @@ def log_smiles(true_idces, probas, idx_to_char):
     valid = [int(m!=None) for m in valid]
     frac_valid = np.mean(valid)
     return df, frac_valid
+
+def i2s(idces, idx_to_char):
+    # list of indices to sequence of characters (=smiles)
+    return ''.join([idx_to_char[idx] for idx in idces])
+
+def log_from_beam(idces, idx_to_char):
+    """ Takes array of possibilities : (N, k_beam, sequences_length) """
+    N, k_beam, length = idces.shape
+    out_mols = []
+    for i in range(N):
+        k,m = 0, None 
+        while(k<=2 and m!=None):
+            smiles = ''.join([idx_to_char[idx] for idx in idces[i,k]])
+            m=Chem.MolFromSmiles(smiles.rstrip('\n'))
+        if(m!=None):
+            out_mols.append(m)
+    return out_mols
+        
+        
+    
     

@@ -22,7 +22,7 @@ def main():
     freeze_support()
     # PARAMS : path to data and suffix for created pickle file. 
     suffix = ''
-    data = pd.read_csv('../data/moses_train.csv', nrows=100)
+    data = pd.read_csv('../data/pretraining.csv', nrows=100)
     
     #=========================================================================
     smiles = list(data['can'])
@@ -68,7 +68,7 @@ def main():
     
     #np.save('../edge_map.npy',edge_map)
     
-    with open(f"edges_and_nodes_map{suffix}.pickle","wb") as f:
+    with open(f"map_files/edges_and_nodes_map{suffix}.pickle","wb") as f:
         pickle.dump(edge_types, f)
         pickle.dump(atom_types, f)
         pickle.dump(chiral_types, f)

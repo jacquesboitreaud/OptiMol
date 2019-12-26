@@ -9,13 +9,14 @@ https://docs.dgl.ai/tutorials/models/1_gnn/4_rgcn.html#sphx-glr-tutorials-models
 
 
 """
-
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
 from functools import partial
 import itertools
+from queue import PriorityQueue
 
 import dgl
 from dgl import mean_nodes
@@ -138,13 +139,26 @@ class Model(nn.Module):
             nn.ReLU(),
             nn.Linear(32,self.N_targets))
         
-    def sample(self, mean, logv, train):
+    def sample(self, mean, logv, mean_only):
         """ Samples a vector according to the latent vector mean and variance """
-        if train:
+        if not mean_only:
             sigma = torch.exp(.5 * logv)
             return mean + torch.randn_like(mean) * sigma
         else:
             return mean
+        
+    def encode(self, g, mean_only):
+        """ Encodes to latent space, with or without stochastic sampling """
+        e_out = self.encoder(g)
+        mu, logv = self.encoder_mean(e_out), self.encoder_logv(e_out)
+        z= self.sample(mu, logv, mean_only).squeeze() # train to true for stochastic sampling 
+        return z
+    
+    def props(self,z):
+        return self.MLP(z)
+    
+    def affs(self,z):
+        return self.aff_net(z)
         
     def decode(self, z, x_true=None):
         """
@@ -174,30 +188,78 @@ class Model(nn.Module):
             rnn_in =F.one_hot(indices,self.voc_size).float()
                 
         return gen_seq
+    
+    def decode_beam(self, z, k=3):
+        """
+        Decodes a batch, molecule by molecule, using beam search of width k 
+        Output: 
+            a list of lists of k best sequences for each molecule.
+        """
+        N = z.shape[0]
+        sequences = []
+        for n in range(N):
+            print("decoding molecule n° ",n)
+            # Initialize rnn states and input
+            z_1mol=z[n].view(1,self.l_size) # Reshape as a batch of size 1
+            start_token = self.rnn_in(z_1mol).view(1,self.voc_size,1).to(self.device)
+            rnn_in = start_token
+            h = self.decoder.init_h(z_1mol)
+            topk = [BeamSearchNode(h,rnn_in, 0, [] )]
+            
+            for step in range(self.max_len):
+                next_nodes=PriorityQueue()
+                for candidate in topk: # for each candidate sequence (among k)
+                    score = candidate.score
+                    seq=candidate.sequence
+                    # pass into decoder
+                    out, new_h = self.decoder(candidate.rnn_in, candidate.h) 
+                    probas = F.softmax(out, dim=1) # Shape N, voc_size
+                    for c in range(self.voc_size):
+                        new_seq=seq+[c]
+                        rnn_in=torch.zeros((1,36))
+                        rnn_in[0,c]=1
+                        s= score-probas[0,c]
+                        next_nodes.put(( s.item(), BeamSearchNode(new_h, rnn_in.to(self.device),s.item(), new_seq)) )
+                topk=[]
+                for k_ in range(k):
+                    # get top k for next timestep !
+                    score, node=next_nodes.get()
+                    topk.append(node)
+                    #print("top sequence for next step :", node.sequence)
+                    
+            sequences.append([n.sequence for n in topk]) # list of lists 
+        return np.array(sequences)
         
     def forward(self, g, smiles):
         #print('edge data size ', g.edata['one_hot'].size())
-        
         e_out = self.encoder(g)
         mu, logv = self.encoder_mean(e_out), self.encoder_logv(e_out)
-        z= self.sample(mu, logv, train=False).squeeze() # train to true for stochastic sampling 
-
+        z= self.sample(mu, logv, mean_only=False).squeeze() # stochastic sampling 
         out = self.decode(z, smiles) # teacher forced decoding 
         properties = self.MLP(z)
+        affinities = self.aff_net(z)
         
-        return out, properties
+        return mu, logv, out, properties, affinities
     
 
     
-def Loss(out, indices, mu, logvar, y=None, pred_properties=None, kappa=1.0):
+def Loss(out, indices, mu, logvar, y_p, p_pred,
+         y_a, a_pred, train_on_aff):
     """ 
     Loss function for multitask VAE. uses Crossentropy for reconstruction
     """
     CE = F.cross_entropy(out, indices, reduction="sum")
     KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
-    mse= F.mse_loss(pred_properties, y, reduction="sum")
-    total_loss=CE + kappa*KLD + mse
-    return total_loss, CE, KLD, mse # returns 4 values
+    
+    mse= F.mse_loss(p_pred, y_p, reduction="sum")
+    
+    #affinities: 
+    if(train_on_aff):
+        aff_loss = F.mse_loss(a_pred,y_a, reduction="sum")
+    else: 
+        aff_loss = torch.tensor(0) 
+    
+    return CE, KLD, mse, aff_loss # returns 4 values
 
 def RecLoss(out, indices):
     """ 

@@ -29,13 +29,13 @@ def collate_block(samples):
     # Collates samples into a batch
     # The input `samples` is a list of pairs
     #  (graph, label).
-    graphs, smiles, labels = map(list, zip(*samples))
+    graphs, smiles, p_labels, a_labels = map(list, zip(*samples))
     batched_graph = dgl.batch(graphs)
     
-    labels = torch.tensor(labels)
+    p_labels, a_labels = torch.tensor(p_labels), torch.tensor(a_labels)
     smiles = torch.tensor(smiles, dtype = torch.long)
     
-    return batched_graph, smiles, labels
+    return batched_graph, smiles, p_labels, a_labels
 
 def oh_tensor(category, n):
     t = torch.zeros(n,dtype=torch.float)
@@ -51,7 +51,7 @@ class molDataset(Dataset):
                 n_mols = 100,
                 debug=False, 
                 shuffled=False,
-                target ='LogP'):
+                props ='LogP'):
         
         if(n_mols!=None):
             self.df = pd.read_csv(csv_path, nrows=n_mols)
@@ -62,10 +62,10 @@ class molDataset(Dataset):
             self.n = self.df.shape[0]
             print('columns:', self.df.columns)
         
-        # 1/ ============== Targets handling: ================
+        # 1/ ============== Properties & Targets handling: ================
         
-        #self.targets = np.load('../targets_chembl.npy') # load list of targets
-        self.targets = [target]
+        self.targets = np.load('map_files/targets_chembl.npy') # load list of targets
+        self.props = props
         print(f'Labels retrieved for the following {len(self.targets)} targets: {self.targets}')
         
         # =========== 2/ Graphs handling ====================
@@ -106,13 +106,17 @@ class molDataset(Dataset):
         # Return as dgl graph, smiles (indexes), targets properties.
         
         row = self.df.iloc[idx]
-        smiles, targets = row['can'], np.array(row[self.targets],dtype=np.float32)
+        smiles, props, targets = row['can'], \
+        np.array(row[self.props],dtype=np.float32), np.array(row[self.targets],dtype=np.float32)
         
-        # Check 
+        
+        # Checks
         if(len(smiles)>self.max_smi_len):
             print(f'smiles length error: l={len(smiles)}, longer than {self.max_smi_len}')
         
-        # 1 - Graph buidlind
+        targets = np.nan_to_num(targets)
+        
+        # 1 - Graph building
         graph=smiles_to_nx(smiles)
         
         one_hot = {edge: torch.tensor(self.edge_map[label]) for edge, label in
@@ -146,14 +150,14 @@ class molDataset(Dataset):
         idces.append(self.char_to_index['\n'])
         a[:len(idces)]=idces
         
-        return g_dgl, a, targets
+        return g_dgl, a, props, targets
         
     
 class Loader():
     def __init__(self,
                  csv_path,
                  n_mols,
-                 target,
+                 props,
                  batch_size=64,
                  num_workers=20,
                  debug=False,
@@ -172,7 +176,7 @@ class Loader():
         self.dataset = molDataset(csv_path, n_mols,
                                   debug=debug,
                                   shuffled=shuffled,
-                                  target = target)
+                                  props = props)
         
         self.num_edge_types, self.num_atom_types = self.dataset.num_edge_types, self.dataset.num_atom_types
         self.num_charges= self.dataset.num_charges

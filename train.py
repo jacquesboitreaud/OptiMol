@@ -4,10 +4,8 @@ Created on Wed Nov  6 18:44:04 2019
 
 @author: jacqu
 
-RGCN model to predict molecular LogP (Regression)
+Graph2Smiles VAE training (RGCN encoder, GRU decoder, teacher forced decoding). 
 
-Dataset: molecularsets training and test set 
-https://github.com/molecularsets/moses/tree/master/data
 
 """
 import sys
@@ -28,20 +26,22 @@ if (__name__ == "__main__"):
     # config
     n_epochs = 3 # epochs to train
     batch_size = 64
-    display_test=False
+    use_aff = False # Penalize error on affinity prediction or not 
+    properties = ['logP']
     SAVE_FILENAME='./saved_model_w/g2s.pth'
     model_path= 'saved_model_w/g2s.pth'
     log_path='./saved_model_w/logs_g2s.npy'
     
-    load_model = True
+    load_model = False
+    save_model = False
 
     #Load train set and test set
-    loaders = Loader(csv_path='../data/moses_train.csv',
-                     n_mols=1000,
+    loaders = Loader(csv_path='../data/pretraining.csv',
+                     n_mols=100,
                      num_workers=0, 
                      batch_size=batch_size, 
                      shuffled= True,
-                     target = 'logP')
+                     props = properties)
     rem, ram, rchim, rcham = loaders.get_reverse_maps()
     
     train_loader, _, test_loader = loaders.get_data()
@@ -49,8 +49,10 @@ if (__name__ == "__main__"):
     # Logs
     logs_dict = {'train_rec':[],
                  'test_rec':[],
-                 'train_mse':[],
-                 'test_mse':[]}
+                 'train_pmse':[],
+                 'test_pmse':[],
+                 'train_amse':[],
+                 'test_amse':[]}
     
     #Model & hparams
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -61,8 +63,8 @@ if (__name__ == "__main__"):
              'num_rels':loaders.num_edge_types,
              'l_size':64,
              'voc_size':loaders.dataset.n_chars,
-             'N_properties':1,
-             'N_targets':1,
+             'N_properties':len(properties),
+             'N_targets':18,
              'device':device}
     pickle.dump(params, open('saved_model_w/params.pickle','wb'))
 
@@ -85,24 +87,27 @@ if (__name__ == "__main__"):
     model.train()
     for epoch in range(1, n_epochs+1):
         print(f'Starting epoch {epoch}')
-        epoch_rec, epoch_mse=0,0
+        epoch_rec, epoch_pmse, epoch_amse=0,0,0
 
-        for batch_idx, (graph, smiles, target) in enumerate(train_loader):
+        for batch_idx, (graph, smiles, p_target, a_target) in enumerate(train_loader):
             
-            target=target.to(device).view(-1,1) # Graph-level target : (batch_size,)
+            p_target=p_target.to(device).view(-1,model.N_properties) # Graph-level target : (batch_size,)
+            a_target=a_target.to(device).view(-1,model.N_targets)
             smiles=smiles.to(device)
             graph=send_graph_to_device(graph,device)
             
             # Forward pass
-            out_smi, out_p = model(graph,smiles)
+            mu, logv, out_smi, out_p, out_a = model(graph,smiles)
             
-            #Compute loss : change according to supervision 
-            rec = RecLoss(out_smi, smiles)
-            mse = F.mse_loss(out_p, target, reduction='sum')
+            #Compute loss terms : change according to supervision 
+            rec, kl, pmse, amse= Loss(out_smi, smiles, mu, logv, p_target, out_p,\
+                                      a_target, out_a, train_on_aff=use_aff)
             epoch_rec+=rec.item()
-            epoch_mse+=mse.item()
+            epoch_pmse+=pmse.item()
+            epoch_amse += amse.item()
             
-            t_loss = rec + mse
+            # COMPOSE TOTAL LOSS TO BACKWARD
+            t_loss = rec + pmse + amse
             
             # backward loss 
             optimizer.zero_grad()
@@ -113,8 +118,9 @@ if (__name__ == "__main__"):
             #logs and monitoring
             if batch_idx % 100 == 0:
                 # log
-                print('ep {}, batch {}, rec_loss {:.2f}, properties mse_loss {:.2f}'.format(epoch, 
-                      batch_idx, rec.item(),mse.item()))
+                print('ep {}, batch {}, rec_loss {:.2f}, properties mse_loss {:.2f}, \
+ aff mse_loss {:.2f}'.format(epoch, 
+                      batch_idx, rec.item(),pmse.item(), amse.item()))
               
             if(batch_idx==0):
                 reconstruction_dataframe, frac_valid = log_smiles(smiles, out_smi.detach(), 
@@ -124,38 +130,45 @@ if (__name__ == "__main__"):
         
         # Validation pass
         model.eval()
-        t_rec, t_mse = 0,0
+        t_rec, t_amse, t_pmse = 0,0,0
         with torch.no_grad():
-            for batch_idx, (graph, smiles, target) in enumerate(test_loader):
+            for batch_idx, (graph, smiles, p_target, a_target) in enumerate(test_loader):
                 
-                target=target.to(device).view(-1,1) # Graph-level target : (batch_size,)
+                p_target=p_target.to(device).view(-1,model.N_properties)
+                a_target = a_target.to(device).view(-1,model.N_targets)
                 smiles=smiles.to(device)
                 graph=send_graph_to_device(graph,device)
                 
                 
-                out_smi, out_p = model(graph,smiles)
+                mu, logv, out_smi, out_p, out_a = model(graph,smiles)
             
                 #Compute loss : change according to supervision 
-                rec = RecLoss(out_smi, smiles)
-                mse = F.mse_loss(out_p,target,reduction='sum')
+                rec, kl, p_mse, a_mse = Loss(out_smi, smiles, mu, logv,\
+                           p_target, out_p, a_target, out_a, train_on_aff=use_aff)
                 t_rec += rec.item()
-                t_mse += mse.item()
+                t_pmse += p_mse.item()
+                t_amse += a_mse.item()
                 
             #reconstruction_dataframe = log_smiles(smiles, out, loaders.dataset.index_to_char)
             #print(reconstruction_dataframe)
             
-            t_rec, t_mse = t_rec/len(test_loader), t_mse/len(test_loader)
-            epoch_rec, epoch_mse = epoch_rec/len(train_loader), epoch_mse/len(train_loader)
+            t_rec, t_pmse, t_amse = t_rec/len(test_loader), t_pmse/len(test_loader), t_amse/len(test_loader)
+            epoch_rec, epoch_pmse, epoch_amse = epoch_rec/len(train_loader), epoch_pmse/len(train_loader),\
+            epoch_amse/len(train_loader)
                 
-        print(f'Validation loss at epoch {epoch}, per batch: rec: {t_rec}, mse: {t_mse}')
+        print(f'Validation loss at epoch {epoch}, per batch: rec: {t_rec:.2f}, props mse: {t_pmse:.2f},\
+ aff mse: {t_amse:.2f}')
             
         # Add to logs : 
-        logs_dict['test_mse'].append(t_mse)
+        logs_dict['test_pmse'].append(t_pmse)
+        logs_dict['test_amse'].append(t_amse)
         logs_dict['test_rec'].append(t_rec)
-        logs_dict['train_mse'].append(epoch_mse)
+        
+        logs_dict['train_pmse'].append(epoch_pmse)
+        logs_dict['train_amse'].append(epoch_amse)
         logs_dict['test_rec'].append(epoch_rec)
             
-        if(epoch%2==0):
+        if(epoch%2==0 and save_model):
             #Save model : checkpoint      
             torch.save( model.state_dict(), SAVE_FILENAME)
             pickle.dump(logs_dict, open(log_path,'wb'))
