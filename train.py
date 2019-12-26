@@ -53,6 +53,7 @@ if (__name__ == "__main__"):
                  'test_pmse':[],
                  'train_amse':[],
                  'test_amse':[]}
+    disable_rdkit_logging() # function from utils to disable rdkit logs
     
     #Model & hparams
     device = 'cuda' if torch.cuda.is_available() else 'cpu'

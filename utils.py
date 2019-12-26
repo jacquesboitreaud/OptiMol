@@ -12,6 +12,7 @@ import dgl
 import torch
 import pandas as pd
 
+import rdkit
 from rdkit import Chem
 
 # ================= Pytorch utils ================================
@@ -98,6 +99,16 @@ def log_from_beam(idces, idx_to_char):
             out_mols.append(m)
     return out_mols
         
+
+def disable_rdkit_logging():
+    """
+    Disables RDKit whiny logging.
+    """
+    import rdkit.rdBase as rkrb
+    import rdkit.RDLogger as rkl
+    logger = rkl.logger()
+    logger.setLevel(rkl.ERROR)
+    rkrb.DisableLog('rdApp.error')
         
     
     
