@@ -121,7 +121,7 @@ class Model(nn.Module):
         self.encoder_logv = nn.Linear(self.gcn_outdim , self.l_size)
         
         self.rnn_in= nn.Linear(self.l_size,self.voc_size)
-        self.decoder = MultiGRUvoc_size= (self.voc_size, latent_size= self.l_size, h_size=100)
+        self.decoder = MultiGRU(voc_size=self.voc_size, latent_size= self.l_size, h_size=100)
         
         # MOLECULAR PROPERTY REGRESSOR
         self.MLP=nn.Sequential(
