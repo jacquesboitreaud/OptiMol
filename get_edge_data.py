@@ -22,7 +22,7 @@ def main():
     freeze_support()
     # PARAMS : path to data and suffix for created pickle file. 
     suffix = ''
-    data = pd.read_csv('../data/pretraining.csv', nrows=100)
+    data = pd.read_csv('../data/pretraining.csv')
     
     #=========================================================================
     smiles = list(data['can'])
