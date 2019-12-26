@@ -106,7 +106,7 @@ class Model(nn.Module):
         self.num_rels = num_rels
         self.l_size = l_size
         self.voc_size = voc_size 
-        self.max_len = 150
+        self.max_len = 151
         
         self.N_properties=N_properties
         self.N_targets = N_targets
