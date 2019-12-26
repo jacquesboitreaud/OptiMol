@@ -31,7 +31,7 @@ class MultiGRU(nn.Module):
     three layer GRU cell including an embedding layer
     and an output linear layer back to the size of the vocabulary
     """
-    def __init__(self, voc_size, latent_size, h_size=100):
+    def __init__(self, voc_size, latent_size, h_size):
         super(MultiGRU, self).__init__()
         
         self.h_size=h_size
@@ -106,7 +106,7 @@ class Model(nn.Module):
         self.num_rels = num_rels
         self.l_size = l_size
         self.voc_size = voc_size 
-        self.max_len = 100
+        self.max_len = 150
         
         self.N_properties=N_properties
         self.N_targets = N_targets
@@ -121,7 +121,7 @@ class Model(nn.Module):
         self.encoder_logv = nn.Linear(self.gcn_outdim , self.l_size)
         
         self.rnn_in= nn.Linear(self.l_size,self.voc_size)
-        self.decoder = MultiGRU(self.voc_size, self.l_size, 100)
+        self.decoder = MultiGRUvoc_size= (self.voc_size, latent_size= self.l_size, h_size=100)
         
         # MOLECULAR PROPERTY REGRESSOR
         self.MLP=nn.Sequential(
@@ -264,7 +264,7 @@ def Loss(out, indices, mu, logvar, y_p, p_pred,
 def RecLoss(out, indices):
     """ 
     Crossentropy for SMILES reconstruction 
-    out : (N, n_chars, l), where l = sequence length (100)
+    out : (N, n_chars, l), where l = sequence length
     indices : (N, l)
     """
     CE = F.cross_entropy(out, indices, reduction="sum")
