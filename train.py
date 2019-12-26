@@ -8,6 +8,8 @@ Graph2Smiles VAE training (RGCN encoder, GRU decoder, teacher forced decoding).
 
 
 """
+
+import argparse
 import sys
 import torch
 import dgl
@@ -18,13 +20,20 @@ import torch.nn.utils.clip_grad as clip
 import torch.nn.functional as F
 
 if (__name__ == "__main__"):
+    
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-m", "--num_mols", help="number of molecules to use. Set to -1 for all",
+                        type=int, default=100)
+    parser.add_argument("-e", "--num_epochs", help="number of training epochs", type=int, default=1)
+    args=parser.parse_args()
+    
     sys.path.append("./dataloading")
     from model import Model, Loss, RecLoss
     from molDataset import molDataset, Loader
     from utils import *
     
     # config
-    n_epochs = 3 # epochs to train
+    n_epochs = args.num_epochs # epochs to train
     batch_size = 64
     use_aff = False # Penalize error on affinity prediction or not 
     properties = ['logP']
@@ -33,11 +42,11 @@ if (__name__ == "__main__"):
     log_path='./saved_model_w/logs_g2s.npy'
     
     load_model = False
-    save_model = False
+    save_model = True
 
     #Load train set and test set
     loaders = Loader(csv_path='../data/pretraining.csv',
-                     n_mols=100,
+                     n_mols=args.num_mols,
                      num_workers=0, 
                      batch_size=batch_size, 
                      shuffled= True,

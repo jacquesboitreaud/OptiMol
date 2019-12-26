@@ -48,12 +48,12 @@ class molDataset(Dataset):
     pytorch Dataset for training on small molecules graphs + smiles 
     """
     def __init__(self, csv_path,
-                n_mols = 100,
+                n_mols,
                 debug=False, 
                 shuffled=False,
                 props ='LogP'):
         
-        if(n_mols!=None):
+        if(n_mols!=-1):
             self.df = pd.read_csv(csv_path, nrows=n_mols)
             self.n = n_mols
             print('columns:', self.df.columns)
