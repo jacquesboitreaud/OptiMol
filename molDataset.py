@@ -49,9 +49,10 @@ class molDataset(Dataset):
     """
     def __init__(self, csv_path,
                 n_mols,
+                props, 
+                targets,
                 debug=False, 
-                shuffled=False,
-                props ='LogP'):
+                shuffled=False):
         
         if(n_mols!=-1):
             self.df = pd.read_csv(csv_path, nrows=n_mols)
@@ -64,7 +65,7 @@ class molDataset(Dataset):
         
         # 1/ ============== Properties & Targets handling: ================
         
-        self.targets = np.load('map_files/targets_chembl.npy') # load list of targets
+        self.targets = targets
         self.props = props
         print(f'Labels retrieved for the following {len(self.targets)} targets: {self.targets}')
         
@@ -158,6 +159,7 @@ class Loader():
                  csv_path,
                  n_mols,
                  props,
+                 targets,
                  batch_size=64,
                  num_workers=20,
                  debug=False,
@@ -176,7 +178,8 @@ class Loader():
         self.dataset = molDataset(csv_path, n_mols,
                                   debug=debug,
                                   shuffled=shuffled,
-                                  props = props)
+                                  props = props,
+                                  targets=targets)
         
         self.num_edge_types, self.num_atom_types = self.dataset.num_edge_types, self.dataset.num_atom_types
         self.num_charges= self.dataset.num_charges

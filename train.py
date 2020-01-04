@@ -12,6 +12,7 @@ Graph2Smiles VAE training (RGCN encoder, GRU decoder, teacher forced decoding).
 import argparse
 import sys
 import torch
+import numpy as np 
 import dgl
 import pickle
 import torch.utils.data
@@ -36,7 +37,8 @@ if (__name__ == "__main__"):
     n_epochs = args.num_epochs # epochs to train
     batch_size = 64
     use_aff = False # Penalize error on affinity prediction or not 
-    properties = ['logP']
+    properties = ['QED','logP','molWt','maxCharge','minCharge','valence','TPSA','HBA','HBD','jIndex']
+    targets = np.load('map_files/targets_chembl.npy')[:2]
     SAVE_FILENAME='./saved_model_w/g2s.pth'
     model_path= 'saved_model_w/g2s.pth'
     log_path='./saved_model_w/logs_g2s.npy'
@@ -50,7 +52,8 @@ if (__name__ == "__main__"):
                      num_workers=0, 
                      batch_size=batch_size, 
                      shuffled= True,
-                     props = properties)
+                     props = properties,
+                     targets=targets)
     rem, ram, rchim, rcham = loaders.get_reverse_maps()
     
     train_loader, _, test_loader = loaders.get_data()
@@ -74,7 +77,7 @@ if (__name__ == "__main__"):
              'l_size':64,
              'voc_size':loaders.dataset.n_chars,
              'N_properties':len(properties),
-             'N_targets':18,
+             'N_targets':len(targets),
              'device':device}
     pickle.dump(params, open('saved_model_w/params.pickle','wb'))
 
