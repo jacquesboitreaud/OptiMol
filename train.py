@@ -35,9 +35,10 @@ if (__name__ == "__main__"):
     
     # config
     n_epochs = args.num_epochs # epochs to train
-    batch_size = 64
+    batch_size = 128
+    warmup_epochs = 10 
     use_aff = False # Penalize error on affinity prediction or not 
-    properties = ['QED','logP','molWt','maxCharge','minCharge','valence','TPSA','HBA','HBD','jIndex']
+    properties = ['QED','logP','molWt','maxCharge','minCharge','valence','TPSA','HBA','HBD']
     targets = np.load('map_files/targets_chembl.npy')[:2]
     SAVE_FILENAME='./saved_model_w/g2s.pth'
     model_path= 'saved_model_w/g2s.pth'
@@ -120,7 +121,11 @@ if (__name__ == "__main__"):
             epoch_amse += amse.item()
             
             # COMPOSE TOTAL LOSS TO BACKWARD
-            t_loss = rec + pmse + amse
+            # For warmup epochs, train only on smiles reconstruction 
+            if(epoch<warmup_epochs):
+                t_loss = rec 
+            else: 
+                t_loss = rec + kl + pmse + amse
             
             # backward loss 
             optimizer.zero_grad()
