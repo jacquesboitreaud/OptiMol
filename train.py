@@ -36,9 +36,9 @@ if (__name__ == "__main__"):
     # config
     n_epochs = args.num_epochs # epochs to train
     batch_size = 128
-    warmup_epochs = 10 
+    warmup_epochs = 5
     use_aff = False # Penalize error on affinity prediction or not 
-    properties = ['QED','logP','molWt','maxCharge','minCharge','valence','TPSA','HBA','HBD']
+    properties = ['QED','logP','molWt']
     targets = np.load('map_files/targets_chembl.npy')[:2]
     SAVE_FILENAME='./saved_model_w/g2s.pth'
     model_path= 'saved_model_w/g2s.pth'
@@ -72,10 +72,10 @@ if (__name__ == "__main__"):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     parallel=False
     params ={'features_dim':loaders.dataset.emb_size, #node embedding dimension
-             'gcn_hdim':64,
-             'gcn_outdim':64,
+             'gcn_hdim':128,
+             'gcn_outdim':128,
              'num_rels':loaders.num_edge_types,
-             'l_size':64,
+             'l_size':128,
              'voc_size':loaders.dataset.n_chars,
              'N_properties':len(properties),
              'N_targets':len(targets),

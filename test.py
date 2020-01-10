@@ -28,6 +28,9 @@ if (__name__ == "__main__"):
     batch_size = 4
     SAVE_FILENAME='./saved_model_w/g2s.pth'
     model_path= 'saved_model_w/g2s.pth'
+    
+    properties = ['QED','logP','molWt','maxCharge','minCharge','valence','TPSA','HBA','HBD']
+    targets = np.load('map_files/targets_chembl.npy')[:2]
 
     #Load train set and test set
     loaders = Loader(csv_path='../data/moses_train.csv',
@@ -35,7 +38,8 @@ if (__name__ == "__main__"):
                      num_workers=0, 
                      batch_size=batch_size, 
                      shuffled= False,
-                     props = ['logP'],
+                     props = properties,
+                     targets=targets,
                      test_only=True)
     rem, ram, rchim, rcham = loaders.get_reverse_maps()
     
