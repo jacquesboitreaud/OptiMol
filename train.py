@@ -28,7 +28,7 @@ if (__name__ == "__main__"):
     parser.add_argument("-e", "--num_epochs", help="number of training epochs", type=int, default=1)
     args=parser.parse_args()
     
-    sys.path.append("./dataloading")
+    sys.path.append("./data_processing")
     from model import Model, Loss, RecLoss
     from molDataset import molDataset, Loader
     from utils import *
@@ -36,19 +36,20 @@ if (__name__ == "__main__"):
     # config
     n_epochs = args.num_epochs # epochs to train
     batch_size = 128
-    warmup_epochs = 5
-    use_aff = False # Penalize error on affinity prediction or not 
+    warmup_epochs = 0
+    use_aff = True # Penalize error on affinity prediction or not 
     properties = ['QED','logP','molWt']
-    targets = np.load('map_files/targets_chembl.npy')[:2]
+    #targets = np.load('map_files/targets_chembl.npy')[:2]
+    targets = ['HERG','Dopamine D3 receptor']
     SAVE_FILENAME='./saved_model_w/g2s.pth'
     model_path= 'saved_model_w/g2s.pth'
     log_path='./saved_model_w/logs_g2s.npy'
     
-    load_model = False
+    load_model = True
     save_model = True
 
     #Load train set and test set
-    loaders = Loader(csv_path='../data/pretraining.csv',
+    loaders = Loader(csv_path='../data/CHEMBL_formatted.csv', # pretraining.csv or finetuning.csv
                      n_mols=args.num_mols,
                      num_workers=0, 
                      batch_size=batch_size, 

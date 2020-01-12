@@ -12,6 +12,7 @@ import os
 import sys
 if __name__ == "__main__":
     sys.path.append("..")
+    sys.path.append("data_processing")
     
 import torch
 import dgl

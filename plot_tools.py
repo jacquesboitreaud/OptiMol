@@ -22,3 +22,15 @@ def pca_plot(z):
     plt.xlabel('PC 1')
     plt.ylabel('PC 2')
     plt.show
+    
+def pca_plot_true_affs(z, affs):
+    """ Fits PCA on latent batch z (N * ldim) and plots colored according to target preference of molecules """
+    pca = PCA(n_components=2)
+    z2 = pca.fit_transform(z)
+    
+    
+    sns.scatterplot(x=z2[:,0], y=z2[:,1], s=15, hue = affs)
+    plt.title("Latent embeddings visualized in 2D PCA space")
+    plt.xlabel('PC 1')
+    plt.ylabel('PC 2')
+    plt.show

@@ -22,19 +22,19 @@ if (__name__ == "__main__"):
     from model import Model, Loss, RecLoss
     from molDataset import molDataset, Loader
     from utils import *
-    from plot_tools import pca_plot
+    from plot_tools import pca_plot, pca_plot_true_affs
     
     # config
-    batch_size = 4
+    batch_size = 100
     SAVE_FILENAME='./saved_model_w/g2s.pth'
     model_path= 'saved_model_w/g2s.pth'
     
     properties = ['QED','logP','molWt','maxCharge','minCharge','valence','TPSA','HBA','HBD']
-    targets = np.load('map_files/targets_chembl.npy')[:2]
+    targets = ['t1','t2']
 
     #Load train set and test set
-    loaders = Loader(csv_path='../data/moses_train.csv',
-                     n_mols=4,
+    loaders = Loader(csv_path='data/validation_2targets.csv',
+                     n_mols=11000,
                      num_workers=0, 
                      batch_size=batch_size, 
                      shuffled= False,
@@ -65,30 +65,46 @@ if (__name__ == "__main__"):
     # Validation pass
     model.eval()
     t_rec, t_mse = 0,0
+    z_all, affs_all = np.zeros((loaders.dataset.n,model.l_size)), np.zeros((loaders.dataset.n,len(targets)))
     with torch.no_grad():
         for batch_idx, (graph, smiles, p_target, a_target) in enumerate(test_loader):
             
-            p_target=p_target.to(device).view(-1,1) # Graph-level target : (batch_size,)
-            a_target=a_target.to(device).view(-1,1)
+            p_target=p_target.to(device).view(-1,len(properties)) # Graph-level target : (batch_size,)
+            a_target=a_target.to(device).view(-1,len(targets))
             smiles=smiles.to(device)
             graph=send_graph_to_device(graph,device)
             
             # Latent representations
             z = model.encode(graph, mean_only=True) #z_shape = N * l_size
             
+            """
             # Decoding to smiles (beam search) and predicted props
             beam_output = model.decode_beam(z,k=3)
             props, aff = model.props(z), model.affs(z)
-            
-            print(props)
-            
-            
-            # Latent space plot
-            z=z.cpu().numpy()
-            pca_plot(z)
-            
             # Only valid out molecules 
             mols = log_from_beam(beam_output,loaders.dataset.index_to_char)
+            """
+            
+            #TODO:  Concat all z and affs 
+            
+            z=z.cpu().numpy()
+            z_all[batch_idx*batch_size:(batch_idx+1)*batch_size]=z
+            affs = a_target.cpu().numpy()
+            affs_all[batch_idx*batch_size:(batch_idx+1)*batch_size]=affs
+            
+            
+        # Plot 
+        bool1 = [int(a[0]!=0) for a in affs_all]
+        bool2 = [int(a[1]!=0) for a in affs_all]
+        bit = np.array(bool2)+ 10*np.array(bool1) # bit affinities 
+        bit = [str(i) for i in bit]
+        mapping = {'0':'dd','1':'da','10':'ad','11':'aa'}
+        bit = [mapping[b] for b in bit]
+        bit=pd.Series(bit,index=np.arange(len(bit)))
+        
+        pca_plot_true_affs(z_all,bit)
+            
+            
             
             
                      
