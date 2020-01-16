@@ -165,7 +165,7 @@ class Model(nn.Module):
             Unrolls decoder RNN to generate a batch of sequences, using teacher forcing
             Args:
                 z: (batch_size * latent_shape) : a sampled vector in latent space
-                x_true: (batch_size * sequence_length * voc_size) a batch of sequences
+                x_true: (batch_size * sequence_length ) a batch of indices of sequences 
             Outputs:
                 gen_seq : (batch_size * voc_size* seq_length) a batch of generated sequences
                 
@@ -184,7 +184,11 @@ class Model(nn.Module):
             out, h = self.decoder(rnn_in, h) 
             gen_seq[:,:,step]=out
             
-            indices = x_true[:,step]
+            if(x_true!=None):
+                indices = x_true[:,step]
+            else:
+                v, indices = torch.max(gen_seq[:,:,step],dim=1) # get char indices with max probability
+            # Input to next step: either autoregressive or Teacher forced
             rnn_in =F.one_hot(indices,self.voc_size).float()
                 
         return gen_seq
@@ -255,7 +259,7 @@ def Loss(out, indices, mu, logvar, y_p, p_pred,
     
     #affinities: 
     if(train_on_aff):
-        aff_loss = F.mse_loss(a_pred,y_a, reduction="sum")
+        aff_loss = torch.sum(100*y_a*F.mse_loss(a_pred,y_a)) # weighted loss for non zero affinities
     else: 
         aff_loss = torch.tensor(0) 
     

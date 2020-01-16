@@ -35,13 +35,12 @@ if (__name__ == "__main__"):
     
     # config
     n_epochs = args.num_epochs # epochs to train
-    batch_size = 128
+    batch_size = 64
     warmup_epochs = 0
     use_aff = True # Penalize error on affinity prediction or not 
     properties = ['QED','logP','molWt']
-    #targets = np.load('map_files/targets_chembl.npy')[:2]
     targets = ['HERG','Dopamine D3 receptor']
-    SAVE_FILENAME='./saved_model_w/g2s.pth'
+    SAVE_FILENAME='./saved_model_w/g2s_finetune.pth'
     model_path= 'saved_model_w/g2s.pth'
     log_path='./saved_model_w/logs_g2s.npy'
     
@@ -49,7 +48,7 @@ if (__name__ == "__main__"):
     save_model = True
 
     #Load train set and test set
-    loaders = Loader(csv_path='../data/CHEMBL_formatted.csv', # pretraining.csv or finetuning.csv
+    loaders = Loader(csv_path='../data/validation_2targets.csv', # pretraining.csv or finetuning.csv
                      n_mols=args.num_mols,
                      num_workers=0, 
                      batch_size=batch_size, 

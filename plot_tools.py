@@ -12,6 +12,11 @@ import numpy as np
 
 from sklearn.decomposition import PCA 
 
+from rdkit import Chem
+from rdkit.Chem import Draw
+
+
+# ==================== PCA plots ====================================
 def pca_plot(z):
     """ Fits PCA on latent batch z (N*latent_dim) """
     pca = PCA(n_components=2)
@@ -34,3 +39,21 @@ def pca_plot_true_affs(z, affs):
     plt.xlabel('PC 1')
     plt.ylabel('PC 2')
     plt.show
+    
+    
+# ================== Molecules drawing  ===============================
+    
+def draw_mols(df, col='output smiles', cutoff = 40):
+    # RDKIT drawing of smiles in a dataframe
+    smiles = list(df[col])
+    
+    mols=[Chem.MolFromSmiles(s.rstrip('\n')) for s in smiles]
+    
+    mols= [m for m in mols if m!=None]
+    print(len(mols))
+    img = Draw.MolsToGridImage(mols, legends=[str(i) for i in range(len(mols))])
+    
+    return img, mols
+
+    
+    

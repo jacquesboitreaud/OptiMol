@@ -125,9 +125,12 @@ class molDataset(Dataset):
                    (nx.get_edge_attributes(graph, 'bond_type')).items()}
         nx.set_edge_attributes(graph, name='one_hot', values=one_hot)
         
-        at_type = {a: oh_tensor(self.at_map[label], self.num_atom_types) for a, label in
-                   (nx.get_node_attributes(graph, 'atomic_num')).items()}
-        nx.set_node_attributes(graph, name='atomic_num', values=at_type)
+        try:
+            at_type = {a: oh_tensor(self.at_map[label], self.num_atom_types) for a, label in
+                       (nx.get_node_attributes(graph, 'atomic_num')).items()}
+            nx.set_node_attributes(graph, name='atomic_num', values=at_type)
+        except KeyError:
+            print(smiles)
         
         at_charge = {a: oh_tensor(self.charges_map[label], self.num_charges) for a, label in
                    (nx.get_node_attributes(graph, 'formal_charge')).items()}
