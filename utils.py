@@ -66,7 +66,7 @@ class BeamSearchNode():
 def log_smiles(true_idces, probas, idx_to_char):
     # Return dataframe with two columns, input smiles and output smiles
     # Returns fraction of valid smiles output
-    #probas = probas.to('cpu').numpy()
+    probas = probas.to('cpu').numpy() # COMMENT IF NEEDED 
     true_idces = true_idces.cpu().numpy()
     N, voc_size, seq_len = probas.shape
     out_idces = np.argmax(probas, axis=1) # get char_indices
