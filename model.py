@@ -160,7 +160,7 @@ class Model(nn.Module):
     def affs(self,z):
         return self.aff_net(z)
         
-    def decode(self, z, x_true=None):
+    def decode(self, z, x_true=None,teacher_forced=False):
         """
             Unrolls decoder RNN to generate a batch of sequences, using teacher forcing
             Args:
@@ -184,7 +184,7 @@ class Model(nn.Module):
             out, h = self.decoder(rnn_in, h) 
             gen_seq[:,:,step]=out
             
-            if(x_true!=None):
+            if(teacher_forced):
                 indices = x_true[:,step]
             else:
                 v, indices = torch.max(gen_seq[:,:,step],dim=1) # get char indices with max probability
@@ -239,7 +239,7 @@ class Model(nn.Module):
         e_out = self.encoder(g)
         mu, logv = self.encoder_mean(e_out), self.encoder_logv(e_out)
         z= self.sample(mu, logv, mean_only=False).squeeze() # stochastic sampling 
-        out = self.decode(z, smiles) # teacher forced decoding 
+        out = self.decode(z, smiles, teacher_forced=True) # teacher forced decoding 
         properties = self.MLP(z)
         affinities = self.aff_net(z)
         
