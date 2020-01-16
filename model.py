@@ -259,7 +259,7 @@ def Loss(out, indices, mu, logvar, y_p, p_pred,
     
     #affinities: 
     if(train_on_aff):
-        aff_loss = 100*F.mse_loss(a_pred,y_a,reduction='sum') # weighted loss 
+        aff_loss = F.mse_loss(a_pred,y_a,reduction='sum') # weighted loss 
     else: 
         aff_loss = torch.tensor(0) 
     
