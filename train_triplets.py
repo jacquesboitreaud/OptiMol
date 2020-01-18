@@ -153,8 +153,10 @@ if (__name__ == "__main__"):
             kl = kl_i + kl_j + kl_l
             pmse = pmse_i + pmse_j + pmse_l
             
-            epoch_rec+=rec_i.item() + rec_j.item() + rec_l.item()
-            epoch_pmse+=pmse_i.item() + pmse_j.item() + pmse_l.item()
+            epoch_rec+=rec.item()
+            epoch_pmse+=pmse.item()
+            
+            del([rec_i, rec_j, rec_l, kl_i, kl_j, kl_l, pmse_i, pmse_j, pmse_l])
             
             # COMPOSE TOTAL LOSS TO BACKWARD
             t_loss = rec + kl + pmse + simLoss # no affinity loss
