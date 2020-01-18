@@ -4,7 +4,7 @@ Created on Sat Oct 26 18:06:44 2019
 
 @author: jacqu
 
-Dataset class for SMILES to graph 
+Dataset class for passing triplets of molecules to model
 
 """
 
@@ -30,13 +30,20 @@ def collate_block(samples):
     # Collates samples into a batch
     # The input `samples` is a list of pairs
     #  (graph, label).
-    graphs, smiles, p_labels, a_labels = map(list, zip(*samples))
-    batched_graph = dgl.batch(graphs)
+    data_i, data_j, data_l = map(list,zip(*samples))
     
-    p_labels, a_labels = torch.tensor(p_labels), torch.tensor(a_labels)
-    smiles = torch.tensor(smiles, dtype = torch.long)
+    g_i, s_i, p_i, a_i = map(list, zip(*data_i))
+    g_j, s_j, p_j, a_j = map(list, zip(*data_j))
+    g_l, s_l, p_l, a_l = map(list, zip(*data_l))
     
-    return batched_graph, smiles, p_labels, a_labels
+    bgi, bgj, bgl = dgl.batch(g_i), dgl.batch(g_j), dgl.batch(g_l)
+    
+    s_i, s_j, s_l = [torch.tensor(s, dtype = torch.long) for s in [s_i,s_j,s_l]]
+    p_i,p_j,p_l = [torch.tensor(p_labels) for p_labels in [p_i,p_j,p_l]]
+    a_i,a_j,a_l = [torch.tensor(a_labels) for a_labels in [a_i,a_j,a_l]]
+    
+    
+    return bgi,s_i,p_i,a_i, bgj, s_j, p_j, a_j, bgl, s_l, p_l, a_l
 
 def oh_tensor(category, n):
     t = torch.zeros(n,dtype=torch.float)
@@ -157,10 +164,38 @@ class molDataset(Dataset):
         return g_dgl, a, props, targets
         
     
+class tripletDataset(Dataset):
+    # Object that yields triplets of molecules coming from two datasets 
+    def __init__(self, actives_D, decoys_D):
+        # Initialize from ligands dataset and decoys_dataset
+        self.na, self.nd = len(actives_D), len(decoys_D)
+        
+        self.actives_D = actives_D
+        self.decoys_D = decoys_D
+        
+        
+    def __len__(self):
+        return min((self.na**2)*self.nd,1000000) # max 1M samples 
+        
+    def __getitem__(self,idx):
+        # Select random indices for triplet
+        a = np.random.randint(0,self.na,2)
+        d = np.random.randint(0,self.nd)
+        
+        # Get the corresponding molecules from their dataset
+        g_i, a_i, props_i, targets_i = self.actives_D.__getitem__(a[0])
+        g_j, a_j, props_j, targets_j = self.actives_D.__getitem__(a[1])
+        g_l, a_l, props_l, targets_l = self.decoys_D.__getitem__(d)
+        
+        # Assemble the 3 
+        
+        return [g_i,a_i,props_i, targets_i], [g_j, a_j, props_j, targets_j], [g_l, a_l, props_l, targets_l]
+        
+    
 class Loader():
     def __init__(self,
-                 csv_path,
-                 n_mols,
+                 actives_csv,
+                 decoys_csv,
                  props,
                  targets,
                  batch_size=64,
@@ -172,71 +207,51 @@ class Loader():
         Uncomment to add validation loader 
         
         if test_only: puts all molecules in csv in the test loader. Returns empty train and valid loaders
-
         """
 
         self.batch_size = batch_size
         self.num_workers = num_workers
-        self.dataset = molDataset(csv_path, n_mols,
+        self.actives_dataset = molDataset(actives_csv,
+                                          n_mols=-1,
                                   debug=debug,
                                   props = props,
                                   targets=targets)
+        self.decoys_dataset = molDataset(decoys_csv,
+                                         n_mols=-1,
+                                          debug=debug,
+                                          props = props,
+                                          targets=targets)
         
-        self.num_edge_types, self.num_atom_types = self.dataset.num_edge_types, self.dataset.num_atom_types
-        self.num_charges= self.dataset.num_charges
+        self.t_dataset = tripletDataset(self.actives_dataset,
+                                        self.decoys_dataset)
+                        
+        # Both datasets should have same maps 
+        self.num_edge_types, self.num_atom_types = self.actives_dataset.num_edge_types, self.actives_dataset.num_atom_types
+        self.num_charges= self.actives_dataset.num_charges
         self.test_only=test_only
         
     def get_maps(self):
         # Returns dataset mapping of edge and node features 
-        return self.dataset.edge_map, self.dataset.at_map, self.dataset.chi_map, self.dataset.charges_map
+        return self.actives_dataset.edge_map, self.actives_dataset.at_map, self.actives_dataset.chi_map, self.actives_dataset.charges_map
     
     def get_reverse_maps(self):
         # Returns maps of one-hot index to actual feature 
-        rev_em = {v:i for (i,v) in self.dataset.edge_map.items() }
-        rev_am = {v:i for (i,v) in self.dataset.at_map.items() }
-        rev_chi_m={v:i for (i,v) in self.dataset.chi_map.items() }
-        rev_cm={v:i for (i,v) in self.dataset.charges_map.items() }
+        rev_em = {v:i for (i,v) in self.actives_dataset.edge_map.items() }
+        rev_am = {v:i for (i,v) in self.actives_dataset.at_map.items() }
+        rev_chi_m={v:i for (i,v) in self.actives_dataset.chi_map.items() }
+        rev_cm={v:i for (i,v) in self.actives_dataset.charges_map.items() }
         return rev_em, rev_am, rev_chi_m, rev_cm
 
     def get_data(self):
-        n = len(self.dataset)
-        print(f"Splitting dataset with {n} samples")
-        indices = list(range(n))
-        # np.random.shuffle(indices)
-        np.random.seed(0)
-        if(not self.test_only):
-            split_train, split_valid = 0.9, 0.9
-            train_index, valid_index = int(split_train * n), int(split_valid * n)
-            
-        else:
-            split_train, split_valid = 0,0
-            train_index, valid_index = 0,0
+        na = len(self.actives_dataset)
+        nd = len(self.decoys_dataset)
+        print(f"Splitting datasets with {na} actives and {nd} decoys")
         
-        train_indices = indices[:train_index]
-        valid_indices = indices[train_index:valid_index]
-        test_indices = indices[valid_index:]
-        
-        train_set = Subset(self.dataset, train_indices)
-        valid_set = Subset(self.dataset, valid_indices)
-        test_set = Subset(self.dataset, test_indices)
-        print(f"Train set contains {len(train_set)} samples")
-
         if(not self.test_only):
-            train_loader = DataLoader(dataset=train_set, shuffle=True, batch_size=self.batch_size,
+            train_loader = DataLoader(dataset=self.t_dataset, shuffle=True, batch_size=self.batch_size,
                                   num_workers=self.num_workers, collate_fn=collate_block)
 
-        # valid_loader = DataLoader(dataset=valid_set, shuffle=True, batch_size=self.batch_size,
-        #                           num_workers=self.num_workers, collate_fn=collate_block)
-        
-        test_loader = DataLoader(dataset=test_set, shuffle=not self.test_only, batch_size=self.batch_size,
-                                 num_workers=self.num_workers, collate_fn=collate_block)
-
-
-        # return train_loader, valid_loader, test_loader
-        if(not self.test_only):
-            return train_loader, 0, test_loader
-        else:
-            return 0,0, test_loader
+        return train_loader
     
 if(__name__=='__main__'):
     d=molDataset()

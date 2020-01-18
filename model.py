@@ -265,6 +265,13 @@ def Loss(out, indices, mu, logvar, y_p, p_pred,
     
     return CE, KLD, mse, aff_loss # returns 4 values
 
+def tripletLoss(z_i, z_j, z_l):
+    dij = torch.norm(z_i-z_j, p=2)
+    dil = torch.norm(z_i-z_l, p=2)
+    h=1
+    # Embeddings distance loss 
+    return max(0, dij -dil +h)
+
 def RecLoss(out, indices):
     """ 
     Crossentropy for SMILES reconstruction 

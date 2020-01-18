@@ -4,7 +4,9 @@ Created on Wed Nov  6 18:44:04 2019
 
 @author: jacqu
 
-Graph2Smiles VAE training (RGCN encoder, GRU decoder, teacher forced decoding). 
+Graph2Smiles VAE training (RGCN encoder, GRU decoder, teacher forced decoding).
+
+Using triplets loss to disentangle latent space 
 
 
 """
@@ -23,14 +25,14 @@ import torch.nn.functional as F
 if (__name__ == "__main__"):
     
     parser = argparse.ArgumentParser()
-    parser.add_argument("-m", "--num_mols", help="number of molecules to use. Set to -1 for all",
+    parser.add_argument("-m", "--num_triplets", help="number of molecules to use. Set to -1 for all",
                         type=int, default=100)
     parser.add_argument("-e", "--num_epochs", help="number of training epochs", type=int, default=1)
     args=parser.parse_args()
     
     sys.path.append("./data_processing")
-    from model import Model, Loss, RecLoss
-    from molDataset import molDataset, Loader
+    from model import Model, Loss, RecLoss, tripletLoss
+    from molDataset_3 import Loader
     from utils import *
     
     # config
@@ -39,24 +41,29 @@ if (__name__ == "__main__"):
     warmup_epochs = 0
     use_aff = False # Penalize error on affinity prediction or not 
     properties = ['QED','logP','molWt']
-    targets = ['t1','t2'] # Change target names according to dataset 
-    SAVE_FILENAME='./saved_model_w/g2s.pth'
+    targets = ['aa2ar','drd3'] # Change target names according to dataset 
+    
+    SAVE_FILENAME='./saved_model_w/g2s_triplets.pth'
     model_path= 'saved_model_w/g2s.pth'
     log_path='./saved_model_w/logs_g2s.npy'
     
-    load_model = True
+    load_model = False
     save_model = True
+    
+    # Dataloading 
+    actives = 'data/triplets/actives_drd3.csv'
+    decoys = 'data/triplets/decoys_drd3.csv'
 
     #Load train set and test set
-    loaders = Loader(csv_path='../data/validation_2targets.csv', # pretraining.csv or finetuning.csv
-                     n_mols=args.num_mols,
+    loaders = Loader(actives_csv=actives,
+                     decoys_csv = decoys,
                      num_workers=0, 
                      batch_size=batch_size, 
                      props = properties,
                      targets=targets)
     rem, ram, rchim, rcham = loaders.get_reverse_maps()
     
-    train_loader, _, test_loader = loaders.get_data()
+    train_loader = loaders.get_data()
     
     # Logs
     logs_dict = {'train_rec':[],
@@ -67,15 +74,16 @@ if (__name__ == "__main__"):
                  'test_amse':[]}
     disable_rdkit_logging() # function from utils to disable rdkit logs
     
+    
     #Model & hparams
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     parallel=False
-    params ={'features_dim':loaders.dataset.emb_size, #node embedding dimension
+    params ={'features_dim':loaders.actives_dataset.emb_size, #node embedding dimension
              'gcn_hdim':128,
              'gcn_outdim':64,
              'num_rels':loaders.num_edge_types,
              'l_size':64,
-             'voc_size':loaders.dataset.n_chars,
+             'voc_size':loaders.actives_dataset.n_chars,
              'N_properties':len(properties),
              'N_targets':len(targets),
              'device':device}
@@ -94,41 +102,71 @@ if (__name__ == "__main__"):
     map = ('cpu' if device == 'cpu' else None)
     torch.manual_seed(1)
     optimizer = optim.Adam(model.parameters())
-    #optimizer = optim.Adam(model.parameters(),lr=1e-4, weight_decay=1e-5)
     
     #Train & test
+    #=========================================================================
     model.train()
     for epoch in range(1, n_epochs+1):
         print(f'Starting epoch {epoch}')
         epoch_rec, epoch_pmse, epoch_amse=0,0,0
 
-        for batch_idx, (graph, smiles, p_target, a_target) in enumerate(train_loader):
+        for batch_idx, data in enumerate(train_loader):
             
-            p_target=p_target.to(device).view(-1,model.N_properties) # Graph-level target : (batch_size,)
-            a_target=a_target.to(device).view(-1,model.N_targets)
-            smiles=smiles.to(device)
-            graph=send_graph_to_device(graph,device)
+            debug_memory()
             
-            # Forward pass
-            mu, logv, out_smi, out_p, out_a = model(graph,smiles)
+            g_i, s_i, p_i, a_i = data[:4]
+            g_j, s_j, p_j, a_j = data[4:8]
+            g_l, s_l, p_l, a_l = data[8:]
+            
+            del(data)
+            
+            # Pass molecule i 
+            p_i=p_i.to(device).view(-1,model.N_properties) # Graph-level target : (batch_size,)
+            s_i=s_i.to(device)
+            g_i=send_graph_to_device(g_i,device)
+            
+            p_j=p_j.to(device).view(-1,model.N_properties) # Graph-level target : (batch_size,)
+            s_j=s_j.to(device)
+            g_j=send_graph_to_device(g_j,device)
+            
+            p_l=p_l.to(device).view(-1,model.N_properties) # Graph-level target : (batch_size,)
+            s_l=s_l.to(device)
+            g_l=send_graph_to_device(g_l,device)
+            
+            z_i, logv_i, out_smi_i, out_p_i, out_a_i = model(g_i,s_i)
+            z_j, logv_j, out_smi_j, out_p_j, out_a_j = model(g_j,s_j)
+            z_l, logv_l, out_smi_l, out_p_l, out_a_l = model(g_l,s_l)
             
             #Compute loss terms : change according to supervision 
-            rec, kl, pmse, amse= Loss(out_smi, smiles, mu, logv, p_target, out_p,\
-                                      a_target, out_a, train_on_aff=use_aff)
-            epoch_rec+=rec.item()
-            epoch_pmse+=pmse.item()
-            epoch_amse += amse.item()
+            simLoss = tripletLoss(z_i, z_j, z_l) # Similarity loss for triplet
+            print('Triplet loss: ', simLoss)
+            
+            
+            rec_i, kl_i, pmse_i,_= Loss(out_smi_i, s_i, z_i, logv_i, p_i, out_p_i,\
+                                      None, None, train_on_aff=use_aff)
+            rec_j, kl_j, pmse_j,_= Loss(out_smi_j, s_j, z_j, logv_j, p_j, out_p_j,\
+                                      None, None, train_on_aff=use_aff)
+            rec_l, kl_l, pmse_l,_= Loss(out_smi_l, s_l, z_l, logv_l, p_l, out_p_l,\
+                                      None, None, train_on_aff=use_aff)
+            
+            rec = rec_i + rec_j + rec_l 
+            kl = kl_i + kl_j + kl_l
+            pmse = pmse_i + pmse_j + pmse_l
+            
+            epoch_rec+=rec_i.item() + rec_j.item() + rec_l.item()
+            epoch_pmse+=pmse_i.item() + pmse_j.item() + pmse_l.item()
             
             # COMPOSE TOTAL LOSS TO BACKWARD
-            # For warmup epochs, train only on smiles reconstruction 
-            if(epoch<warmup_epochs):
-                t_loss = rec 
-            else: 
-                t_loss = rec + kl + pmse + amse
+            t_loss = rec + kl + pmse + simLoss # no affinity loss
             
             # backward loss 
             optimizer.zero_grad()
             t_loss.backward()
+            del(t_loss)
+            del(rec)
+            del(kl)
+            del(pmse)
+            del(simLoss)
             #clip.clip_grad_norm_(model.parameters(),1)
             optimizer.step()
             
@@ -136,50 +174,17 @@ if (__name__ == "__main__"):
             if batch_idx % 100 == 0:
                 # log
                 print('ep {}, batch {}, rec_loss {:.2f}, properties mse_loss {:.2f}, \
- aff mse_loss {:.2f}'.format(epoch, 
-                      batch_idx, rec.item(),pmse.item(), amse.item()))
+ sim loss {:.2f}'.format(epoch, 
+                      batch_idx, rec.item(),pmse.item(), simLoss.item()))
               
             if(batch_idx==0):
-                reconstruction_dataframe, frac_valid = log_smiles(smiles, out_smi.detach(), 
-                                                      loaders.dataset.index_to_char)
+                reconstruction_dataframe, frac_valid = log_smiles(s_i, out_smi_i.detach(), 
+                                                      loaders.actives_dataset.index_to_char)
                 print(reconstruction_dataframe)
                 print('fraction of valid smiles in a training batch: ', frac_valid)
-        
-        # Validation pass
-        model.eval()
-        t_rec, t_amse, t_pmse = 0,0,0
-        with torch.no_grad():
-            for batch_idx, (graph, smiles, p_target, a_target) in enumerate(test_loader):
-                
-                p_target=p_target.to(device).view(-1,model.N_properties)
-                a_target = a_target.to(device).view(-1,model.N_targets)
-                smiles=smiles.to(device)
-                graph=send_graph_to_device(graph,device)
-                
-                
-                mu, logv, out_smi, out_p, out_a = model(graph,smiles)
-            
-                #Compute loss : change according to supervision 
-                rec, kl, p_mse, a_mse = Loss(out_smi, smiles, mu, logv,\
-                           p_target, out_p, a_target, out_a, train_on_aff=use_aff)
-                t_rec += rec.item()
-                t_pmse += p_mse.item()
-                t_amse += a_mse.item()
-                
-            #reconstruction_dataframe = log_smiles(smiles, out, loaders.dataset.index_to_char)
-            #print(reconstruction_dataframe)
-            
-            t_rec, t_pmse, t_amse = t_rec/len(test_loader), t_pmse/len(test_loader), t_amse/len(test_loader)
+
             epoch_rec, epoch_pmse, epoch_amse = epoch_rec/len(train_loader), epoch_pmse/len(train_loader),\
             epoch_amse/len(train_loader)
-                
-        print(f'Validation loss at epoch {epoch}, per batch: rec: {t_rec:.2f}, props mse: {t_pmse:.2f},\
- aff mse: {t_amse:.2f}')
-            
-        # Add to logs : 
-        logs_dict['test_pmse'].append(t_pmse)
-        logs_dict['test_amse'].append(t_amse)
-        logs_dict['test_rec'].append(t_rec)
         
         logs_dict['train_pmse'].append(epoch_pmse)
         logs_dict['train_amse'].append(epoch_amse)

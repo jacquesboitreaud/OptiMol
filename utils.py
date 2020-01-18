@@ -16,6 +16,16 @@ import rdkit
 from rdkit import Chem
 
 # ================= Pytorch utils ================================
+
+def debug_memory():
+    import collections, gc, torch
+    tensors = collections.Counter((str(o.device), o.dtype, tuple(o.shape), o.size())
+                                  for o in gc.get_objects()
+                                  if torch.is_tensor(o))
+    print(f"Found {len(tensors)} unique tensors. Total: {sum(tensors.values())}")
+    for line in sorted(tensors.items(), key=lambda x: x[1], reverse=True):
+        print('{}\t{}'.format(*line))
+        
 def send_graph_to_device(g, device):
     """
     Send dgl graph to device

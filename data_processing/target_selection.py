@@ -70,6 +70,6 @@ mols_a=mols_a.drop(todrop).reset_index()
 # Save 
 mols_a.to_csv('data/validation_2targets.csv')
 
-
+#mols=pd.read_csv('../data/validation_2targets.csv')
 
 

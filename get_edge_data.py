@@ -16,16 +16,24 @@ from tqdm import tqdm
 import pickle
 from multiprocessing import Pool, freeze_support, RLock
 
+import sys
+sys.path.append("./data_processing")
+
 from rdkit_to_nx import smiles_to_nx
 
 def main():
     freeze_support()
     # PARAMS : path to data and suffix for created pickle file. 
     suffix = ''
-    data = pd.read_csv('../data/pretraining.csv')
+    data = pd.read_csv('data/DUD_clean.csv')
+    smiles = list(data['can'])
+    data = pd.read_csv('data/CHEMBL_formatted.csv')
+    smiles = smiles + list(data['can'])
+    
+    print('Parsing ', len(smiles), ' molecules')
     
     #=========================================================================
-    smiles = list(data['can'])
+    
     # EDGE attributes
     edge_types = set()
     # ATOM types 
