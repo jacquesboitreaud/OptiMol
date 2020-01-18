@@ -165,10 +165,7 @@ if (__name__ == "__main__"):
             optimizer.zero_grad()
             t_loss.backward()
             del(t_loss)
-            del(rec)
-            del(kl)
-            del(pmse)
-            del(simLoss)
+
             #clip.clip_grad_norm_(model.parameters(),1)
             optimizer.step()
             
@@ -184,9 +181,15 @@ if (__name__ == "__main__"):
                                                       loaders.actives_dataset.index_to_char)
                 print(reconstruction_dataframe)
                 print('fraction of valid smiles in a training batch: ', frac_valid)
-
-            epoch_rec, epoch_pmse, epoch_amse = epoch_rec/len(train_loader), epoch_pmse/len(train_loader),\
-            epoch_amse/len(train_loader)
+                
+            del(rec)
+            del(kl)
+            del(pmse)
+            del(simLoss)
+            
+            
+        epoch_rec, epoch_pmse, epoch_amse = epoch_rec/len(train_loader), epoch_pmse/len(train_loader),\
+        epoch_amse/len(train_loader)
         
         logs_dict['train_pmse'].append(epoch_pmse)
         logs_dict['train_amse'].append(epoch_amse)
