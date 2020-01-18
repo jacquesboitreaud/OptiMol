@@ -44,11 +44,11 @@ if (__name__ == "__main__"):
     model_path= 'saved_model_w/g2s.pth'
     log_path='./saved_model_w/logs_g2s.npy'
     
-    load_model = True
+    load_model = False
     save_model = True
 
     #Load train set and test set
-    loaders = Loader(csv_path='../data/validation_2targets.csv', # pretraining.csv or finetuning.csv
+    loaders = Loader(csv_path='data/DUD_clean.csv',
                      n_mols=args.num_mols,
                      num_workers=0, 
                      batch_size=batch_size, 
