@@ -112,7 +112,8 @@ if (__name__ == "__main__"):
 
         for batch_idx, data in enumerate(train_loader):
             
-            debug_memory()
+            #Memory debugging function
+            #debug_memory()
             
             g_i, s_i, p_i, a_i = data[:4]
             g_j, s_j, p_j, a_j = data[4:8]
@@ -153,9 +154,7 @@ if (__name__ == "__main__"):
             kl = kl_i + kl_j + kl_l
             pmse = pmse_i + pmse_j + pmse_l
             
-            epoch_rec+=rec.item()
-            epoch_pmse+=pmse.item()
-            
+            # Deleting loss components after sum
             del([rec_i, rec_j, rec_l, kl_i, kl_j, kl_l, pmse_i, pmse_j, pmse_l])
             
             # COMPOSE TOTAL LOSS TO BACKWARD
@@ -165,7 +164,6 @@ if (__name__ == "__main__"):
             optimizer.zero_grad()
             t_loss.backward()
             del(t_loss)
-
             #clip.clip_grad_norm_(model.parameters(),1)
             optimizer.step()
             
@@ -182,12 +180,16 @@ if (__name__ == "__main__"):
                 print(reconstruction_dataframe)
                 print('fraction of valid smiles in a training batch: ', frac_valid)
                 
+            # Add to epoch totals and delete 
+            epoch_rec+=rec.item()
+            epoch_pmse+=pmse.item()  
+            
             del(rec)
             del(kl)
             del(pmse)
             del(simLoss)
             
-            
+        # End of epoch logs
         epoch_rec, epoch_pmse, epoch_amse = epoch_rec/len(train_loader), epoch_pmse/len(train_loader),\
         epoch_amse/len(train_loader)
         
