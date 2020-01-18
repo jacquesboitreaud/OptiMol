@@ -39,7 +39,7 @@ if (__name__ == "__main__"):
     warmup_epochs = 0
     use_aff = False # Penalize error on affinity prediction or not 
     properties = ['QED','logP','molWt']
-    targets = ['t1','t2'] # Change target names according to dataset 
+    targets = ['aa2ar','drd3'] # Change target names according to dataset 
     SAVE_FILENAME='./saved_model_w/g2s.pth'
     model_path= 'saved_model_w/g2s.pth'
     log_path='./saved_model_w/logs_g2s.npy'
