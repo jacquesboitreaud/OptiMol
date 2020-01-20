@@ -198,7 +198,6 @@ aff mse_loss {:.2f}'.format(epoch, total_steps, rec.item(),pmse.item(), amse.ite
                 smiles=smiles.to(device)
                 graph=send_graph_to_device(graph,device)
                 
-                
                 mu, logv, out_smi, out_p, out_a = model(graph,smiles)
             
                 #Compute loss : change according to supervision 
@@ -222,5 +221,5 @@ aff mse_loss {:.2f}'.format(epoch, total_steps, rec.item(),pmse.item(), amse.ite
         
         logs_dict['train_pmse'].append(epoch_pmse)
         logs_dict['train_amse'].append(epoch_amse)
-        logs_dict['test_rec'].append(epoch_rec)
+        logs_dict['train_rec'].append(epoch_rec)
         

@@ -27,26 +27,27 @@ import torch.nn.utils.clip_grad as clip
 import torch.nn.functional as F
 
 if (__name__ == "__main__"):
-    sys.path.append("./dataloading")
-    from model import Model, Loss, RecLoss
+    sys.path.append("./data_processing")
     from molDataset import molDataset, Loader
+    from rdkit_to_nx import smiles_to_nx
+    from model import Model, Loss, RecLoss
+    
     from utils import *
     from plot_tools import *
     
     # config
     batch_size = 100
-    SAVE_FILENAME='./saved_model_w/g2s.pth'
-    model_path= 'saved_model_w/g2s.pth'
+    load_iter = 200000
+    model_path= f'saved_model_w/g2s_iter_{load_iter}.pth'
     
     properties = ['QED','logP','molWt']
-    targets = ['t1','t2']
+    targets = ['aa2ar','drd3']
 
     #Load train set and test set
-    loaders = Loader(csv_path='data/validation_2targets.csv',
+    loaders = Loader(csv_path='data/test.csv',
                      n_mols=1000,
                      num_workers=0, 
                      batch_size=batch_size, 
-                     shuffled= False,
                      props = properties,
                      targets=targets,
                      test_only=True)
@@ -98,7 +99,7 @@ if (__name__ == "__main__"):
             
             
             """
-            # Decoding to smiles (beam search) and predicted props
+            # Decoding with beam search 
             beam_output = model.decode_beam(z,k=3)
             props, aff = model.props(z), model.affs(z)
             # Only valid out molecules 
@@ -131,7 +132,10 @@ if (__name__ == "__main__"):
         print("Fraction of molecules decoded into a valid smiles: ", frac_valid)
         print("Fraction of perfectly reconstructed mols ", frac_id)
         
-        #TODO : properties prediction error + affinities prediction error 
+        # ===================================================================
+        # Prediction error plots 
+        # ===================================================================
+        
         for i,p in enumerate(properties):
             reconstruction_dataframe[p]=p_target_all[:,i]
             reconstruction_dataframe[p+'_pred']=p_all[:,i]
@@ -140,10 +144,7 @@ if (__name__ == "__main__"):
             reconstruction_dataframe[t]=-np.log(10e-9*a_target_all[:,i])
             reconstruction_dataframe[t+'_pred']=a_all[:,i]
         reconstruction_dataframe=reconstruction_dataframe.replace([np.inf, -np.inf], 0)
-            
-        # ===================================================================
-        # Prediction error plots 
-        # ===================================================================
+        
         plt.figure()
         sns.scatterplot(reconstruction_dataframe['QED'],reconstruction_dataframe['QED_pred'])
         sns.lineplot([0,1],[0,1],color='r')
@@ -157,35 +158,37 @@ if (__name__ == "__main__"):
         sns.lineplot([0,700],[0,700],color='r')
         
         plt.figure()
-        sns.scatterplot(reconstruction_dataframe['t1'],reconstruction_dataframe['t1_pred'])
+        sns.scatterplot(reconstruction_dataframe[targets[0]],reconstruction_dataframe[f'{targets[0]}_pred'])
         sns.lineplot([0,20],[0,20],color='r')
         
         plt.figure()
-        sns.scatterplot(reconstruction_dataframe['t2'],reconstruction_dataframe['t2_pred'])
+        sns.scatterplot(reconstruction_dataframe[targets[1]],reconstruction_dataframe[f'{targets[1]}_pred'])
         sns.lineplot([0,20],[0,20],color='r')
         
-            
         # ===================================================================
         # PCA plot 
         # ===================================================================
         
-        bool1 = [int(a[0]!=0) for a in a_all]
-        bool2 = [int(a[1]!=0) for a in a_all]
+        # Retrieve affinities of each molecule 
+        bool1 = [int(a[0]==1) for a in a_target_all] # actives for t1
+        bool2 = [int(a[0]==-1) for a in a_target_all] # decoys for t1
+        
         bit = np.array(bool2)+ 10*np.array(bool1) # bit affinities 
         bit = [str(i) for i in bit]
         mapping = {'0':'dd','1':'da','10':'ad','11':'aa'}
         bit = [mapping[b] for b in bit]
         bit=pd.Series(bit,index=np.arange(len(bit)))
         
+        plt.figure()
         pca_plot_true_affs(z_all,bit)
         
-        #TODO : different hue parameters 
+        #TODO : different hue parameters : QED, MolWt, logP 
         
         # ====================================================================
         # Random sampling in latent space 
         # ====================================================================
         
-        r = torch.tensor(np.random.normal(size = z.shape), dtype=torch.float).to('cuda')
+        r = torch.tensor(2*np.random.normal(size = z.shape), dtype=torch.float).to('cuda')
         
         out = model.decode(r)
         v, indices = torch.max(out, dim=1)

@@ -24,10 +24,32 @@ import torch.nn.functional as F
 
 if (__name__ == "__main__"):
     
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-m", "--num_triplets", help="number of molecules to use. Set to -1 for all",
-                        type=int, default=100)
-    parser.add_argument("-e", "--num_epochs", help="number of training epochs", type=int, default=1)
+      parser.add_argument('--train', help="path to training dataframe", type=str, default='data/DUD_clean.csv')
+    parser.add_argument("--cutoff", help="Max number of molecules to use. Set to -1 for all", type=int, default=100)
+    parser.add_argument('--save_path', type=str, default = './saved_model_w/g2s')
+    parser.add_argument('--load_model', type=bool, default=False)
+    
+    parser.add_argument('--use_aff', type=bool, default=False)
+    
+    parser.add_argument('--hidden_size', type=int, default=450)
+    parser.add_argument('--batch_size', type=int, default=32)
+    parser.add_argument('--latent_size', type=int, default=64)
+    
+    parser.add_argument('--lr', type=float, default=1e-3) # Initial learning rate 
+    parser.add_argument('--clip_norm', type=float, default=50.0) # Gradient clipping max norm 
+    parser.add_argument('--beta', type=float, default=0.0) # initial KL annealing weight 
+    parser.add_argument('--step_beta', type=float, default=0.002) # beta increase per step 
+    parser.add_argument('--max_beta', type=float, default=1.0) # maximum KL annealing weight 
+    parser.add_argument('--warmup', type=int, default=40000) # number of steps with only reconstruction loss (beta=0)
+    
+    parser.add_argument('--n_epochs', type=int, default=20) # nbr training epochs 
+    parser.add_argument('--anneal_rate', type=float, default=0.9) # Learning rate annealing 
+    parser.add_argument('--anneal_iter', type=int, default=40000) # update learning rate every _ step 
+    parser.add_argument('--kl_anneal_iter', type=int, default=2000) # update beta every _ step 
+    parser.add_argument('--print_iter', type=int, default=50) # print loss metrics every _ step 
+    parser.add_argument('--print_smiles_iter', type=int, default=1000) # print reconstructed smiles every _ step 
+    parser.add_argument('--save_iter', type=int, default=5000) # save model weights every _ step 
+    
     args=parser.parse_args()
     
     sys.path.append("./data_processing")
@@ -36,10 +58,10 @@ if (__name__ == "__main__"):
     from utils import *
     
     # config
-    n_epochs = args.num_epochs # epochs to train
-    batch_size = 64
-    warmup_epochs = 0
-    use_aff = False # Penalize error on affinity prediction or not 
+    n_epochs = args.n_epochs # epochs to train
+    batch_size = args.batch_size
+    
+    
     properties = ['QED','logP','molWt']
     targets = ['aa2ar','drd3'] # Change target names according to dataset 
     
@@ -47,7 +69,7 @@ if (__name__ == "__main__"):
     model_path= 'saved_model_w/g2s.pth'
     log_path='./saved_model_w/logs_g2s.npy'
     
-    load_model = False
+    load_model = True
     save_model = True
     
     # Dataloading 
@@ -79,10 +101,10 @@ if (__name__ == "__main__"):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     parallel=False
     params ={'features_dim':loaders.actives_dataset.emb_size, #node embedding dimension
-             'gcn_hdim':128,
-             'gcn_outdim':64,
+             'gcn_hdim':args.hdim,
+             'gcn_outdim':args.latent_size,
              'num_rels':loaders.num_edge_types,
-             'l_size':64,
+             'l_size':args.latent_size,
              'voc_size':loaders.actives_dataset.n_chars,
              'N_properties':len(properties),
              'N_targets':len(targets),
@@ -100,15 +122,20 @@ if (__name__ == "__main__"):
     #Print model summary
     print(model)
     map = ('cpu' if device == 'cpu' else None)
-    torch.manual_seed(1)
-    optimizer = optim.Adam(model.parameters())
+
+    # Optim
+    optimizer = optim.Adam(model.parameters(), lr=args.lr)
+    scheduler = lr_scheduler.ExponentialLR(optimizer, args.anneal_rate)
+    print ("learning rate: %.6f" % scheduler.get_lr()[0])
     
     #Train & test
     #=========================================================================
     model.train()
+    total_steps = 0 
+    
     for epoch in range(1, n_epochs+1):
         print(f'Starting epoch {epoch}')
-        epoch_rec, epoch_pmse, epoch_amse=0,0,0
+        epoch_rec, epoch_pmse, epoch_simLoss=0,0,0
 
         for batch_idx, data in enumerate(train_loader):
             
@@ -158,31 +185,42 @@ if (__name__ == "__main__"):
             del([rec_i, rec_j, rec_l, kl_i, kl_j, kl_l, pmse_i, pmse_j, pmse_l])
             
             # COMPOSE TOTAL LOSS TO BACKWARD
-            t_loss = rec + kl + pmse + simLoss # no affinity loss
+            t_loss = rec + kl + pmse + simLoss # no affinity loss, beta = 1 from start 
             
             # backward loss 
             optimizer.zero_grad()
             t_loss.backward()
             del(t_loss)
-            #clip.clip_grad_norm_(model.parameters(),1)
+            clip.clip_grad_norm_(model.parameters(),args.clip_norm)
             optimizer.step()
             
+            # Annealing KL and LR
+            if total_steps % args.anneal_iter == 0:
+                 scheduler.step()
+                 print ("learning rate: %.6f" % scheduler.get_lr()[0])
+
+            if total_steps % args.kl_anneal_iter == 0 and total_steps >= args.warmup:
+                beta = min(1, beta + args.step_beta)
+            
             #logs and monitoring
-            if batch_idx % 100 == 0:
-                # log
-                print('ep {}, batch {}, rec_loss {:.2f}, properties mse_loss {:.2f}, \
- sim loss {:.2f}'.format(epoch, 
-                      batch_idx, rec.item(),pmse.item(), simLoss.item()))
+            if total_steps % args.print_iter == 0:
+                print('epoch {}, opt. step n°{}, rec_loss {:.2f}, properties mse_loss {:.2f}, \
+tripletLoss {:.2f}'.format(epoch, total_steps, rec.item(),pmse.item(), simLoss.item()))
               
-            if(batch_idx==0):
-                reconstruction_dataframe, frac_valid = log_smiles(s_i, out_smi_i.detach(), 
-                                                      loaders.actives_dataset.index_to_char)
+            if(total_steps % args.print_smiles_iter == 0):
+                reconstruction_dataframe, frac_valid = log_smiles(smiles, out_smi.detach(), 
+                                                      loaders.dataset.index_to_char)
                 print(reconstruction_dataframe)
-                print('fraction of valid smiles in a training batch: ', frac_valid)
+                print('fraction of valid smiles in training batch: ', frac_valid)
+                
+            if total_steps % args.save_iter == 0:
+                torch.save( model.state_dict(), f"{args.save_path}_iter_{total_steps}.pth")
+                pickle.dump(logs_dict, open(f'{log_path}.npy','wb'))
                 
             # Add to epoch totals and delete 
             epoch_rec+=rec.item()
-            epoch_pmse+=pmse.item()  
+            epoch_pmse+=pmse.item()
+            epoch_simLoss += simLoss.item()
             
             del(rec)
             del(kl)
@@ -190,16 +228,10 @@ if (__name__ == "__main__"):
             del(simLoss)
             
         # End of epoch logs
-        epoch_rec, epoch_pmse, epoch_amse = epoch_rec/len(train_loader), epoch_pmse/len(train_loader),\
-        epoch_amse/len(train_loader)
+        epoch_rec, epoch_pmse, epoch_simLoss = epoch_rec/len(train_loader), epoch_pmse/len(train_loader),\
+        epoch_simLoss/len(train_loader)
         
         logs_dict['train_pmse'].append(epoch_pmse)
-        logs_dict['train_amse'].append(epoch_amse)
-        logs_dict['test_rec'].append(epoch_rec)
-            
-        if(epoch%2==0 and save_model):
-            #Save model : checkpoint      
-            torch.save( model.state_dict(), SAVE_FILENAME)
-            pickle.dump(logs_dict, open(log_path,'wb'))
-            print(f"model saved to {SAVE_FILENAME}")
+        logs_dict['train_simLoss'].append(epoch_simLoss)
+        logs_dict['train_rec'].append(epoch_rec)
         

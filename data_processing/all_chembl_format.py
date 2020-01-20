@@ -38,28 +38,27 @@ for p in properties:
 d['can']= [] # column for canonical smiles
     
 for i, row in all_c.iterrows(): 
-    if(i>590916):
-        if(i%10000 == 0):
-            print(i)
-        target = row['target_name']
-        
-        # smiles and props
-        s=row['canonical_smiles']
-        m=Chem.MolFromSmiles(s)
-        if(m!=None):
-            d['can'].append(s)
-            d['QED'].append(QED.default(m))
-            d['logP'].append(Crippen.MolLogP(m))
-            d['molWt'].append(Descriptors.MolWt(m))
-            # targets IC50 
-            if(target in targets):
-                d[target].append(-np.log(10e9*row['standard_value'])) # pIC50 = -log(IC50 in nanomolar)
-                for other in targets:
-                    if(other!=target):
-                        d[other].append(0)
-            else:
-                for other in targets:
+    if(i%10000 == 0):
+        print(i)
+    target = row['target_name']
+    
+    # smiles and props
+    s=row['canonical_smiles']
+    m=Chem.MolFromSmiles(s)
+    if(m!=None):
+        d['can'].append(s)
+        d['QED'].append(QED.default(m))
+        d['logP'].append(Crippen.MolLogP(m))
+        d['molWt'].append(Descriptors.MolWt(m))
+        # targets IC50 
+        if(target in targets):
+            d[target].append(-np.log(10e9*row['standard_value'])) # pIC50 = -log(IC50 in nanomolar)
+            for other in targets:
+                if(other!=target):
                     d[other].append(0)
+        else:
+            for other in targets:
+                d[other].append(0)
     
 chembl = pd.DataFrame.from_dict(d)
 chembl.to_csv('C:/Users/jacqu/Documents/GitHub/graph2smiles/data/CHEMBL_formatted.csv')
