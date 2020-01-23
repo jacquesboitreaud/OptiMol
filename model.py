@@ -271,12 +271,14 @@ def Loss(out, indices, mu, logvar, y_p, p_pred,
     
     return CE, KLD, mse, aff_loss # returns 4 values
 
-def tripletLoss(z_i, z_j, z_l):
-    dij = torch.norm(z_i-z_j, p=2)
-    dil = torch.norm(z_i-z_l, p=2)
-    h=2
+def tripletLoss(z_i, z_j, z_l, margin=2):
+    
+    dij = torch.norm(z_i-z_j, p=2, dim=1) # z vectors are (N*l_size), compute norm along latent size, for each batch item.
+    dil = torch.norm(z_i-z_l, p=2, dim=1)
+    loss = torch.max(torch.zeros(z_i.shape[0]), dij -dil + margin)
+    print(loss.shape)
     # Embeddings distance loss 
-    return max(torch.tensor(0), dij -dil +h)
+    return torch.sum(loss)
 
 def RecLoss(out, indices):
     """ 
