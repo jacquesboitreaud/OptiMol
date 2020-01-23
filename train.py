@@ -128,7 +128,7 @@ if (__name__ == "__main__"):
     #Train & test
     model.train()
     total_steps=0
-    beta = 0 
+    beta = args.beta
     for epoch in range(1, n_epochs+1):
         print(f'Starting epoch {epoch}')
         epoch_rec, epoch_pmse, epoch_amse=0,0,0

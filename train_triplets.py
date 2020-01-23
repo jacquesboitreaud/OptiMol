@@ -32,8 +32,6 @@ if (__name__ == "__main__"):
     
     parser = argparse.ArgumentParser()
     
-    parser.add_argument('--train', help="path to training dataframe", type=str, default='data/DUD_clean.csv')
-    parser.add_argument("--cutoff", help="Max number of molecules to use. Set to -1 for all", type=int, default=100)
     parser.add_argument('--save_path', type=str, default = './saved_model_w/g2s_triplets')
     parser.add_argument('--load_model', type=bool, default=True)
     parser.add_argument('--load_iter', type=int, default=410000)
@@ -137,6 +135,7 @@ if (__name__ == "__main__"):
     #=========================================================================
     model.train()
     total_steps = 0 
+    beta = args.beta
     
     for epoch in range(1, n_epochs+1):
         print(f'Starting epoch {epoch}')
