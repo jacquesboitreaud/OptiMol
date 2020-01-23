@@ -213,7 +213,7 @@ tripletLoss {:.2f}'.format(epoch, total_steps, rec.item(),pmse.item(), simLoss.i
               
             if(total_steps % args.print_smiles_iter == 0):
                 reconstruction_dataframe, frac_valid = log_smiles(s_i, out_smi_i.detach(), 
-                                                      loaders.dataset.index_to_char)
+                                                      loaders.actives_dataset.index_to_char)
                 print(reconstruction_dataframe)
                 print('fraction of valid smiles in training batch: ', frac_valid)
                 
