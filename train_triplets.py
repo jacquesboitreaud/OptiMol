@@ -172,7 +172,6 @@ if (__name__ == "__main__"):
             
             #Compute loss terms : change according to supervision 
             simLoss = tripletLoss(z_i, z_j, z_l) # Similarity loss for triplet
-            print('Triplet loss: ', simLoss)
             
             
             rec_i, kl_i, pmse_i,_= Loss(out_smi_i, s_i, z_i, logv_i, p_i, out_p_i,\
@@ -190,7 +189,7 @@ if (__name__ == "__main__"):
             del([rec_i, rec_j, rec_l, kl_i, kl_j, kl_l, pmse_i, pmse_j, pmse_l])
             
             # COMPOSE TOTAL LOSS TO BACKWARD
-            t_loss = rec + kl + pmse + simLoss # no affinity loss, beta = 1 from start 
+            t_loss = rec + kl + pmse + 10e2*simLoss # no affinity loss, beta = 1 from start 
             
             # backward loss 
             optimizer.zero_grad()
