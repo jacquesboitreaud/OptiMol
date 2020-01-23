@@ -276,7 +276,7 @@ def tripletLoss(z_i, z_j, z_l, margin=2):
     print(z_i.shape)
     dij = torch.norm(z_i-z_j, p=2, dim=1) # z vectors are (N*l_size), compute norm along latent size, for each batch item.
     dil = torch.norm(z_i-z_l, p=2, dim=1)
-    loss = torch.max(torch.zeros(z_i.shape[0]), dij -dil + margin)
+    loss = torch.max(torch.cuda.FloatTensor(z_i.shape[0]).fill_(0), dij -dil + margin)
     print(loss.shape)
     # Embeddings distance loss 
     return torch.sum(loss)
