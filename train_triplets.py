@@ -5,10 +5,14 @@ Created on Wed Nov  6 18:44:04 2019
 @author: jacqu
 
 Graph2Smiles VAE training (RGCN encoder, GRU decoder, teacher forced decoding).
-
 Using triplets loss to disentangle latent space 
 
-
+****
+Default params resume training after 410k iterations, 
+starting with 
+lr = 1e-5
+beta = 0.8 
+****
 """
 
 import argparse
@@ -22,12 +26,17 @@ from torch import nn, optim
 import torch.nn.utils.clip_grad as clip
 import torch.nn.functional as F
 
+import torch.optim.lr_scheduler as lr_scheduler
+
 if (__name__ == "__main__"):
     
-      parser.add_argument('--train', help="path to training dataframe", type=str, default='data/DUD_clean.csv')
+    parser = argparse.ArgumentParser()
+    
+    parser.add_argument('--train', help="path to training dataframe", type=str, default='data/DUD_clean.csv')
     parser.add_argument("--cutoff", help="Max number of molecules to use. Set to -1 for all", type=int, default=100)
-    parser.add_argument('--save_path', type=str, default = './saved_model_w/g2s')
-    parser.add_argument('--load_model', type=bool, default=False)
+    parser.add_argument('--save_path', type=str, default = './saved_model_w/g2s_triplets')
+    parser.add_argument('--load_model', type=bool, default=True)
+    parser.add_argument('--load_iter', type=int, default=410000)
     
     parser.add_argument('--use_aff', type=bool, default=False)
     
@@ -35,12 +44,12 @@ if (__name__ == "__main__"):
     parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--latent_size', type=int, default=64)
     
-    parser.add_argument('--lr', type=float, default=1e-3) # Initial learning rate 
+    parser.add_argument('--lr', type=float, default=1e-5) # Initial learning rate 
     parser.add_argument('--clip_norm', type=float, default=50.0) # Gradient clipping max norm 
-    parser.add_argument('--beta', type=float, default=0.0) # initial KL annealing weight 
+    parser.add_argument('--beta', type=float, default=0.8) # initial KL annealing weight 
     parser.add_argument('--step_beta', type=float, default=0.002) # beta increase per step 
     parser.add_argument('--max_beta', type=float, default=1.0) # maximum KL annealing weight 
-    parser.add_argument('--warmup', type=int, default=40000) # number of steps with only reconstruction loss (beta=0)
+    parser.add_argument('--warmup', type=int, default=0) # number of steps with only reconstruction loss (beta=0)
     
     parser.add_argument('--n_epochs', type=int, default=20) # nbr training epochs 
     parser.add_argument('--anneal_rate', type=float, default=0.9) # Learning rate annealing 
@@ -61,16 +70,11 @@ if (__name__ == "__main__"):
     n_epochs = args.n_epochs # epochs to train
     batch_size = args.batch_size
     
-    
     properties = ['QED','logP','molWt']
     targets = ['aa2ar','drd3'] # Change target names according to dataset 
     
-    SAVE_FILENAME='./saved_model_w/g2s_triplets.pth'
-    model_path= 'saved_model_w/g2s.pth'
+    model_path= f'saved_model_w/g2s_iter_{args.load_iter}.pth'
     log_path='./saved_model_w/logs_g2s.npy'
-    
-    load_model = True
-    save_model = True
     
     # Dataloading 
     actives = 'data/triplets/actives_drd3.csv'
@@ -101,7 +105,7 @@ if (__name__ == "__main__"):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     parallel=False
     params ={'features_dim':loaders.actives_dataset.emb_size, #node embedding dimension
-             'gcn_hdim':args.hdim,
+             'gcn_hdim':128,
              'gcn_outdim':args.latent_size,
              'num_rels':loaders.num_edge_types,
              'l_size':args.latent_size,
@@ -112,7 +116,8 @@ if (__name__ == "__main__"):
     pickle.dump(params, open('saved_model_w/params.pickle','wb'))
 
     model = Model(**params).to(device)
-    if(load_model):
+    if(args.load_model):
+        print('Loading pretrained model')
         model.load_state_dict(torch.load(model_path))
     
     if (parallel): #torch.cuda.device_count() > 1 and
@@ -171,11 +176,11 @@ if (__name__ == "__main__"):
             
             
             rec_i, kl_i, pmse_i,_= Loss(out_smi_i, s_i, z_i, logv_i, p_i, out_p_i,\
-                                      None, None, train_on_aff=use_aff)
+                                      None, None, train_on_aff=args.use_aff)
             rec_j, kl_j, pmse_j,_= Loss(out_smi_j, s_j, z_j, logv_j, p_j, out_p_j,\
-                                      None, None, train_on_aff=use_aff)
+                                      None, None, train_on_aff=args.use_aff)
             rec_l, kl_l, pmse_l,_= Loss(out_smi_l, s_l, z_l, logv_l, p_l, out_p_l,\
-                                      None, None, train_on_aff=use_aff)
+                                      None, None, train_on_aff=args.use_aff)
             
             rec = rec_i + rec_j + rec_l 
             kl = kl_i + kl_j + kl_l

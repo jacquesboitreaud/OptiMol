@@ -52,14 +52,23 @@ class molDataset(Dataset):
                 n_mols,
                 props, 
                 targets,
-                debug=False):
+                debug,
+                shuffle,
+                select_target):
         
-        if(n_mols!=-1):
+        if(n_mols!=-1 and not shuffle):
             self.df = pd.read_csv(csv_path, nrows=n_mols)
             self.n = n_mols
             print('columns:', self.df.columns)
+        elif(n_mols!=-1):
+            # Random sampling of the right number of molecules 
+            self.df = pd.read_csv(csv_path)
+            self.df=self.df.sample(n_mols)
+            self.n = n_mols
         else:
             self.df = pd.read_csv(csv_path)
+            if(select_target!=None): # keep only actives and decoys for a specific target (use for test plots)
+                self.df=self.df[self.df[select_target]!=0]
             self.n = self.df.shape[0]
             print('columns:', self.df.columns)
         
@@ -99,6 +108,17 @@ class molDataset(Dataset):
         if(debug):
             # special case for debugging
             pass
+        
+    def pass_dataset_path(self, path):
+        # Pass a new dataset to the loader, without changing other parameters 
+        self.df = pd.read_csv(path)
+        self.n = self.df.shape[0]
+        print('New dataset columns:', self.df.columns)
+        
+    def pass_dataset(self,df):
+        self.df=df
+        self.n=df.shape[0]
+        print('New dataset columns:', self.df.columns)
             
     def __len__(self):
         return self.n
@@ -107,8 +127,12 @@ class molDataset(Dataset):
         # Return as dgl graph, smiles (indexes), targets properties.
         
         row = self.df.iloc[idx]
-        smiles, props, targets = row['can'], \
-        np.array(row[self.props],dtype=np.float32), np.array(row[self.targets],dtype=np.float32)
+        smiles, props = row['can'], np.array(row[self.props],dtype=np.float32)
+        
+        try:
+            targets = np.array(row[self.targets],dtype=np.float32)
+        except:
+            targets = np.zeros(len(self.targets), dtype=np.float32)
         
         
         # Checks
@@ -166,7 +190,9 @@ class Loader():
                  batch_size=64,
                  num_workers=20,
                  debug=False,
-                 test_only=False):
+                 test_only=False,
+                 shuffle = False,
+                 select_target=None):
         """
         Wrapper for test loader, train loader 
         Uncomment to add validation loader 
@@ -180,7 +206,9 @@ class Loader():
         self.dataset = molDataset(csv_path, n_mols,
                                   debug=debug,
                                   props = props,
-                                  targets=targets)
+                                  targets=targets,
+                                  shuffle = shuffle,
+                                  select_target=select_target)
         
         self.num_edge_types, self.num_atom_types = self.dataset.num_edge_types, self.dataset.num_atom_types
         self.num_charges= self.dataset.num_charges

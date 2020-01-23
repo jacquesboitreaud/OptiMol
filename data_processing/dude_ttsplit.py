@@ -12,6 +12,7 @@ import os
 
 
 dud = pd.read_csv('../data/DUD_clean.csv')
+print('loaded dude')
 
 # 1 - 80/20 test/train split
 

@@ -11,8 +11,6 @@ from rdkit import Chem
 from rdkit.Chem import Draw, QED, Crippen, Descriptors, rdMolDescriptors, GraphDescriptors
 import pandas as pd
 
-#######" CHoose local or server 
-
 path_to_file = 'C:/Users/jacqu/Documents/GitHub/graph2smiles/data/validation_2targets.csv'
 
 df=pd.read_csv(path_to_file)

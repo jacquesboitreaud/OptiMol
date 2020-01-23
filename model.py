@@ -193,13 +193,19 @@ class Model(nn.Module):
                 
         return gen_seq
     
-    def decode_beam(self, z, k=3):
+    def decode_beam(self, z, k=3, cutoff_mols=None):
         """
+        Input:
+            z = torch.tensor type, (N_mols*l_size)  
+            k : beam param
         Decodes a batch, molecule by molecule, using beam search of width k 
         Output: 
             a list of lists of k best sequences for each molecule.
         """
         N = z.shape[0]
+        if(cutoff_mols!=None):
+            N=cutoff_mols
+            print(f'Decoding will stop after {N} mols')
         sequences = []
         for n in range(N):
             print("decoding molecule n° ",n)

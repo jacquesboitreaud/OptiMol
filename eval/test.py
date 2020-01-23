@@ -4,7 +4,7 @@ Created on Wed Nov  6 18:44:04 2019
 
 @author: jacqu
 
-Graph2Smiles VAE evaluation (RGCN encoder, GRU decoder, beam search decoding). 
+Evaluate training of Graph2Smiles VAE (RGCN encoder, GRU decoder, beam search decoding). 
 
 
 """
@@ -26,70 +26,80 @@ from torch import nn, optim
 import torch.nn.utils.clip_grad as clip
 import torch.nn.functional as F
 
+from joblib import dump, load
+from sklearn.decomposition import PCA
+
+
+
+# Execution is set to take place in graph2smiles root dir 
 if (__name__ == "__main__"):
-    sys.path.append("./data_processing")
+    sys.path.append('eval')
+    sys.path.append("data_processing")
     from molDataset import molDataset, Loader
     from rdkit_to_nx import smiles_to_nx
     from model import Model, Loss, RecLoss
+    from model_utils import load_trained_model
     
+    from eval_utils import *
     from utils import *
     from plot_tools import *
     
-    # config
-    batch_size = 100
-    load_iter = 200000
+    # Eval config 
+    load_iter = 410000
     model_path= f'saved_model_w/g2s_iter_{load_iter}.pth'
     
+    recompute_pca = False
+    
+    # Should be same as for training...
     properties = ['QED','logP','molWt']
     targets = ['aa2ar','drd3']
+    
+    # Select only DUDE subset to plot in PCA space 
+    plot_target = 'aa2ar'
 
-    #Load train set and test set
-    loaders = Loader(csv_path='data/test.csv',
-                     n_mols=1000,
+    #Load eval set
+    loaders = Loader(csv_path='data/DUD_clean.csv',
+                     n_mols=100,
                      num_workers=0, 
-                     batch_size=batch_size, 
+                     batch_size=100, 
                      props = properties,
                      targets=targets,
-                     test_only=True)
+                     test_only=True,
+                     shuffle = True, 
+                     select_target = plot_target)
     rem, ram, rchim, rcham = loaders.get_reverse_maps()
     
     _, _, test_loader = loaders.get_data()
     
-    #Model & hparams
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    parallel=False
-    
-    params = pickle.load(open('saved_model_w/params.pickle','rb'))
-    model = Model(**params).to(device)
-    model.load_state_dict(torch.load(model_path))
-    
-    if (parallel): #torch.cuda.device_count() > 1 and
-        print("Parallel model using ", torch.cuda.device_count(), "GPUs!")
-        model = nn.DataParallel(model)
-        
-    #Print model summary
-    print(model)
-    map = ('cpu' if device == 'cpu' else None)
-    torch.manual_seed(1)
-    
     # Validation pass
-    model.eval()
-    t_rec, t_mse = 0,0
+    try:
+        model.eval()
+    except NameError:
+        model,device=load_trained_model(model_path)
+        model.eval()
+    
+    # Smiles 
+    out_all = np.zeros((loaders.dataset.n,151))
+    smi_all = np.zeros((loaders.dataset.n,151))
+    
+    # Latent embeddings
     z_all = np.zeros((loaders.dataset.n,model.l_size))
+    
+    # Affinities
     a_target_all = np.zeros((loaders.dataset.n,len(targets)))
     a_all = np.zeros((loaders.dataset.n,len(targets)))
+    
+    # Mol Props
     p_target_all = np.zeros((loaders.dataset.n,len(properties)))
     p_all = np.zeros((loaders.dataset.n,len(properties)))
     
-    
-    out_all = np.zeros((loaders.dataset.n,151))
-    smi_all = np.zeros((loaders.dataset.n,151))
+
     with torch.no_grad():
         for batch_idx, (graph, smiles, p_target, a_target) in enumerate(test_loader):
             
             graph=send_graph_to_device(graph,device)
             
-            # Latent representations
+            # Latent embeddings
             z = model.encode(graph, mean_only=True) #z_shape = N * l_size
             pred_p, pred_a = model.props(z), model.affs(z)
             
@@ -98,15 +108,15 @@ if (__name__ == "__main__"):
             v, indices = torch.max(out, dim=1) # get indices of char with max probability
             
             
-            """
             # Decoding with beam search 
-            beam_output = model.decode_beam(z,k=3)
-            props, aff = model.props(z), model.affs(z)
+            """
+            beam_output = model.decode_beam(z,k=3, cutoff_mols=10)
             # Only valid out molecules 
-            mols = log_from_beam(beam_output,loaders.dataset.index_to_char)
+            mols, _ = log_from_beam(beam_output,loaders.dataset.index_to_char)
             """
             
             # Concat all input and ouput data 
+            batch_size = z.shape[0]
             indices=indices.cpu().numpy()
             out_all[batch_idx*batch_size:(batch_idx+1)*batch_size]=indices
             smi_all[batch_idx*batch_size:(batch_idx+1)*batch_size]=smiles
@@ -123,6 +133,12 @@ if (__name__ == "__main__"):
             p_all[batch_idx*batch_size:(batch_idx+1)*batch_size]=props
             
             p_target_all[batch_idx*batch_size:(batch_idx+1)*batch_size]=p_target.numpy()
+            
+        # ===================================================================
+        # Latent space KDE 
+        # ===================================================================
+        
+        plot_kde(z_all)
         
         # ===================================================================
         # Decoding statistics 
@@ -157,6 +173,8 @@ if (__name__ == "__main__"):
         sns.scatterplot(reconstruction_dataframe['molWt'],reconstruction_dataframe['molWt_pred'])
         sns.lineplot([0,700],[0,700],color='r')
         
+        """
+        # Affinities prediction plots
         plt.figure()
         sns.scatterplot(reconstruction_dataframe[targets[0]],reconstruction_dataframe[f'{targets[0]}_pred'])
         sns.lineplot([0,20],[0,20],color='r')
@@ -164,25 +182,37 @@ if (__name__ == "__main__"):
         plt.figure()
         sns.scatterplot(reconstruction_dataframe[targets[1]],reconstruction_dataframe[f'{targets[1]}_pred'])
         sns.lineplot([0,20],[0,20],color='r')
-        
+        """
         # ===================================================================
         # PCA plot 
         # ===================================================================
+        if(recompute_pca):
+            fitted_pca = fit_pca(z)
+            dump(fitted_pca, 'eval/fitted_pca.joblib') 
+            print('Fitted and saved PCA for next time!')
+        else:
+            try:
+                fitted_pca = load('eval/fitted_pca.joblib') 
+            except(FileNotFoundError):
+                print('Fitted PCA object not found at ~/eval/fitted_pca.joblib, new PCA will be fitted on current data.')
+                fitted_pca = fit_pca(z)
+                dump(fitted_pca, 'eval/fitted_pca.joblib') 
+                print('Fitted and saved PCA for next time!')
         
         # Retrieve affinities of each molecule 
-        bool1 = [int(a[0]==1) for a in a_target_all] # actives for t1
-        bool2 = [int(a[0]==-1) for a in a_target_all] # decoys for t1
         
-        bit = np.array(bool2)+ 10*np.array(bool1) # bit affinities 
+        bool1 = [int(a[0]==1) for a in a_target_all] # actives for t1
+        
+        bit = np.array(bool1)
         bit = [str(i) for i in bit]
-        mapping = {'0':'dd','1':'da','10':'ad','11':'aa'}
+        mapping = {'0':'Decoy','1':'Active'}
         bit = [mapping[b] for b in bit]
         bit=pd.Series(bit,index=np.arange(len(bit)))
         
-        plt.figure()
-        pca_plot_true_affs(z_all,bit)
         
-        #TODO : different hue parameters : QED, MolWt, logP 
+        # Plot PCA with desired hue variable 
+        plt.figure()
+        pca_plot_hue(z= z_all, variable = bit, pca = fitted_pca)
         
         # ====================================================================
         # Random sampling in latent space 
