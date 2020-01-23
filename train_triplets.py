@@ -166,19 +166,19 @@ if (__name__ == "__main__"):
             s_l=s_l.to(device)
             g_l=send_graph_to_device(g_l,device)
             
-            z_i, logv_i, out_smi_i, out_p_i, out_a_i = model(g_i,s_i)
-            z_j, logv_j, out_smi_j, out_p_j, out_a_j = model(g_j,s_j)
-            z_l, logv_l, out_smi_l, out_p_l, out_a_l = model(g_l,s_l)
+            mu_i, logv_i, z_i, out_smi_i, out_p_i, out_a_i = model(g_i,s_i)
+            mu_j, logv_j, z_j, out_smi_j, out_p_j, out_a_j = model(g_j,s_j)
+            mu_l, logv_l, z_l, out_smi_l, out_p_l, out_a_l = model(g_l,s_l)
             
             #Compute loss terms : change according to supervision 
             simLoss = tripletLoss(z_i, z_j, z_l) # Similarity loss for triplet
             
             
-            rec_i, kl_i, pmse_i,_= Loss(out_smi_i, s_i, z_i, logv_i, p_i, out_p_i,\
+            rec_i, kl_i, pmse_i,_= Loss(out_smi_i, s_i, mu_i, logv_i, p_i, out_p_i,\
                                       None, None, train_on_aff=args.use_aff)
-            rec_j, kl_j, pmse_j,_= Loss(out_smi_j, s_j, z_j, logv_j, p_j, out_p_j,\
+            rec_j, kl_j, pmse_j,_= Loss(out_smi_j, s_j, mu_j, logv_j, p_j, out_p_j,\
                                       None, None, train_on_aff=args.use_aff)
-            rec_l, kl_l, pmse_l,_= Loss(out_smi_l, s_l, z_l, logv_l, p_l, out_p_l,\
+            rec_l, kl_l, pmse_l,_= Loss(out_smi_l, s_l, mu_l, logv_l, p_l, out_p_l,\
                                       None, None, train_on_aff=args.use_aff)
             
             rec = rec_i + rec_j + rec_l 

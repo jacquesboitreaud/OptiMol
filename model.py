@@ -249,7 +249,7 @@ class Model(nn.Module):
         properties = self.MLP(z)
         affinities = self.aff_net(z)
         
-        return mu, logv, out, properties, affinities
+        return mu, logv,z, out, properties, affinities
     
 
     

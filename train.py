@@ -143,7 +143,7 @@ if (__name__ == "__main__"):
             graph=send_graph_to_device(graph,device)
             
             # Forward pass
-            mu, logv, out_smi, out_p, out_a = model(graph,smiles)
+            mu, logv, _, out_smi, out_p, out_a = model(graph,smiles)
             
             #Compute loss terms : change according to supervision 
             rec, kl, pmse, amse= Loss(out_smi, smiles, mu, logv, p_target, out_p,\
