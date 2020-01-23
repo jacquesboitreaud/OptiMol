@@ -145,6 +145,7 @@ if (__name__ == "__main__"):
             
             #Memory debugging function
             #debug_memory()
+            total_steps+=1
             
             g_i, s_i, p_i, a_i = data[:4]
             g_j, s_j, p_j, a_j = data[4:8]
