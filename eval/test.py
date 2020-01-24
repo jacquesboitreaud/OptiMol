@@ -45,10 +45,11 @@ if (__name__ == "__main__"):
     from plot_tools import *
     
     # Eval config 
-    load_iter = 410000
-    model_path= f'saved_model_w/g2s_iter_{load_iter}.pth'
+    load_iter = 30000
+    model_path= f'saved_model_w/g2s_triplets_iter_{load_iter}.pth'
     
     recompute_pca = False
+    reload_model = True
     
     # Should be same as for training...
     properties = ['QED','logP','molWt']
@@ -72,11 +73,15 @@ if (__name__ == "__main__"):
     _, _, test_loader = loaders.get_data()
     
     # Validation pass
-    try:
-        model.eval()
-    except NameError:
-        model,device=load_trained_model(model_path)
-        model.eval()
+    if(reload_model):
+         model,device=load_trained_model(model_path)
+         model.eval()
+    else:
+        try:
+            model.eval()
+        except NameError:
+            model,device=load_trained_model(model_path)
+            model.eval()
     
     # Smiles 
     out_all = np.zeros((loaders.dataset.n,151))

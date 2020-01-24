@@ -6,6 +6,13 @@ Created on Wed Nov  6 18:44:04 2019
 
 Graph2Smiles VAE training (RGCN encoder, GRU decoder, teacher forced decoding). 
 
+To resume training form a given 
+- iteration saved
+- learning rate
+- beta 
+
+pass corresponding args + load_model = True
+
 
 """
 
@@ -63,6 +70,7 @@ if (__name__ == "__main__"):
     
     # config
     properties = ['QED','logP','molWt']
+    props_weights = torch.tensor([10,1,1e-2])
     targets = ['aa2ar','drd3'] # Change target names according to dataset 
     
     
@@ -129,6 +137,7 @@ if (__name__ == "__main__"):
     model.train()
     total_steps=0
     beta = args.beta
+    props_weights=props_weights.to(device)
     for epoch in range(1, n_epochs+1):
         print(f'Starting epoch {epoch}')
         epoch_rec, epoch_pmse, epoch_amse=0,0,0
@@ -147,7 +156,7 @@ if (__name__ == "__main__"):
             
             #Compute loss terms : change according to supervision 
             rec, kl, pmse, amse= Loss(out_smi, smiles, mu, logv, p_target, out_p,\
-                                      a_target, out_a, train_on_aff=use_aff)
+                                      a_target, out_a, train_on_aff=use_aff, props_weights=props_weights)
             epoch_rec+=rec.item()
             epoch_pmse+=pmse.item()
             epoch_amse += amse.item()
@@ -202,7 +211,7 @@ aff mse_loss {:.2f}'.format(epoch, total_steps, rec.item(),pmse.item(), amse.ite
             
                 #Compute loss : change according to supervision 
                 rec, kl, p_mse, a_mse = Loss(out_smi, smiles, mu, logv,\
-                           p_target, out_p, a_target, out_a, train_on_aff=use_aff)
+                           p_target, out_p, a_target, out_a, train_on_aff=use_aff, props_weights=props_weights)
                 t_rec += rec.item()
                 t_pmse += p_mse.item()
                 t_amse += a_mse.item()

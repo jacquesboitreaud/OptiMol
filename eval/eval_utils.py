@@ -62,11 +62,10 @@ def fit_pca(z):
     
     return pca 
     
-def pca_plot(z, pca):
+def pca_plot_color(z, pca, color):
     """ Takes fitted PCA and applies on latent batch z (N*latent_dim) """
     z2 = pca.transform(z)
-    
-    sns.scatterplot(x=z2[:,0], y=z2[:,1], s=15)
+    sns.scatterplot(x=z2[:,0], y=z2[:,1], s=10, color=color)
     plt.title("Latent embeddings visualized in 2D PCA space")
     plt.xlabel('PC 1')
     plt.ylabel('PC 2')

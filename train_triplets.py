@@ -69,6 +69,7 @@ if (__name__ == "__main__"):
     batch_size = args.batch_size
     
     properties = ['QED','logP','molWt']
+    props_weights = torch.tensor([10,1,1e-2])
     targets = ['aa2ar','drd3'] # Change target names according to dataset 
     
     model_path= f'saved_model_w/g2s_iter_{args.load_iter}.pth'
@@ -93,6 +94,7 @@ if (__name__ == "__main__"):
     logs_dict = {'train_rec':[],
                  'test_rec':[],
                  'train_pmse':[],
+                 'train_simLoss':[],
                  'test_pmse':[],
                  'train_amse':[],
                  'test_amse':[]}
@@ -136,7 +138,7 @@ if (__name__ == "__main__"):
     model.train()
     total_steps = 0 
     beta = args.beta
-    
+    props_weights=props_weights.to(device)
     for epoch in range(1, n_epochs+1):
         print(f'Starting epoch {epoch}')
         epoch_rec, epoch_pmse, epoch_simLoss=0,0,0
@@ -175,11 +177,11 @@ if (__name__ == "__main__"):
             
             
             rec_i, kl_i, pmse_i,_= Loss(out_smi_i, s_i, mu_i, logv_i, p_i, out_p_i,\
-                                      None, None, train_on_aff=args.use_aff)
+                                      None, None, train_on_aff=args.use_aff, props_weights = props_weights)
             rec_j, kl_j, pmse_j,_= Loss(out_smi_j, s_j, mu_j, logv_j, p_j, out_p_j,\
-                                      None, None, train_on_aff=args.use_aff)
+                                      None, None, train_on_aff=args.use_aff, props_weights = props_weights)
             rec_l, kl_l, pmse_l,_= Loss(out_smi_l, s_l, mu_l, logv_l, p_l, out_p_l,\
-                                      None, None, train_on_aff=args.use_aff)
+                                      None, None, train_on_aff=args.use_aff, props_weights=props_weights)
             
             rec = rec_i + rec_j + rec_l 
             kl = kl_i + kl_j + kl_l

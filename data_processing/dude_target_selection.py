@@ -12,7 +12,7 @@ import pandas as pd
 import numpy as np 
 
 
-tar = 'cxcr4'
+tar = 'esr1'
 
 mols = pd.read_csv('../data/DUD_clean.csv')
 

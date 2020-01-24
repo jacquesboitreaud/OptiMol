@@ -39,8 +39,8 @@ def plot_dendrogram(model, **kwargs):
 
 if(__name__=='__main__'):
 
-    target = 'cxcr4'
-    df = pd.read_csv(f'../data/dude_targets/{target}.csv', nrows=2000)
+    target = 'esr1'
+    df = pd.read_csv(f'../data/dude_targets/{target}.csv', nrows=3000)
     
     z_all = embed(model,device, loaders, df)
     
@@ -48,14 +48,21 @@ if(__name__=='__main__'):
     decoys_mask = np.where(df.loc[:,target]==-1)[0]
     
     z_a = z_all[actives_mask,:]
-    z_d=z_all[decoys_mask,:]
+    z_d=z_all[decoys_mask,:2000]
     
+    # Plot in PCA space 
+    fitted_pca = load('fitted_pca.joblib') 
+    plt.figure()
+    pca_plot_color(z= z_d, pca = fitted_pca, color = 'lightgreen')
+    pca_plot_color(z= z_a, pca = fitted_pca, color = 'purple')
+
+    # Pairwise distances 
     D_a = pairwise_distances(z_a, metric='l2')
     D_d = pairwise_distances(z_d, metric='l2')
     
     avg_a, avg_d = np.mean(D_a), np.mean(D_d)
     hclust = AgglomerativeClustering(distance_threshold=1,n_clusters = None,
                                         linkage="average", affinity='precomputed')
-    hclust=model.fit(D_a)
+    hclust=hclust.fit(D_a)
     plot_dendrogram(hclust,truncate_mode='level', p=10)
     plt.show()

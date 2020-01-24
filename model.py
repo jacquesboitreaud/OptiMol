@@ -254,14 +254,14 @@ class Model(nn.Module):
 
     
 def Loss(out, indices, mu, logvar, y_p, p_pred,
-         y_a, a_pred, train_on_aff):
+         y_a, a_pred, train_on_aff, props_weights):
     """ 
     Loss function for multitask VAE. uses Crossentropy for reconstruction
     """
     CE = F.cross_entropy(out, indices, reduction="sum")
     KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
     
-    mse= F.mse_loss(p_pred, y_p, reduction="sum")
+    mse= torch.sum(torch.mv(F.mse_loss(p_pred, y_p, reduction="none"),props_weights))
     
     #affinities: 
     if(train_on_aff):

@@ -42,7 +42,7 @@ if (__name__ == "__main__"):
     from utils import *
     from plot_tools import *
     
-    # Eval config 
+    # Choose model to load :  
     batch_size = 100
     load_iter = 410000
     model_path= f'saved_model_w/g2s_iter_{load_iter}.pth'
