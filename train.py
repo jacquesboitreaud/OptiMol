@@ -37,6 +37,7 @@ if (__name__ == "__main__"):
     parser.add_argument("--cutoff", help="Max number of molecules to use. Set to -1 for all", type=int, default=100)
     parser.add_argument('--save_path', type=str, default = './saved_model_w/g2s')
     parser.add_argument('--load_model', type=bool, default=False)
+    parser.add_argument('--load_iter', type=int, default=410000)
     
     parser.add_argument('--use_aff', type=bool, default=False)
     
@@ -97,7 +98,9 @@ if (__name__ == "__main__"):
     # Logs
     disable_rdkit_logging() # function from utils to disable rdkit logs
     logs_dict = {'train_rec':[],
+                 'train_kl':[],
                  'test_rec':[],
+                 'test_kl':[],
                  'train_pmse':[],
                  'test_pmse':[],
                  'train_amse':[],
@@ -135,12 +138,16 @@ if (__name__ == "__main__"):
     
     #Train & test
     model.train()
-    total_steps=0
+    if(args.load_model):
+        total_steps = args.load_iter
+    else:
+        total_steps=0
     beta = args.beta
     props_weights=props_weights.to(device)
+    
     for epoch in range(1, n_epochs+1):
         print(f'Starting epoch {epoch}')
-        epoch_rec, epoch_pmse, epoch_amse=0,0,0
+        epoch_rec, epoch_kl, epoch_pmse, epoch_amse=0,0,0,0
 
         for batch_idx, (graph, smiles, p_target, a_target) in enumerate(train_loader):
             
@@ -158,6 +165,7 @@ if (__name__ == "__main__"):
             rec, kl, pmse, amse= Loss(out_smi, smiles, mu, logv, p_target, out_p,\
                                       a_target, out_a, train_on_aff=use_aff, props_weights=props_weights)
             epoch_rec+=rec.item()
+            epoch_kl+= kl.item()
             epoch_pmse+=pmse.item()
             epoch_amse += amse.item()
             
@@ -198,7 +206,7 @@ aff mse_loss {:.2f}'.format(epoch, total_steps, rec.item(),pmse.item(), amse.ite
 
         # Validation pass
         model.eval()
-        t_rec, t_amse, t_pmse = 0,0,0
+        t_rec, t_kl, t_amse, t_pmse = 0,0,0,0
         with torch.no_grad():
             for batch_idx, (graph, smiles, p_target, a_target) in enumerate(test_loader):
                 
@@ -207,18 +215,20 @@ aff mse_loss {:.2f}'.format(epoch, total_steps, rec.item(),pmse.item(), amse.ite
                 smiles=smiles.to(device)
                 graph=send_graph_to_device(graph,device)
                 
-                mu, logv, out_smi, out_p, out_a = model(graph,smiles)
+                mu, logv, z, out_smi, out_p, out_a = model(graph,smiles)
             
                 #Compute loss : change according to supervision 
                 rec, kl, p_mse, a_mse = Loss(out_smi, smiles, mu, logv,\
                            p_target, out_p, a_target, out_a, train_on_aff=use_aff, props_weights=props_weights)
                 t_rec += rec.item()
+                t_kl +=kl.item()
                 t_pmse += p_mse.item()
                 t_amse += a_mse.item()
             
-            t_rec, t_pmse, t_amse = t_rec/len(test_loader), t_pmse/len(test_loader), t_amse/len(test_loader)
-            epoch_rec, epoch_pmse, epoch_amse = epoch_rec/len(train_loader), epoch_pmse/len(train_loader),\
-            epoch_amse/len(train_loader)
+            t_rec, t_kl, t_pmse, t_amse = t_rec/len(test_loader), t_kl/len(test_loader),\
+            t_pmse/len(test_loader), t_amse/len(test_loader)
+            epoch_rec, epoch_kl, epoch_pmse, epoch_amse = epoch_rec/len(train_loader), epoch_kl/len(train_loader),\
+            epoch_pmse/len(train_loader),epoch_amse/len(train_loader)
                 
         print(f'Validation loss at epoch {epoch}, per batch: rec: {t_rec:.2f}, props mse: {t_pmse:.2f},\
  aff mse: {t_amse:.2f}')
@@ -227,8 +237,10 @@ aff mse_loss {:.2f}'.format(epoch, total_steps, rec.item(),pmse.item(), amse.ite
         logs_dict['test_pmse'].append(t_pmse)
         logs_dict['test_amse'].append(t_amse)
         logs_dict['test_rec'].append(t_rec)
+        logs_dict['test_kl'].append(t_kl)
         
         logs_dict['train_pmse'].append(epoch_pmse)
         logs_dict['train_amse'].append(epoch_amse)
         logs_dict['train_rec'].append(epoch_rec)
+        logs_dict['train_kl'].append(epoch_kl)
         

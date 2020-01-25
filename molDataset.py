@@ -48,35 +48,39 @@ class molDataset(Dataset):
     """ 
     pytorch Dataset for training on small molecules graphs + smiles 
     """
-    def __init__(self, csv_path,
-                n_mols,
-                props, 
-                targets,
-                debug,
-                shuffle,
-                select_target):
-        
-        if(n_mols!=-1 and not shuffle):
-            self.df = pd.read_csv(csv_path, nrows=n_mols)
-            self.n = n_mols
-            print('columns:', self.df.columns)
-        elif(n_mols!=-1):
-            # Random sampling of the right number of molecules 
-            self.df = pd.read_csv(csv_path)
-            self.df=self.df.sample(n_mols)
-            self.n = n_mols
-        else:
-            self.df = pd.read_csv(csv_path)
+    def __init__(self, csv_path=None,
+                n_mols=-1,
+                props=None, 
+                targets=None,
+                debug=False,
+                shuffle=False,
+                select_target=None):
+        print('**************** dataset building ******************')
+        # 1/ two solutions: dataframe given or csv path given 
+        if(csv_path is None):
+            print("Empty dataset initialized. Use pass_dataset or pass_dataset_path to add molecules.")
+            self.df=None
+            self.n = 0 
+            
+        else: 
+            # Cutoff number of molecules 
+            if(n_mols!=-1):
+                self.df = pd.read_csv(csv_path, nrows=n_mols)
+                self.n = n_mols
+                print('columns:', self.df.columns)
+            else:
+                self.df = pd.read_csv(csv_path)
+                
             if(select_target!=None): # keep only actives and decoys for a specific target (use for test plots)
+                print('Restricting dataset to selected target')
                 self.df=self.df[self.df[select_target]!=0]
-            self.n = self.df.shape[0]
-            print('columns:', self.df.columns)
-        
+                self.n = self.df.shape[0]
+                print('columns:', self.df.columns)
+                
         # 1/ ============== Properties & Targets handling: ================
         
         self.targets = targets
         self.props = props
-        print(f'Labels retrieved for the following {len(self.targets)} targets: {self.targets}')
         
         # =========== 2/ Graphs handling ====================
         
@@ -119,6 +123,12 @@ class molDataset(Dataset):
         self.df=df
         self.n=df.shape[0]
         print('New dataset columns:', self.df.columns)
+        
+    def pass_smiles_list(self, smiles):
+        # pass smiles list to the model; a dataframe with unique column 'can' will be created 
+        self.df = pd.DataFrame.from_dict({'can':smiles})
+        self.n = self.df.shape[0]
+        print('New dataset contains only can smiles // no props or affinities')
             
     def __len__(self):
         return self.n
@@ -127,20 +137,12 @@ class molDataset(Dataset):
         # Return as dgl graph, smiles (indexes), targets properties.
         
         row = self.df.iloc[idx]
-        smiles, props = row['can'], np.array(row[self.props],dtype=np.float32)
-        
-        try:
-            targets = np.array(row[self.targets],dtype=np.float32)
-        except:
-            targets = np.zeros(len(self.targets), dtype=np.float32)
-        
-        
+        smiles = row['can']
         # Checks
         if(len(smiles)>self.max_smi_len):
             print(f'smiles length error: l={len(smiles)}, longer than {self.max_smi_len}')
         
-        targets = np.nan_to_num(targets)
-        
+
         # 1 - Graph building
         graph=smiles_to_nx(smiles)
         
@@ -177,6 +179,18 @@ class molDataset(Dataset):
         idces = [self.char_to_index[c] for c in smiles]
         idces.append(self.char_to_index['\n'])
         a[:len(idces)]=idces
+        
+        # 3 - Optional props and affinities 
+        props, targets = 0,0
+        if(self.props!=None):
+            props = np.array(row[self.props],dtype=np.float32)
+        
+        if(self.targets!=None):
+            try:
+                targets = np.array(row[self.targets],dtype=np.float32)
+            except:
+                targets = np.zeros(len(self.targets), dtype=np.float32)
+            targets = np.nan_to_num(targets)
         
         return g_dgl, a, props, targets
         

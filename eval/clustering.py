@@ -39,7 +39,7 @@ def plot_dendrogram(model, **kwargs):
 
 if(__name__=='__main__'):
 
-    target = 'esr1'
+    target = 'hdac2'
     df = pd.read_csv(f'../data/dude_targets/{target}.csv', nrows=3000)
     
     z_all = embed(model,device, loaders, df)

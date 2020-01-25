@@ -53,3 +53,6 @@ def embed(model, device, loader, df):
             z_all[batch_idx*batch_size:(batch_idx+1)*batch_size]=z
             
     return z_all
+
+    
+    

@@ -75,12 +75,14 @@ if (__name__ == "__main__"):
     # Validation pass
     if(reload_model):
          model,device=load_trained_model(model_path)
+         model.set_smiles_chars()
          model.eval()
     else:
         try:
             model.eval()
         except NameError:
             model,device=load_trained_model(model_path)
+            model.set_smiles_chars()
             model.eval()
     
     # Smiles 
@@ -111,7 +113,6 @@ if (__name__ == "__main__"):
             # Decoding 
             out = model.decode(z)
             v, indices = torch.max(out, dim=1) # get indices of char with max probability
-            
             
             # Decoding with beam search 
             """
@@ -234,6 +235,7 @@ if (__name__ == "__main__"):
         props, affs = model.props(r).detach().cpu().numpy(), model.affs(r).detach().cpu().numpy()
         
         mols= [Chem.MolFromSmiles(s) for s in list(sampling_df['output smiles'])]
+        fig = Draw.MolsToGridImage(mols)
         """
         for m in mols:
             fig = Draw.MolToMPL(m, size = (100,100))

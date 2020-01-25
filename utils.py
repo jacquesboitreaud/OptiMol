@@ -74,9 +74,15 @@ class BeamSearchNode():
 # ============== Smiles handling utils ===============================
         
 def log_smiles(true_idces, probas, idx_to_char):
-    # Return dataframe with two columns, input smiles and output smiles
-    # Returns fraction of valid smiles output
-    probas = probas.to('cpu').numpy() # COMMENT IF NEEDED 
+    """
+    Input : 
+        true_idces : shape (N, seq_len)
+        probas : shape (N, voc_size, seq_len)
+        idx_to_char : dict with idx to char mapping 
+        
+        Argmax on probas array (dim 1) to find most likely character indices 
+    """
+    probas = probas.to('cpu').numpy()
     true_idces = true_idces.cpu().numpy()
     N, voc_size, seq_len = probas.shape
     out_idces = np.argmax(probas, axis=1) # get char_indices
@@ -93,7 +99,12 @@ def log_smiles(true_idces, probas, idx_to_char):
     return df, frac_valid
 
 def log_smiles_from_indices(true_idces, out_idces, idx_to_char):
-    # Inputs given as numpy arrays directly + contain indices !!! 
+    """
+    Input : 
+        true_idces : shape (N, seq_len)
+        out_idces : shape (N, seq_len)
+        idx_to_char : dict with idx to char mapping 
+    """
     N, seq_len = out_idces.shape
     if(type(true_idces)==np.ndarray):
         print('shape of true indices array: ',true_idces.shape)
@@ -136,19 +147,17 @@ def i2s(idces, idx_to_char):
 def log_from_beam(idces, idx_to_char):
     """ Takes array of possibilities : (N, k_beam, sequences_length) """
     N, k_beam, length = idces.shape
-    out_mols, smiles = [], []
+    smiles = []
     for i in range(N):
         k,m = 0, None 
-        while(k<=2 and m==None):
+        while(k<2 and m==None):
             smi = ''.join([idx_to_char[idx] for idx in idces[i,k]])
-            smi = smi.rstrip('\n')
+            smi = smi.rstrip()
             m=Chem.MolFromSmiles(smi)
             k+=1
-        if(m!=None):
-            out_mols.append(m)
-            print(smi)
-            smiles.append(smi)
-    return out_mols, smiles
+        smiles.append(smi)
+        print(smi)
+    return smiles
 
 
 def disable_rdkit_logging():

@@ -17,6 +17,7 @@ import torch.nn.functional as F
 from functools import partial
 import itertools
 from queue import PriorityQueue
+import json
 
 import dgl
 from dgl import mean_nodes
@@ -139,6 +140,25 @@ class Model(nn.Module):
             nn.ReLU(),
             nn.Linear(32,self.N_targets))
         
+    def set_smiles_chars(self,char_file="map_files/zinc_chars.json"):
+        # Adds dict to convert indices to smiles chars 
+        self.char_list = json.load(open(char_file))
+        self.char_to_index= dict((c, i) for i, c in enumerate(self.char_list))
+        self.index_to_char= dict((i, c) for i, c in enumerate(self.char_list))
+        
+    # ======================== Model pass functions ==========================
+    
+    def forward(self, g, smiles):
+        #print('edge data size ', g.edata['one_hot'].size())
+        e_out = self.encoder(g)
+        mu, logv = self.encoder_mean(e_out), self.encoder_logv(e_out)
+        z= self.sample(mu, logv, mean_only=False).squeeze() # stochastic sampling 
+        out = self.decode(z, smiles, teacher_forced=True) # teacher forced decoding 
+        properties = self.MLP(z)
+        affinities = self.aff_net(z)
+        
+        return mu, logv,z, out, properties, affinities
+        
     def sample(self, mean, logv, mean_only):
         """ Samples a vector according to the latent vector mean and variance """
         if not mean_only:
@@ -193,6 +213,28 @@ class Model(nn.Module):
                 
         return gen_seq
     
+    def probas_to_smiles(self, gen_seq):
+        # Takes tensor of shape (N, voc_size, seq_len), returns list of corresponding smiles
+        N, voc_size, seq_len = gen_seq.shape
+        v, indices = torch.max(gen_seq, dim=1)
+        indices = indices.cpu().numpy()
+        smiles = []
+        for i in range(N):
+            smiles.append(''.join([self.index_to_char[idx] for idx in indices[i]]).rstrip())
+        return smiles
+    
+    def indices_to_smiles(self, indices):
+        # Takes indices tensor of shape (N, seq_len), returns list of corresponding smiles
+        N, seq_len = indices.shape
+        try:
+            indices = indices.cpu().numpy()
+        except:
+            pass
+        smiles = []
+        for i in range(N):
+            smiles.append(''.join([self.index_to_char[idx] for idx in indices[i]]).rstrip())
+        return smiles
+    
     def decode_beam(self, z, k=3, cutoff_mols=None):
         """
         Input:
@@ -239,19 +281,44 @@ class Model(nn.Module):
                     
             sequences.append([n.sequence for n in topk]) # list of lists 
         return np.array(sequences)
-        
-    def forward(self, g, smiles):
-        #print('edge data size ', g.edata['one_hot'].size())
-        e_out = self.encoder(g)
-        mu, logv = self.encoder_mean(e_out), self.encoder_logv(e_out)
-        z= self.sample(mu, logv, mean_only=False).squeeze() # stochastic sampling 
-        out = self.decode(z, smiles, teacher_forced=True) # teacher forced decoding 
-        properties = self.MLP(z)
-        affinities = self.aff_net(z)
-        
-        return mu, logv,z, out, properties, affinities
     
-
+    # ========================== Sampling functions ======================================
+    
+    def sample_around_mol(self, g, dist, beam_search=False, attempts = 1):
+        """ Samples around embedding of molecular graph g, within a l2 distance of d """
+        e_out = self.encoder(g)
+        mu, var = self.encoder_mean(e_out), self.encoder_logv(e_out)
+        sigma = torch.exp(.5 * var)
+        
+        tensors_list = []
+        for i in range(attempts):
+            noise = torch.randn_like(mu) * sigma
+            noise = (dist/torch.norm(noise,p=2,dim=1))*noise
+            noise = noise.to(self.device)
+            sp=mu + noise 
+            tensors_list.append(sp)
+        
+        if(attempts>1):
+            samples=torch.stack(tensors_list, dim=0)
+            samples = torch.squeeze(samples)
+        else:
+            samples = sp
+            
+        if(beam_search):
+            dec = self.decode_beam(samples)
+        else:
+            dec = self.decode(samples)
+        
+        return dec
+    
+    def sample_z_prior(self, n_mols):
+        """Sampling z ~ p(z) = N(0, I)
+        :param n_batch: number of batches
+        :return: (n_batch, d_z) of floats, sample of latent z
+        """
+        return torch.randn(n_mols, self.l_size, device=self.device)
+        
+# ======================= Loss functions ====================================
     
 def Loss(out, indices, mu, logvar, y_p, p_pred,
          y_a, a_pred, train_on_aff, props_weights):
