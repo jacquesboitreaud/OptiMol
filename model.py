@@ -329,7 +329,8 @@ def Loss(out, indices, mu, logvar, y_p, p_pred,
     KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
     
     #mse= torch.sum(torch.mv(F.mse_loss(p_pred, y_p, reduction="none"),props_weights))
-    mse= F.mse_loss(p_pred, y_p, reduction="sum")
+    mse= 10*F.mse_loss(p_pred[:,0], y_p[:,0], reduction="sum") +\
+    F.mse_loss(p_pred[:,1], y_p[:,1], reduction="sum") + 1e-2* F.mse_loss(p_pred[:,2], y_p[:,2], reduction="sum")
     
     #affinities: 
     if(train_on_aff):
