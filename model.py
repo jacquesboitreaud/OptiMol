@@ -328,7 +328,8 @@ def Loss(out, indices, mu, logvar, y_p, p_pred,
     CE = F.cross_entropy(out, indices, reduction="sum")
     KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
     
-    mse= torch.sum(torch.mv(F.mse_loss(p_pred, y_p, reduction="none"),props_weights))
+    #mse= torch.sum(torch.mv(F.mse_loss(p_pred, y_p, reduction="none"),props_weights))
+    mse= F.mse_loss(p_pred, y_p, reduction="sum")
     
     #affinities: 
     if(train_on_aff):
