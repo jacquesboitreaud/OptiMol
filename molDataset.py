@@ -70,12 +70,14 @@ class molDataset(Dataset):
                 print('columns:', self.df.columns)
             else:
                 self.df = pd.read_csv(csv_path)
+                self.n = self.df.shape[0]
+                print('Dataset columns:', self.df.columns)
                 
             if(select_target!=None): # keep only actives and decoys for a specific target (use for test plots)
-                print('Restricting dataset to selected target')
+                print('Restricting dataset to a selected target')
                 self.df=self.df[self.df[select_target]!=0]
                 self.n = self.df.shape[0]
-                print('columns:', self.df.columns)
+                print('Dataset columns:', self.df.columns)
                 
         # 1/ ============== Properties & Targets handling: ================
         
