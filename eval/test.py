@@ -59,8 +59,8 @@ if (__name__ == "__main__"):
     plot_target = 'aa2ar'
 
     #Load eval set
-    loaders = Loader(csv_path='data/DUD_clean.csv',
-                     n_mols=100,
+    loaders = Loader(csv_path='data/DUDE_clean.csv',
+                     n_mols=10,
                      num_workers=0, 
                      batch_size=100, 
                      props = properties,

@@ -33,7 +33,7 @@ if (__name__ == "__main__"):
     
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--train', help="path to training dataframe", type=str, default='data/DUD_clean.csv')
+    parser.add_argument('--train', help="path to training dataframe", type=str, default='data/moses_train.csv')
     parser.add_argument("--cutoff", help="Max number of molecules to use. Set to -1 for all", type=int, default=100)
     parser.add_argument('--save_path', type=str, default = './saved_model_w/g2s')
     parser.add_argument('--load_model', type=bool, default=False)
@@ -71,7 +71,7 @@ if (__name__ == "__main__"):
     
     # config
     properties = ['QED','logP','molWt']
-    props_weights = torch.tensor([10,1,1e-2])
+    props_weights = torch.tensor([10,1,1e-2]) # weighted loss ! 
     targets = ['aa2ar','drd3'] # Change target names according to dataset 
     
     
