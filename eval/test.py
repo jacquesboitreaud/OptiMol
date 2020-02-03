@@ -58,8 +58,8 @@ if (__name__ == "__main__"):
     # Select only DUDE subset to plot in PCA space 
     plot_target = 'aa2ar'
 
-    #Load eval set
-    loaders = Loader(csv_path='data/DUDE_clean.csv',
+    #Load eval set: USE MOSES TEST SET !!!!!!!!!!!!!!!!!
+    loaders = Loader(csv_path='data/moses_test.csv',
                      n_mols=10,
                      num_workers=0, 
                      batch_size=100, 
