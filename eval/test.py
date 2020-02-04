@@ -46,7 +46,7 @@ if (__name__ == "__main__"):
     
     # Eval config 
     load_iter = 30000
-    model_path= f'saved_model_w/g2s_triplets_iter_{load_iter}.pth'
+    model_path= f'saved_model_w/baseline.pth'
     
     recompute_pca = False
     reload_model = True
@@ -67,7 +67,7 @@ if (__name__ == "__main__"):
                      targets=targets,
                      test_only=True,
                      shuffle = True, 
-                     select_target = plot_target)
+                     select_target = None)
     rem, ram, rchim, rcham = loaders.get_reverse_maps()
     
     _, _, test_loader = loaders.get_data()

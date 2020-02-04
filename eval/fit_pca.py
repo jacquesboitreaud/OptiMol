@@ -44,8 +44,7 @@ if (__name__ == "__main__"):
     
     # Choose model to load :  
     batch_size = 100
-    load_iter = 410000
-    model_path= f'saved_model_w/g2s_iter_{load_iter}.pth'
+    model_path= f'saved_model_w/baseline.pth'
     
     # Should be same as for training...
     properties = ['QED','logP','molWt']

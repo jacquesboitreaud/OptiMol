@@ -321,7 +321,7 @@ class Model(nn.Module):
 # ======================= Loss functions ====================================
     
 def Loss(out, indices, mu, logvar, y_p, p_pred,
-         y_a, a_pred, train_on_aff, props_weights):
+         y_a, a_pred, train_on_aff):
     """ 
     Loss function for multitask VAE. uses Crossentropy for reconstruction
     """

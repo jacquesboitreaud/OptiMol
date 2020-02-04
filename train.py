@@ -71,7 +71,6 @@ if (__name__ == "__main__"):
     
     # config
     properties = ['QED','logP','molWt']
-    props_weights = torch.tensor([10,1,1e-2]) # weighted loss ! 
     targets = ['aa2ar','drd3'] # Change target names according to dataset 
     
     
@@ -143,7 +142,6 @@ if (__name__ == "__main__"):
     else:
         total_steps=0
     beta = args.beta
-    props_weights=props_weights.to(device)
     
     for epoch in range(1, n_epochs+1):
         print(f'Starting epoch {epoch}')
@@ -163,7 +161,7 @@ if (__name__ == "__main__"):
             
             #Compute loss terms : change according to supervision 
             rec, kl, pmse, amse= Loss(out_smi, smiles, mu, logv, p_target, out_p,\
-                                      a_target, out_a, train_on_aff=use_aff, props_weights=props_weights)
+                                      a_target, out_a, train_on_aff=use_aff)
             epoch_rec+=rec.item()
             epoch_kl+= kl.item()
             epoch_pmse+=pmse.item()
@@ -219,7 +217,7 @@ aff mse_loss {:.2f}'.format(epoch, total_steps, rec.item(),pmse.item(), amse.ite
             
                 #Compute loss : change according to supervision 
                 rec, kl, p_mse, a_mse = Loss(out_smi, smiles, mu, logv,\
-                           p_target, out_p, a_target, out_a, train_on_aff=use_aff, props_weights=props_weights)
+                           p_target, out_p, a_target, out_a, train_on_aff=use_aff)
                 t_rec += rec.item()
                 t_kl +=kl.item()
                 t_pmse += p_mse.item()
