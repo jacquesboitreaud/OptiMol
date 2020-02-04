@@ -33,6 +33,7 @@ from sklearn.decomposition import PCA
 # Execution is set to take place in graph2smiles root dir 
 if (__name__ == "__main__"):
     sys.path.append('eval')
+    sys.path.append('..')
     sys.path.append("data_processing")
     from molDataset import molDataset, Loader
     from rdkit_to_nx import smiles_to_nx
