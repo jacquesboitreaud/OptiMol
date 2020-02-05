@@ -74,6 +74,8 @@ class molDataset(Dataset):
         # Select only a part of the actives 
         if(fold!=None):
             self.df=self.df[self.df['fold']==fold]
+            self.n = self.df.shape[0]
+            self.df = self.df.reset_index(drop=True)
             
         # 1/ ============== Properties & Targets handling: ================
         
