@@ -4,15 +4,16 @@ Created on Wed Nov  6 18:44:04 2019
 
 @author: jacqu
 
-Graph2Smiles VAE training (RGCN encoder, GRU decoder, teacher forced decoding).
+Graph2Smiles VAE finetuning (RGCN encoder, GRU decoder, teacher forced decoding).
 Using triplets loss to disentangle latent space 
 
 ****
-Default params resume training after 410k iterations, 
-starting with 
+Default params starting with 
 lr = 1e-5
-beta = 0.8 
+beta = 1 
+since model should have been pretrained. 
 ****
+
 """
 
 import argparse
@@ -44,7 +45,7 @@ if (__name__ == "__main__"):
     
     parser.add_argument('--lr', type=float, default=1e-5) # Initial learning rate 
     parser.add_argument('--clip_norm', type=float, default=50.0) # Gradient clipping max norm 
-    parser.add_argument('--beta', type=float, default=0.8) # initial KL annealing weight 
+    parser.add_argument('--beta', type=float, default=1) # initial KL annealing weight 
     parser.add_argument('--step_beta', type=float, default=0.002) # beta increase per step 
     parser.add_argument('--max_beta', type=float, default=1.0) # maximum KL annealing weight 
     parser.add_argument('--warmup', type=int, default=0) # number of steps with only reconstruction loss (beta=0)
@@ -61,7 +62,7 @@ if (__name__ == "__main__"):
     
     sys.path.append("./data_processing")
     from model import Model, Loss, RecLoss, tripletLoss
-    from molDataset_3 import Loader
+    from tripletsDataset import Loader
     from utils import *
     
     # config
@@ -75,8 +76,8 @@ if (__name__ == "__main__"):
     log_path='./saved_model_w/logs_g2s.npy'
     
     # Dataloading 
-    actives = 'data/triplets/actives_drd3.csv'
-    decoys = 'data/triplets/decoys_drd3.csv'
+    actives = ['data/triplets/herg_actives.csv', 'data/triplets/drd3_actives.csv']
+    decoys = ['data/triplets/herg_decoys.csv', 'data/triplets/drd3_decoys.csv']
 
     #Load train set and test set
     loaders = Loader(actives_csv=actives,

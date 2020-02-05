@@ -52,7 +52,7 @@ if (__name__ == "__main__"):
     targets = ['aa2ar','drd3']
 
     #Load eval set
-    loaders = Loader(csv_path='data/DUD_clean.csv',
+    loaders = Loader(csv_path='data/moses_train.csv',
                      n_mols=500000,
                      num_workers=0, 
                      batch_size=batch_size, 

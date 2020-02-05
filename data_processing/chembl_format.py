@@ -102,6 +102,7 @@ chembl=chembl.drop(todrop).reset_index()
         
 chembl.to_csv('C:/Users/jacqu/Documents/GitHub/graph2smiles/data/CHEMBL_formatted.csv')
 
+# TODO ; adapt this into an independent function we can import 
 # ============================================================================
 # Drop by trying to create one-hot vectors (long!)
 #=============================================================================
@@ -112,23 +113,29 @@ for i,smiles in enumerate(smi):
     if(i%100000==0):
         print(i)
     graph=smiles_to_nx(smiles)
-        
-    try:
-        one_hot = {edge: torch.tensor(rem[label]) for edge, label in
-                   (nx.get_edge_attributes(graph, 'bond_type')).items()}
-        nx.set_edge_attributes(graph, name='one_hot', values=one_hot)
-        
-        at_type = {a: oh_tensor(ram[label], len(ram)) for a, label in
-                   (nx.get_node_attributes(graph, 'atomic_num')).items()}
-        nx.set_node_attributes(graph, name='atomic_num', values=at_type)
-        
-        at_charge = {a: oh_tensor(rcham[label], len(rcham)) for a, label in
-                   (nx.get_node_attributes(graph, 'formal_charge')).items()}
-        nx.set_node_attributes(graph, name='formal_charge', values=at_charge)
-        
-        
-        at_chir = {a: torch.tensor(rchim[label]) for a, label in
-                   (nx.get_node_attributes(graph, 'chiral_tag')).items()}
-        nx.set_node_attributes(graph, name='chiral_tag', values=at_chir)
-    except KeyError:
+    
+    if(len(smiles)>150 or '9' in smiles): # Conditions linked to the SMILES handling of the model.
         todrop.append(i)
+    else:
+        
+        try:
+            one_hot = {edge: torch.tensor(rem[label]) for edge, label in
+                       (nx.get_edge_attributes(graph, 'bond_type')).items()}
+            nx.set_edge_attributes(graph, name='one_hot', values=one_hot)
+            
+            at_type = {a: oh_tensor(ram[label], len(ram)) for a, label in
+                       (nx.get_node_attributes(graph, 'atomic_num')).items()}
+            nx.set_node_attributes(graph, name='atomic_num', values=at_type)
+            
+            at_charge = {a: oh_tensor(rcham[label], len(rcham)) for a, label in
+                       (nx.get_node_attributes(graph, 'formal_charge')).items()}
+            nx.set_node_attributes(graph, name='formal_charge', values=at_charge)
+            
+            
+            at_chir = {a: torch.tensor(rchim[label]) for a, label in
+                       (nx.get_node_attributes(graph, 'chiral_tag')).items()}
+            nx.set_node_attributes(graph, name='chiral_tag', values=at_chir)
+        except KeyError:
+            todrop.append(i)
+            
+    

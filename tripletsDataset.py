@@ -74,7 +74,6 @@ class molDataset(Dataset):
         
         self.targets = targets
         self.props = props
-        print(f'Labels retrieved for the following {len(self.targets)} targets: {self.targets}')
         
         # =========== 2/ Graphs handling ====================
         
@@ -166,26 +165,34 @@ class molDataset(Dataset):
     
 class tripletDataset(Dataset):
     # Object that yields triplets of molecules coming from two datasets 
-    def __init__(self, actives_D, decoys_D):
+    
+    def __init__(self, t1_actives, t1_decoys, t2_actives, t2_decoys):
         # Initialize from ligands dataset and decoys_dataset
-        self.na, self.nd = len(actives_D), len(decoys_D)
         
-        self.actives_D = actives_D
-        self.decoys_D = decoys_D
+        self.na = [len(t1_actives), len(t2_actives)]
+        self.nd =  [len(t1_decoys), len(t2_decoys)]
+        
+        self.actives = [t1_actives,t2_actives]
+        self.decoys = [t1_decoys, t2_decoys]
         
         
     def __len__(self):
-        return min((self.na**2)*self.nd,1000000) # max 1M samples 
+        return 1000000 # max 1M samples 
         
     def __getitem__(self,idx):
+        
+        # select a target at random
+        t = np.random.randint(0,2)
+        
+        
         # Select random indices for triplet
-        a = np.random.randint(0,self.na,2)
-        d = np.random.randint(0,self.nd)
+        a = np.random.randint(0,self.na[t],2) # two random actives 
+        d = np.random.randint(0,self.nd[t]) # one random inactive (negative sampling)
         
         # Get the corresponding molecules from their dataset
-        g_i, a_i, props_i, targets_i = self.actives_D.__getitem__(a[0])
-        g_j, a_j, props_j, targets_j = self.actives_D.__getitem__(a[1])
-        g_l, a_l, props_l, targets_l = self.decoys_D.__getitem__(d)
+        g_i, a_i, props_i, targets_i = self.actives[t].__getitem__(a[0])
+        g_j, a_j, props_j, targets_j = self.actives[t].__getitem__(a[1])
+        g_l, a_l, props_l, targets_l = self.decoys[t].__getitem__(d)
         
         # Assemble the 3 
         
@@ -194,8 +201,8 @@ class tripletDataset(Dataset):
     
 class Loader():
     def __init__(self,
-                 actives_csv,
-                 decoys_csv,
+                 actives_files,
+                 decoys_files,
                  props,
                  targets,
                  batch_size=64,
@@ -211,41 +218,47 @@ class Loader():
 
         self.batch_size = batch_size
         self.num_workers = num_workers
-        self.actives_dataset = molDataset(actives_csv,
-                                          n_mols=-1,
-                                  debug=debug,
-                                  props = props,
-                                  targets=targets)
-        self.decoys_dataset = molDataset(decoys_csv,
-                                         n_mols=-1,
-                                          debug=debug,
-                                          props = props,
-                                          targets=targets)
+        self.t1_actives = molDataset(actives_files[0],
+                                     n_mols=-1,
+                                     debug=debug,
+                                     props = props,
+                                     targets=targets)
+        self.t1_decoys = molDataset(decoys_files[0],
+                                    n_mols=-1,
+                                    debug=debug,
+                                    props = props,
+                                    targets=targets)
+        self.t2_actives = molDataset(actives_files[1],
+                                     n_mols=-1,
+                                     debug=debug,
+                                     props = props,
+                                     targets=targets)
+        self.t2_decoys = molDataset(decoys_files[1],
+                                    n_mols=-1,
+                                    debug=debug,
+                                    props = props,
+                                    targets=targets)
         
-        self.t_dataset = tripletDataset(self.actives_dataset,
-                                        self.decoys_dataset)
+        self.t_dataset = tripletDataset(self.t1_actives, self.t1_decoys, self.t2_actives, self.t2_decoys)
                         
         # Both datasets should have same maps 
-        self.num_edge_types, self.num_atom_types = self.actives_dataset.num_edge_types, self.actives_dataset.num_atom_types
-        self.num_charges= self.actives_dataset.num_charges
+        self.num_edge_types, self.num_atom_types = self.t1_actives.num_edge_types, self.t1_actives.num_atom_types
+        self.num_charges= self.t1_actives.num_charges
         self.test_only=test_only
         
     def get_maps(self):
         # Returns dataset mapping of edge and node features 
-        return self.actives_dataset.edge_map, self.actives_dataset.at_map, self.actives_dataset.chi_map, self.actives_dataset.charges_map
+        return self.t1_actives.edge_map, self.t1_actives.at_map, self.t1_actives.chi_map, self.t1_actives.charges_map
     
     def get_reverse_maps(self):
         # Returns maps of one-hot index to actual feature 
-        rev_em = {v:i for (i,v) in self.actives_dataset.edge_map.items() }
-        rev_am = {v:i for (i,v) in self.actives_dataset.at_map.items() }
-        rev_chi_m={v:i for (i,v) in self.actives_dataset.chi_map.items() }
-        rev_cm={v:i for (i,v) in self.actives_dataset.charges_map.items() }
+        rev_em = {v:i for (i,v) in self.t1_actives.edge_map.items() }
+        rev_am = {v:i for (i,v) in self.t1_actives.at_map.items() }
+        rev_chi_m={v:i for (i,v) in self.t1_actives.chi_map.items() }
+        rev_cm={v:i for (i,v) in self.t1_actives.charges_map.items() }
         return rev_em, rev_am, rev_chi_m, rev_cm
 
     def get_data(self):
-        na = len(self.actives_dataset)
-        nd = len(self.decoys_dataset)
-        print(f"Splitting datasets with {na} actives and {nd} decoys")
         
         if(not self.test_only):
             train_loader = DataLoader(dataset=self.t_dataset, shuffle=True, batch_size=self.batch_size,

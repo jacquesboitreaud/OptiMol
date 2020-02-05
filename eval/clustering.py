@@ -64,5 +64,6 @@ if(__name__=='__main__'):
     hclust = AgglomerativeClustering(distance_threshold=1,n_clusters = None,
                                         linkage="average", affinity='precomputed')
     hclust=hclust.fit(D_a)
+    plt.figure()
     plot_dendrogram(hclust,truncate_mode='level', p=10)
     plt.show()

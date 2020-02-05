@@ -45,11 +45,10 @@ if (__name__ == "__main__"):
     from plot_tools import *
     
     # Eval config 
-    load_iter = 30000
     model_path= f'saved_model_w/baseline.pth'
     
     recompute_pca = False
-    reload_model = True
+    reload_model = False
     
     # Should be same as for training...
     properties = ['QED','logP','molWt']
@@ -60,7 +59,7 @@ if (__name__ == "__main__"):
 
     #Load eval set: USE MOSES TEST SET !!!!!!!!!!!!!!!!!
     loaders = Loader(csv_path='data/moses_test.csv',
-                     n_mols=10,
+                     n_mols=1000,
                      num_workers=0, 
                      batch_size=100, 
                      props = properties,
