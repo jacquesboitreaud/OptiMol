@@ -80,8 +80,8 @@ if (__name__ == "__main__"):
     decoys = ['data/triplets/herg_decoys.csv', 'data/triplets/drd3_decoys.csv']
 
     #Load train set and test set
-    loaders = Loader(actives_csv=actives,
-                     decoys_csv = decoys,
+    loaders = Loader(actives_files=actives,
+                     decoys_files = decoys,
                      num_workers=0, 
                      batch_size=batch_size, 
                      props = properties,
