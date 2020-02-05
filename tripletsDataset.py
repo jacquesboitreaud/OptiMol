@@ -59,7 +59,8 @@ class molDataset(Dataset):
                 n_mols,
                 props, 
                 targets,
-                debug=False):
+                debug=False, 
+                fold = None):
         
         if(n_mols!=-1):
             self.df = pd.read_csv(csv_path, nrows=n_mols)
@@ -69,7 +70,11 @@ class molDataset(Dataset):
             self.df = pd.read_csv(csv_path)
             self.n = self.df.shape[0]
             print('columns:', self.df.columns)
-        
+            
+        # Select only a part of the actives 
+        if(fold!=None):
+            self.df=self.df[self.df['fold']==fold]
+            
         # 1/ ============== Properties & Targets handling: ================
         
         self.targets = targets
@@ -113,8 +118,12 @@ class molDataset(Dataset):
         # Return as dgl graph, smiles (indexes), targets properties.
         
         row = self.df.iloc[idx]
-        smiles, props, targets = row['can'], \
-        np.array(row[self.props],dtype=np.float32), np.array(row[self.targets],dtype=np.float32)
+        smiles = row['can']
+        
+        props = np.array(row[self.props],dtype=np.float32)
+        
+        # TODO : Put back the targets if we use affinities 
+        targets = np.zeros(len(self.targets), dtype=np.float32)
         
         
         # Checks
@@ -222,7 +231,8 @@ class Loader():
                                      n_mols=-1,
                                      debug=debug,
                                      props = props,
-                                     targets=targets)
+                                     targets=targets, 
+                                     fold = 1)
         self.t1_decoys = molDataset(decoys_files[0],
                                     n_mols=-1,
                                     debug=debug,
@@ -232,7 +242,8 @@ class Loader():
                                      n_mols=-1,
                                      debug=debug,
                                      props = props,
-                                     targets=targets)
+                                     targets=targets, 
+                                     fold = 1)
         self.t2_decoys = molDataset(decoys_files[1],
                                     n_mols=-1,
                                     debug=debug,
