@@ -104,12 +104,12 @@ if (__name__ == "__main__"):
     #Model & hparams
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     parallel=False
-    params ={'features_dim':loaders.actives_dataset.emb_size, #node embedding dimension
+    params ={'features_dim':loaders.t1_actives.emb_size, #node embedding dimension
              'gcn_hdim':128,
              'gcn_outdim':args.latent_size,
              'num_rels':loaders.num_edge_types,
              'l_size':args.latent_size,
-             'voc_size':loaders.actives_dataset.n_chars,
+             'voc_size':loaders.t1_actives.n_chars,
              'N_properties':len(properties),
              'N_targets':len(targets),
              'device':device}
@@ -215,7 +215,7 @@ tripletLoss {:.2f}'.format(epoch, total_steps, rec.item(),pmse.item(), simLoss.i
               
             if(total_steps % args.print_smiles_iter == 0):
                 reconstruction_dataframe, frac_valid = log_smiles(s_i, out_smi_i.detach(), 
-                                                      loaders.actives_dataset.index_to_char)
+                                                      loaders.t1_actives.index_to_char)
                 print(reconstruction_dataframe)
                 print('fraction of valid smiles in training batch: ', frac_valid)
                 
