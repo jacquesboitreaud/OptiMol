@@ -199,10 +199,10 @@ class molDataset(Dataset):
     
 class Loader():
     def __init__(self,
-                 csv_path,
-                 n_mols,
-                 props,
-                 targets,
+                 csv_path=None,
+                 n_mols=None,
+                 props=None,
+                 targets=None,
                  batch_size=64,
                  num_workers=20,
                  debug=False,
@@ -212,7 +212,6 @@ class Loader():
         """
         Wrapper for test loader, train loader 
         Uncomment to add validation loader 
-        
         if test_only: puts all molecules in csv in the test loader. Returns empty train and valid loaders
 
         """
