@@ -111,7 +111,7 @@ if (__name__ == "__main__"):
              'l_size':args.latent_size,
              'voc_size':loaders.t1_actives.n_chars,
              'N_properties':len(properties),
-             'N_targets':len(targets),
+             'N_targets':2,
              'device':device}
     pickle.dump(params, open('saved_model_w/params.pickle','wb'))
 
