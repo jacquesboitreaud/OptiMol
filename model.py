@@ -135,7 +135,7 @@ class Model(nn.Module):
                 nn.Linear(16,self.N_properties))
             
         # Affinities predictor (If binary, sigmoid applied directly in fwd function)
-            self.aff_net = nn.Sequential(
+        self.aff_net = nn.Sequential(
                 nn.Linear(self.l_size,32),
                 nn.ReLU(),
                 nn.Linear(32,32),
@@ -336,7 +336,7 @@ def Loss(out, indices, mu, logvar, y_p, p_pred,
     CE = F.cross_entropy(out, indices, reduction="sum")
     KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
     
-    #mse= torch.sum(torch.mv(F.mse_loss(p_pred, y_p, reduction="none"),props_weights))
+    # Weighted mse loss (100*qed + 10 logp + 0.1 molweight)
     mse= 100*F.mse_loss(p_pred[:,0], y_p[:,0], reduction="sum") +\
     10*F.mse_loss(p_pred[:,1], y_p[:,1], reduction="sum") + 0.1* F.mse_loss(p_pred[:,2], y_p[:,2], reduction="sum")
     
@@ -363,6 +363,7 @@ def csvaeLoss(out, indices, mu, logvar, y_p, p_pred,
     """ Loss function for disentangling a subspace of z to encode binding """
     
     # TODO 
+    raise NotImplementedError
     
 
 
