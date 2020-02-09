@@ -358,12 +358,9 @@ def tripletLoss(z_i, z_j, z_l, margin=2):
     # Embeddings distance loss 
     return torch.sum(loss)
 
-def csvaeLoss(out, indices, mu, logvar, y_p, p_pred,
-         y_a, a_pred, train_on_aff, binary_aff=False):
-    """ Loss function for disentangling a subspace of z to encode binding """
+
     
-    # TODO 
-    raise NotImplementedError
+    
     
 
 
