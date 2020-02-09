@@ -124,9 +124,8 @@ class molDataset(Dataset):
         
         props = np.array(row[self.props],dtype=np.float32)
         
-        # TODO : Put back the targets if we use affinities 
-        targets = np.zeros(len(self.targets), dtype=np.float32)
-        
+        # TODO : Put back the true values if we use affinities labels
+        targets = np.zeros(2, dtype=np.float32)
         
         # Checks
         if(len(smiles)>self.max_smi_len):
