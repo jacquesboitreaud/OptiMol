@@ -73,7 +73,7 @@ if (__name__ == "__main__"):
     targets = ['aa2ar','drd3'] # Change target names according to dataset 
     
     model_path= f'saved_model_w/{args.load_fname}'
-    log_path='./saved_model_w/logs_g2s.npy'
+    log_path='./saved_model_w/logs_g2s'
     
     # Dataloading 
     actives = ['data/triplets/herg_actives.csv', 'data/triplets/drd3_actives.csv']

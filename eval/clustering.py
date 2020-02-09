@@ -39,28 +39,50 @@ def plot_dendrogram(model, **kwargs):
 
 if(__name__=='__main__'):
 
-    target = 'hdac2'
-    df = pd.read_csv(f'../data/dude_targets/{target}.csv', nrows=3000)
+    # Extend for either 1 or 2 targets 
     
-    z_all = embed(model,device, loaders, df)
+    target = 'herg'
+    target2 = 'drd3'
     
-    actives_mask = np.where(df.loc[:,target]==1)[0]
-    decoys_mask = np.where(df.loc[:,target]==-1)[0]
+    # Actives 
+    df_a = pd.read_csv(f'../data/triplets/{target}_actives.csv')
+    df_a = df_a[df_a['fold']==2]
     
-    z_a = z_all[actives_mask,:]
-    z_d=z_all[decoys_mask,:2000]
+    if(target2!=None):
+        df_a2 = pd.read_csv(f'../data/triplets/{target2}_actives.csv')
+        df_a2 = df_a2[df_a2['fold']==2]
+    
+    # Decoys 
+    df_d = pd.read_csv(f'../data/triplets/{target}_decoys.csv')
+    df_d = df_d.sample(5000)
+    
+    # Random ZINC 
+    df_r = pd.read_csv(f'../data/moses_test.csv')
+    df_r = df_r.sample(5000)
+    
+    
+    z_a = embed(model,device, loaders, df_a)
+    if(target2 != None):
+        z_a2 = embed(model,device, loaders, df_a2)
+    z_d = embed(model,device,loaders, df_d)
+    z_r = embed(model,device, loaders, df_r)
+    
     
     # Plot in PCA space 
     fitted_pca = load('fitted_pca.joblib') 
     plt.figure()
-    pca_plot_color(z= z_d, pca = fitted_pca, color = 'lightgreen')
-    pca_plot_color(z= z_a, pca = fitted_pca, color = 'purple')
+
+    pca_plot_color(z= z_r, pca = fitted_pca, color = 'red') # random moses
+    pca_plot_color(z= z_d, pca = fitted_pca, color = 'lightgreen') # decoys
+    pca_plot_color(z= z_a, pca = fitted_pca, color = 'purple') #actives 1 
+    if(target2 != None):
+        pca_plot_color(z= z_a2, pca = fitted_pca, color = 'blue') # actives 2
 
     # Pairwise distances 
-    D_a = pairwise_distances(z_a, metric='l2')
-    D_d = pairwise_distances(z_d, metric='l2')
+    #D_a = pairwise_distances(z_a, metric='l2')
+    #D_d = pairwise_distances(z_d, metric='l2')
     
-    avg_a, avg_d = np.mean(D_a), np.mean(D_d)
+    #avg_a, avg_d = np.mean(D_a), np.mean(D_d)
     hclust = AgglomerativeClustering(distance_threshold=1,n_clusters = None,
                                         linkage="average", affinity='precomputed')
     hclust=hclust.fit(D_a)
