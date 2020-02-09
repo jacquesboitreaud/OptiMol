@@ -70,14 +70,14 @@ if (__name__ == "__main__"):
     batch_size = args.batch_size
     
     properties = ['QED','logP','molWt']
-    targets = ['aa2ar','drd3'] # Change target names according to dataset 
+    targets = None # If we use multitask affinities prediction 
     
     model_path= f'saved_model_w/{args.load_fname}'
     log_path='./saved_model_w/logs_g2s'
     
     # Dataloading 
-    actives = ['data/triplets/herg_actives.csv', 'data/triplets/drd3_actives.csv']
-    decoys = ['data/triplets/herg_decoys.csv', 'data/triplets/drd3_decoys.csv']
+    actives = ['data/triplets/herg_actives.csv']
+    decoys = ['data/triplets/moses_train.csv']
 
     #Load train set and test set
     loaders = Loader(actives_files=actives,

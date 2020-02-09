@@ -97,7 +97,8 @@ class Model(nn.Module):
     def __init__(self, features_dim, gcn_hdim, gcn_outdim , num_rels,
                  l_size, voc_size,
                  N_properties, N_targets,
-                 device):
+                 device,
+                 binary_labels = True):
         super(Model, self).__init__()
         
         # params:
@@ -113,6 +114,7 @@ class Model(nn.Module):
         self.N_targets = N_targets
         
         self.device = device
+        self.binary_labels = binary_labels
         
         # layers:
         self.encoder=RGCN(self.features_dim, self.gcn_hdim, self.gcn_outdim, self.num_rels, 
@@ -132,13 +134,13 @@ class Model(nn.Module):
                 nn.ReLU(),
                 nn.Linear(16,self.N_properties))
             
-        # BINDING SCORES PREDICTOR -> pIC50 ( 0: non binder, 9: nanomolar activity)
-        self.aff_net = nn.Sequential(
-            nn.Linear(self.l_size,32),
-            nn.ReLU(),
-            nn.Linear(32,32),
-            nn.ReLU(),
-            nn.Linear(32,self.N_targets))
+        # Affinities predictor (If binary, sigmoid applied directly in fwd function)
+            self.aff_net = nn.Sequential(
+                nn.Linear(self.l_size,32),
+                nn.ReLU(),
+                nn.Linear(32,32),
+                nn.ReLU(),
+                nn.Linear(32,self.N_targets))
         
     def set_smiles_chars(self,char_file="map_files/zinc_chars.json"):
         # Adds dict to convert indices to smiles chars 
@@ -156,6 +158,8 @@ class Model(nn.Module):
         out = self.decode(z, smiles, teacher_forced=True) # teacher forced decoding 
         properties = self.MLP(z)
         affinities = self.aff_net(z)
+        if(self.binary_labels):
+            affinities = torch.sigmoid(affinities)
         
         return mu, logv,z, out, properties, affinities
         
@@ -178,7 +182,11 @@ class Model(nn.Module):
         return self.MLP(z)
     
     def affs(self,z):
-        return self.aff_net(z)
+        a = self.aff_net(z)
+        if(self.binary_labels):
+            return torch.sigmoid(a)
+        else:
+            return a 
         
     def decode(self, z, x_true=None,teacher_forced=False):
         """
@@ -321,9 +329,9 @@ class Model(nn.Module):
 # ======================= Loss functions ====================================
     
 def Loss(out, indices, mu, logvar, y_p, p_pred,
-         y_a, a_pred, train_on_aff):
+         y_a, a_pred, train_on_aff, binary_aff=False):
     """ 
-    Loss function for multitask VAE. uses Crossentropy for reconstruction
+    Loss function for VAE + multitask.
     """
     CE = F.cross_entropy(out, indices, reduction="sum")
     KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
@@ -333,24 +341,35 @@ def Loss(out, indices, mu, logvar, y_p, p_pred,
     10*F.mse_loss(p_pred[:,1], y_p[:,1], reduction="sum") + 0.1* F.mse_loss(p_pred[:,2], y_p[:,2], reduction="sum")
     
     #affinities: 
-    if(train_on_aff):
-        aff_loss = F.mse_loss(a_pred,y_a,reduction='sum') # weighted loss 
+    if(train_on_aff and binary_aff):
+        aff_loss = F.cross_entropy(a_pred, y_a, reduction="sum") # binary binding labels
+    elif(train_on_aff):
+        aff_loss = F.mse_loss(a_pred,y_a,reduction='sum') # regression IC50 values 
     else: 
-        aff_loss = torch.tensor(0) 
+        aff_loss = torch.tensor(0) # No affinity prediction 
     
     return CE, KLD, mse, aff_loss # returns 4 values
 
 def tripletLoss(z_i, z_j, z_l, margin=2):
-    
+    """ For disentangling by separating known actives in latent space """
     dij = torch.norm(z_i-z_j, p=2, dim=1) # z vectors are (N*l_size), compute norm along latent size, for each batch item.
     dil = torch.norm(z_i-z_l, p=2, dim=1)
     loss = torch.max(torch.cuda.FloatTensor(z_i.shape[0]).fill_(0), dij -dil + margin)
     # Embeddings distance loss 
     return torch.sum(loss)
 
+def csvaeLoss(out, indices, mu, logvar, y_p, p_pred,
+         y_a, a_pred, train_on_aff, binary_aff=False):
+    """ Loss function for disentangling a subspace of z to encode binding """
+    
+    # TODO 
+    
+
+
+
 def RecLoss(out, indices):
     """ 
-    Crossentropy for SMILES reconstruction 
+    Only crossentropy for SMILES reconstruction 
     out : (N, n_chars, l), where l = sequence length
     indices : (N, l)
     """

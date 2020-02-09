@@ -177,14 +177,15 @@ class molDataset(Dataset):
 class tripletDataset(Dataset):
     # Object that yields triplets of molecules coming from two datasets 
     
-    def __init__(self, t1_actives, t1_decoys, t2_actives, t2_decoys):
+    def __init__(self, t1_actives, t1_decoys, t2_actives=None, t2_decoys=None):
         # Initialize from ligands dataset and decoys_dataset
+        # Optional 2 targets but performed bad at experiment... 
         
-        self.na = [len(t1_actives), len(t2_actives)]
-        self.nd =  [len(t1_decoys), len(t2_decoys)]
+        self.na = len(t1_actives)
+        self.nd =  len(t1_decoys)
         
-        self.actives = [t1_actives,t2_actives]
-        self.decoys = [t1_decoys, t2_decoys]
+        self.actives = t1_actives
+        self.decoys = t1_decoys
         
         
     def __len__(self):
@@ -192,18 +193,15 @@ class tripletDataset(Dataset):
         
     def __getitem__(self,idx):
         
-        # select a target at random
-        t = np.random.randint(0,2)
-        
         
         # Select random indices for triplet
-        a = np.random.randint(0,self.na[t],2) # two random actives 
-        d = np.random.randint(0,self.nd[t]) # one random inactive (negative sampling)
+        a = np.random.randint(0,self.na,2) # two random actives 
+        d = np.random.randint(0,self.nd) # one random inactive (negative sampling)
         
         # Get the corresponding molecules from their dataset
-        g_i, a_i, props_i, targets_i = self.actives[t].__getitem__(a[0])
-        g_j, a_j, props_j, targets_j = self.actives[t].__getitem__(a[1])
-        g_l, a_l, props_l, targets_l = self.decoys[t].__getitem__(d)
+        g_i, a_i, props_i, targets_i = self.actives.__getitem__(a[0])
+        g_j, a_j, props_j, targets_j = self.actives.__getitem__(a[1])
+        g_l, a_l, props_l, targets_l = self.decoys.__getitem__(d)
         
         # Assemble the 3 
         
@@ -240,19 +238,8 @@ class Loader():
                                     debug=debug,
                                     props = props,
                                     targets=targets)
-        self.t2_actives = molDataset(actives_files[1],
-                                     n_mols=-1,
-                                     debug=debug,
-                                     props = props,
-                                     targets=targets, 
-                                     fold = 1)
-        self.t2_decoys = molDataset(decoys_files[1],
-                                    n_mols=-1,
-                                    debug=debug,
-                                    props = props,
-                                    targets=targets)
         
-        self.t_dataset = tripletDataset(self.t1_actives, self.t1_decoys, self.t2_actives, self.t2_decoys)
+        self.t_dataset = tripletDataset(self.t1_actives, self.t1_decoys)
                         
         # Both datasets should have same maps 
         self.num_edge_types, self.num_atom_types = self.t1_actives.num_edge_types, self.t1_actives.num_atom_types
