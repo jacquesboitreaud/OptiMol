@@ -77,7 +77,7 @@ if (__name__ == "__main__"):
     
     # Dataloading 
     actives = ['data/triplets/herg_actives.csv']
-    decoys = ['data/triplets/moses_train.csv']
+    decoys = ['data/moses_train.csv']
 
     #Load train set and test set
     loaders = Loader(actives_files=actives,
