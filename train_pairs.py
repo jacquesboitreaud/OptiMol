@@ -74,7 +74,7 @@ if (__name__ == "__main__"):
     targets = None # If we use multitask affinities prediction 
     
     model_path= f'saved_model_w/{args.load_fname}'
-    log_path='./saved_model_w/logs_g2s'
+    log_path='./saved_model_w/logs_pairs'
     
     # Dataloading 
     actives = 'data/targets/herg+.csv'
@@ -170,7 +170,7 @@ if (__name__ == "__main__"):
             
             #Compute loss terms : change according to supervision 
             simLoss = pairwiseLoss(z_i, z_j, labels) #  Contrastive pairloss
-            print(simLoss.item())
+            #print(simLoss.item())
             
             
             rec_i, kl_i, pmse_i,_= Loss(out_smi_i, s_i, mu_i, logv_i, p_i, out_p_i,\
