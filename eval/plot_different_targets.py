@@ -4,7 +4,7 @@ Created on Wed Jan 22 16:19:15 2020
 
 @author: jacqu
 
-PCA plot of embeddings and clustering  in latent space (TODO)
+Plotting actives of different targets in latent space of preloaded model.
 """
 import numpy as np
 import pandas as pd
@@ -37,47 +37,36 @@ def plot_dendrogram(model, **kwargs):
     dendrogram(linkage_matrix, **kwargs)
     return
 
-if(__name__=='__main__'):
+if(__name__=='__main__'): 
+    
+    target = 'herg'
+    df_a = pd.read_csv(f'../data/targets/herg+.csv', index_col = 0)
+    df_n = pd.read_csv(f'../data/targets/herg-.csv', index_col = 0)
 
-    # Extend for either 1 or 2 targets 
+    # Select a split fold of the data or a subsample 
+    # df_a = df_a[df_a['fold']==1]
     
-    target = 'drd3'
-    target2 = None
-    
-    # Actives 
-    df_a = pd.read_csv(f'../data/triplets/{target}_actives.csv')
-    df_a = df_a[df_a['fold']==2]
-    
-    if(target2!=None):
-        df_a2 = pd.read_csv(f'../data/triplets/{target2}_actives.csv')
-        df_a2 = df_a2[df_a2['fold']==2]
-    
-    # Decoys 
-    #df_d = pd.read_csv(f'../data/triplets/{target}_decoys.csv')
-    #df_d = df_d.sample(5000)
-    
-    # Random ZINC 
-    df_r = pd.read_csv(f'../data/moses_test.csv')
-    df_r = df_r.sample(10000)
-    
-    
-    z_a = embed(model,device, loaders, df_a)
-    if(target2 != None):
-        z_a2 = embed(model,device, loaders, df_a2)
-    z_d = embed(model,device,loaders, df_d)
-    z_r = embed(model,device, loaders, df_r)
-    
-    
-    # Plot in PCA space 
     fitted_pca = load('fitted_pca.joblib') 
-    plt.figure()
 
-    pca_plot_color(z= z_r, pca = fitted_pca, color = 'lightblue') # random moses
-    #pca_plot_color(z= z_d, pca = fitted_pca, color = 'lightgreen') # decoys
-    pca_plot_color(z= z_a, pca = fitted_pca, color = 'purple') #actives 1 
-    if(target2 != None):
-        pca_plot_color(z= z_a2, pca = fitted_pca, color = 'blue') # actives 2
-
+    z_a = embed(model,device, loaders, df_a)
+    z_n = embed(model,device, loaders, df_n)
+    
+    plt.xlim(-4.5,5)
+    plt.ylim(-3.3,3.3)
+    
+    # Random ZINC // no need to re-embed if already done 
+    try:
+        pca_plot_color(z= z_r, pca = fitted_pca, color = 'lightblue', label='random ZINC')
+    except:
+        df_r = pd.read_csv(f'../data/moses_test.csv')
+        df_r = df_r.sample(5000)
+        z_r = embed(model,device, loaders, df_r)
+        pca_plot_color(z= z_r, pca = fitted_pca, color = 'lightblue', label='random ZINC') # random mols
+    
+    # Plot actives in PCA space 
+    #pca_plot_color(z= z_n, pca = fitted_pca, color = 'green', label = f'{target} non-blockers') 
+    pca_plot_color(z= z_a, pca = fitted_pca, color = 'red', label = f'{target} blockers') 
+    
     # Pairwise distances 
     #D_a = pairwise_distances(z_a, metric='l2')
     #D_d = pairwise_distances(z_d, metric='l2')

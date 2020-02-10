@@ -16,6 +16,7 @@ import pandas as pd
 
 if(__name__=='__main__'):
     sys.path.append('data_processing')
+    sys.path.append('dataloaders')
     sys.path.append('eval')
     
     from model_utils import load_trained_model, embed

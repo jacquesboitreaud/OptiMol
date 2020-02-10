@@ -45,7 +45,7 @@ if (__name__ == "__main__"):
     from plot_tools import *
     
     # Eval config 
-    model_path= f'saved_model_w/baseline.pth'
+    model_path= f'saved_model_w/g2s_triplets_iter_55000.pth'
     
     recompute_pca = False
     reload_model = True

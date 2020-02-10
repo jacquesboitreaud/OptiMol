@@ -358,12 +358,11 @@ def tripletLoss(z_i, z_j, z_l, margin=2):
     # Embeddings distance loss 
     return torch.sum(loss)
 
-
-    
-    
-    
-
-
+def pairwiseLoss(z_i,z_j,pair_label):
+    """ Learning objective: dot product of embeddings ~ 1_(i and j bind same target) """
+    prod = torch.sigmoid(torch.bmm(z_i.unsqueeze(1),z_j.unsqueeze(2)).squeeze())
+    CE = F.binary_cross_entropy(prod, pair_label)
+    return CE
 
 def RecLoss(out, indices):
     """ 

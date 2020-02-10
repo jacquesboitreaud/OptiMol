@@ -31,6 +31,12 @@ import torch.nn.functional as F
 
 if (__name__ == "__main__"):
     
+    sys.path.append("./data_processing")
+    sys.path.append("./dataloaders")
+    from model import Model, Loss, RecLoss
+    from molDataset import molDataset, Loader
+    from utils import *
+    
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--train', help="path to training dataframe", type=str, default='data/moses_train.csv')
@@ -64,10 +70,7 @@ if (__name__ == "__main__"):
     
     args=parser.parse_args()
     
-    sys.path.append("./data_processing")
-    from model import Model, Loss, RecLoss
-    from molDataset import molDataset, Loader
-    from utils import *
+
     
     # config
     properties = ['QED','logP','molWt']

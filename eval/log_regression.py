@@ -68,9 +68,9 @@ def morgan_fp(df):
 # 1 / Load the DUD ligands and decoys dataframe 
 # ==================================================================================
 
-df=pd.read_csv('data/dude_targets/esr1.csv', nrows = 10000)
-target = 'esr1'
-labels = np.array(df[target])
+#df=pd.read_csv('data/dude_targets/esr1.csv', nrows = 10000)
+#target = 'esr1'
+#labels = np.array(df[target])
 
 # 2 / Compute baseline embeddings (ECFP, molecularVAE embedding... )
 
@@ -83,7 +83,9 @@ labels = np.array(df[target])
 
 
 # Affinity shaped vae 
-z_affvae = embed(model,device, loaders, df)
+z_affvae = np.concatenate((z_a,z_n))
+na, nn = z_a.shape[0], z_n.shape[0]
+labels = np.concatenate((np.ones(na), np.zeros(nn)))
 
 clf = evaluate_LR(z_affvae, labels)
 

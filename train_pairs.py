@@ -33,7 +33,7 @@ if (__name__ == "__main__"):
     
     parser = argparse.ArgumentParser()
     
-    parser.add_argument('--save_path', type=str, default = './saved_model_w/g2s_triplets')
+    parser.add_argument('--save_path', type=str, default = './saved_model_w/g2s_pairwise')
     parser.add_argument('--load_model', type=bool, default=True)
     parser.add_argument('--load_fname', type=str, default='baseline.pth')
     
@@ -62,8 +62,8 @@ if (__name__ == "__main__"):
     
     sys.path.append("./data_processing")
     sys.path.append("./dataloaders")
-    from model import Model, Loss, RecLoss, tripletLoss
-    from tripletsDataset import Loader
+    from model import Model, Loss, RecLoss, pairwiseLoss
+    from pairwiseDataset import Loader
     from utils import *
     
     # config
@@ -77,12 +77,12 @@ if (__name__ == "__main__"):
     log_path='./saved_model_w/logs_g2s'
     
     # Dataloading 
-    actives = ['data/targets/herg+.csv']
-    decoys = ['data/targets/herg-.csv']
+    actives = 'data/targets/herg+.csv'
+    neg = 'data/targets/herg-.csv'
 
     #Load train set and test set
-    loaders = Loader(actives_files=actives,
-                     decoys_files = decoys,
+    loaders = Loader(clust1=actives,
+                     clust2 = neg,
                      num_workers=0, 
                      batch_size=batch_size, 
                      props = properties,
@@ -151,7 +151,7 @@ if (__name__ == "__main__"):
             
             g_i, s_i, p_i, a_i = data[:4]
             g_j, s_j, p_j, a_j = data[4:8]
-            g_l, s_l, p_l, a_l = data[8:]
+            labels = data[8].to(device) # pair labels
             
             del(data)
             
@@ -164,31 +164,26 @@ if (__name__ == "__main__"):
             s_j=s_j.to(device)
             g_j=send_graph_to_device(g_j,device)
             
-            p_l=p_l.to(device).view(-1,model.N_properties) # Graph-level target : (batch_size,)
-            s_l=s_l.to(device)
-            g_l=send_graph_to_device(g_l,device)
             
             mu_i, logv_i, z_i, out_smi_i, out_p_i, out_a_i = model(g_i,s_i)
             mu_j, logv_j, z_j, out_smi_j, out_p_j, out_a_j = model(g_j,s_j)
-            mu_l, logv_l, z_l, out_smi_l, out_p_l, out_a_l = model(g_l,s_l)
             
             #Compute loss terms : change according to supervision 
-            simLoss = tripletLoss(z_i, z_j, z_l) # Similarity loss for triplet
+            simLoss = pairwiseLoss(z_i, z_j, labels) #  Contrastive pairloss
+            print(simLoss.item())
             
             
             rec_i, kl_i, pmse_i,_= Loss(out_smi_i, s_i, mu_i, logv_i, p_i, out_p_i,\
                                       None, None, train_on_aff=args.use_aff)
             rec_j, kl_j, pmse_j,_= Loss(out_smi_j, s_j, mu_j, logv_j, p_j, out_p_j,\
                                       None, None, train_on_aff=args.use_aff)
-            rec_l, kl_l, pmse_l,_= Loss(out_smi_l, s_l, mu_l, logv_l, p_l, out_p_l,\
-                                      None, None, train_on_aff=args.use_aff)
             
-            rec = rec_i + rec_j + rec_l 
-            kl = kl_i + kl_j + kl_l
-            pmse = pmse_i + pmse_j + pmse_l
+            rec = rec_i + rec_j 
+            kl = kl_i + kl_j 
+            pmse = pmse_i + pmse_j 
             
             # Deleting loss components after sum
-            del([rec_i, rec_j, rec_l, kl_i, kl_j, kl_l, pmse_i, pmse_j, pmse_l])
+            del([rec_i, rec_j, kl_i, kl_j, pmse_i, pmse_j])
             
             # COMPOSE TOTAL LOSS TO BACKWARD
             t_loss = rec + kl + pmse + 10e2*simLoss 
