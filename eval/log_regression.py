@@ -83,8 +83,8 @@ def morgan_fp(df):
 
 
 # Affinity shaped vae 
-z_affvae = np.concatenate((z_a,z_n))
-na, nn = z_a.shape[0], z_n.shape[0]
+z_affvae = np.concatenate((z_a,z_a2))
+na, nn = z_a.shape[0], z_a2.shape[0]
 labels = np.concatenate((np.ones(na), np.zeros(nn)))
 
 clf = evaluate_LR(z_affvae, labels)

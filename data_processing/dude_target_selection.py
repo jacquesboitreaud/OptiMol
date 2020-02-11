@@ -12,7 +12,7 @@ import pandas as pd
 import numpy as np 
 
 
-tar = 'hdac2'
+tar = 'drd3'
 
 mols = pd.read_csv('../data/DUD_clean.csv')
 
@@ -25,7 +25,7 @@ mols.to_csv('../data/DUD_clean.csv')
 """
 
 # Select molecules corresponding to targets 
-mols = mols[mols[tar]!=0]
+mols = mols[mols[tar]==1]
 mols = mols.loc[:,['can','QED','logP','molWt',tar]]
 
 print(f'Kept {mols.shape[0]} actives and decoys')

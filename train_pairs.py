@@ -5,7 +5,7 @@ Created on Wed Nov  6 18:44:04 2019
 @author: jacqu
 
 Graph2Smiles VAE finetuning (RGCN encoder, GRU decoder, teacher forced decoding).
-Using triplets loss to disentangle latent space 
+Using pairwise  loss to disentangle latent space 
 
 ****
 Default params starting with 
@@ -77,12 +77,10 @@ if (__name__ == "__main__"):
     log_path='./saved_model_w/logs_pairs'
     
     # Dataloading 
-    actives = 'data/targets/herg+.csv'
-    neg = 'data/targets/herg-.csv'
+    data = 'data/exp/herg_drd.csv'
 
     #Load train set and test set
-    loaders = Loader(clust1=actives,
-                     clust2 = neg,
+    loaders = Loader(csv_data=data,
                      num_workers=0, 
                      batch_size=batch_size, 
                      props = properties,
@@ -186,7 +184,7 @@ if (__name__ == "__main__"):
             del([rec_i, rec_j, kl_i, kl_j, pmse_i, pmse_j])
             
             # COMPOSE TOTAL LOSS TO BACKWARD
-            t_loss = rec + kl + pmse + 10e2*simLoss 
+            t_loss = rec + kl + pmse + 4*10e2*simLoss 
             # no affinity loss, beta = 1 from start 
             
             # backward loss 
@@ -207,7 +205,7 @@ if (__name__ == "__main__"):
             #logs and monitoring
             if total_steps % args.print_iter == 0:
                 print('epoch {}, opt. step n°{}, rec_loss {:.2f}, properties mse_loss {:.2f}, \
-tripletLoss {:.2f}'.format(epoch, total_steps, rec.item(),pmse.item(), simLoss.item()))
+contrast. Loss {:.2f}'.format(epoch, total_steps, rec.item(),pmse.item(), simLoss.item()))
               
             if(total_steps % args.print_smiles_iter == 0):
                 reconstruction_dataframe, frac_valid = log_smiles(s_i, out_smi_i.detach(), 

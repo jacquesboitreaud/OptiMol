@@ -34,6 +34,7 @@ from sklearn.decomposition import PCA
 # Execution is set to take place in graph2smiles root dir 
 if (__name__ == "__main__"):
     sys.path.append('eval')
+    sys.path.append('dataloaders')
     sys.path.append("data_processing")
     from molDataset import molDataset, Loader
     from rdkit_to_nx import smiles_to_nx
@@ -45,7 +46,7 @@ if (__name__ == "__main__"):
     from plot_tools import *
     
     # Eval config 
-    model_path= f'saved_model_w/g2s_triplets_iter_55000.pth'
+    model_path= f'saved_model_w/baseline.pth'
     
     recompute_pca = False
     reload_model = True

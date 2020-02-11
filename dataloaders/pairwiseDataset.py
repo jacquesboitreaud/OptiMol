@@ -123,10 +123,12 @@ class molDataset(Dataset):
         row = self.df.iloc[idx]
         smiles = row['can']
         
+        # 0 - Properties & Affinities or affinity profiles 
         props = np.array(row[self.props],dtype=np.float32)
-        
         # TODO : Put back the true values if we use affinities labels
         targets = np.zeros(2, dtype=np.float32)
+        # Binding profile for similarity training 
+        profile = row['profile']
         
         # Checks
         if(len(smiles)>self.max_smi_len):
@@ -171,59 +173,42 @@ class molDataset(Dataset):
         idces.append(self.char_to_index['\n'])
         a[:len(idces)]=idces
         
-        return g_dgl, a, props, targets
+        return g_dgl, a, props, targets, profile
         
     
 class pairDataset(Dataset):
     # Object that yields triplets of molecules coming from two datasets 
     
-    def __init__(self, df1, df2):
+    def __init__(self, moldataset):
         
-        self.n1 = len(df1)
-        self.n2 =  len(df2)
-        
-        self.df1 = df1
-        self.df2 = df2
+        self.df= moldataset
+        self.n = moldataset.n
         
         
     def __len__(self):
-        return 1000000 # max 1M samples 
+        return 400000 # arbitrary set 1 epoch = 400k samples 
         
     def __getitem__(self,idx):
         
         
         # Select random pairs
-        i, j = np.random.randint(0,self.n1+self.n2,2) # two random actives 
-        if(i < self.n1):
-            g_i, a_i, props_i, targets_i = self.df1.__getitem__(i)
-            if(j < self.n1):
-                g_j, a_j, props_j, targets_j = self.df1.__getitem__(j)
-                # Positive pair; both from df1 
-                label = 1
-            else:
-                g_j, a_j, props_j, targets_j = self.df2.__getitem__(j-self.n1)
-                # Negative pair
-                label=0
+        i, j = np.random.randint(0,self.n,2) # two random actives 
+        
+        g_i, a_i, props_i, targets_i, profile1 = self.df.__getitem__(i)
+        g_j, a_j, props_j, targets_j, profile2 = self.df.__getitem__(j)
+        
+        if(profile1==profile2 and profile1<2): # Both have same profile, and not 'HERG nonblocker'. 
+            label = 1 # positive pair
         else:
-            g_i, a_i, props_i, targets_i = self.df2.__getitem__(i-self.n1) # i from df2
-            if(j < self.n1):
-                g_j, a_j, props_j, targets_j = self.df1.__getitem__(j)
-                # Negative pair 
-                label = 0
-            else:
-                g_j, a_j, props_j, targets_j = self.df2.__getitem__(j-self.n1) # j from df2
-                # Positive pair; both from df2
-                label=1
-        
+            label = 0
+
         # Assemble the 2 + pair label 
-        
         return [g_i,a_i,props_i, targets_i], [g_j, a_j, props_j, targets_j], label
         
     
 class Loader():
     def __init__(self,
-                 clust1,
-                 clust2,
+                 csv_data,
                  props,
                  targets,
                  batch_size=64,
@@ -235,23 +220,27 @@ class Loader():
         Uncomment to add validation loader 
         
         if test_only: puts all molecules in csv in the test loader. Returns empty train and valid loaders
+        if choose_fold is not none, training restricts to a fold of the data
         """
-
+        self.choose_fold = 1
+        
         self.batch_size = batch_size
         self.num_workers = num_workers
-        self.t1_actives = molDataset(clust1,
+        self.t1_actives = molDataset(csv_data,
                                      n_mols=-1,
                                      debug=debug,
                                      props = props,
                                      targets=targets, 
-                                     fold = 1)
+                                     fold = self.choose_fold)
+        """
         self.others = molDataset(clust2,
                                     n_mols=-1,
                                     debug=debug,
                                     props = props,
                                     targets=targets)
+        """
         
-        self.t_dataset = pairDataset(self.t1_actives, self.others)
+        self.t_dataset = pairDataset(self.t1_actives)
                         
         # Both datasets should have same maps 
         self.num_edge_types, self.num_atom_types = self.t1_actives.num_edge_types, self.t1_actives.num_atom_types

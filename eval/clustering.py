@@ -41,20 +41,17 @@ if(__name__=='__main__'):
 
     # Extend for either 1 or 2 targets 
     
-    target = 'drd3'
-    target2 = None
+    target = 'herg+'
+    target2 = 'herg-'
     
     # Actives 
-    df_a = pd.read_csv(f'../data/triplets/{target}_actives.csv')
+    df_a = pd.read_csv(f'../data/targets/herg+.csv')
     df_a = df_a[df_a['fold']==2]
     
     if(target2!=None):
-        df_a2 = pd.read_csv(f'../data/triplets/{target2}_actives.csv')
+        df_a2 = pd.read_csv(f'../data/targets/herg-.csv')
         df_a2 = df_a2[df_a2['fold']==2]
     
-    # Decoys 
-    #df_d = pd.read_csv(f'../data/triplets/{target}_decoys.csv')
-    #df_d = df_d.sample(5000)
     
     # Random ZINC 
     df_r = pd.read_csv(f'../data/moses_test.csv')
@@ -64,7 +61,6 @@ if(__name__=='__main__'):
     z_a = embed(model,device, loaders, df_a)
     if(target2 != None):
         z_a2 = embed(model,device, loaders, df_a2)
-    z_d = embed(model,device,loaders, df_d)
     z_r = embed(model,device, loaders, df_r)
     
     
@@ -72,20 +68,18 @@ if(__name__=='__main__'):
     fitted_pca = load('fitted_pca.joblib') 
     plt.figure()
 
-    pca_plot_color(z= z_r, pca = fitted_pca, color = 'lightblue') # random moses
-    #pca_plot_color(z= z_d, pca = fitted_pca, color = 'lightgreen') # decoys
-    pca_plot_color(z= z_a, pca = fitted_pca, color = 'purple') #actives 1 
-    if(target2 != None):
-        pca_plot_color(z= z_a2, pca = fitted_pca, color = 'blue') # actives 2
+    pca_plot_color(z= z_r, pca = fitted_pca, color = 'lightblue', label='random ZINC') # random moses
+    pca_plot_color(z= z_a, pca = fitted_pca, color = 'green', label = 'cluster 1') #actives 1 
+    pca_plot_color(z= z_a2, pca = fitted_pca, color = 'red', label = 'cluster 2') # actives 2
 
     # Pairwise distances 
-    #D_a = pairwise_distances(z_a, metric='l2')
-    #D_d = pairwise_distances(z_d, metric='l2')
+    D_a = pairwise_distances(z_a, metric='l2')
+    D_d = pairwise_distances(z_a2, metric='l2')
     
     #avg_a, avg_d = np.mean(D_a), np.mean(D_d)
-    hclust = AgglomerativeClustering(distance_threshold=1,n_clusters = None,
+    hclust = AgglomerativeClustering(distance_threshold=0.11,n_clusters = None,
                                         linkage="average", affinity='precomputed')
     hclust=hclust.fit(D_a)
     plt.figure()
-    plot_dendrogram(hclust,truncate_mode='level', p=10)
+    plot_dendrogram(hclust,truncate_mode='level', p=1)
     plt.show()
