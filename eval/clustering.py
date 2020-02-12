@@ -44,13 +44,14 @@ if(__name__=='__main__'):
     target = 'herg+'
     target2 = 'herg-'
     
+    fold = 1
     # Actives 
-    df_a = pd.read_csv(f'../data/targets/herg+.csv')
-    df_a = df_a[df_a['fold']==2]
+    df_a = pd.read_csv(f'data/targets/herg+.csv')
+    df_a = df_a[df_a['fold']==fold]
     
     if(target2!=None):
-        df_a2 = pd.read_csv(f'../data/targets/herg-.csv')
-        df_a2 = df_a2[df_a2['fold']==2]
+        df_a2 = pd.read_csv(f'data/targets/drd3+.csv')
+        df_a2 = df_a2[df_a2['fold']==fold]
     
     
     # Random ZINC 
@@ -66,6 +67,11 @@ if(__name__=='__main__'):
     
     # Plot in PCA space 
     fitted_pca = load('fitted_pca.joblib') 
+    
+    # Refit pca ? 
+    z_prime = np.concatenate((z_a,z_a2))
+    fitted_pca=fit_pca(z_prime)
+    
     plt.figure()
 
     pca_plot_color(z= z_r, pca = fitted_pca, color = 'lightblue', label='random ZINC') # random moses
@@ -76,6 +82,7 @@ if(__name__=='__main__'):
     D_a = pairwise_distances(z_a, metric='l2')
     D_d = pairwise_distances(z_a2, metric='l2')
     
+    """
     #avg_a, avg_d = np.mean(D_a), np.mean(D_d)
     hclust = AgglomerativeClustering(distance_threshold=0.11,n_clusters = None,
                                         linkage="average", affinity='precomputed')
@@ -83,3 +90,4 @@ if(__name__=='__main__'):
     plt.figure()
     plot_dendrogram(hclust,truncate_mode='level', p=1)
     plt.show()
+    """

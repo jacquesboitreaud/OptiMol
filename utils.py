@@ -140,6 +140,17 @@ def log_smiles_from_indices(true_idces, out_idces, idx_to_char):
 
     return df, frac_valid, frac_id
 
+def filter_mols(df):
+    # Takes a dataframe with column 'output smiles' and drops those which correspond to stupid molecules 
+    todrop=[]
+    for i, s in enumerate(list(df['output smiles'])):
+        if('CCCCCCCCCC' in s or 'ccccccccccccc' in s):
+            todrop.append(i)
+    df=df.drop(todrop)
+    df=df.reset_index(drop=True)
+    print(f'dropped {len(todrop)} smiles')
+    return df 
+
 def i2s(idces, idx_to_char):
     # list of indices to sequence of characters (=smiles)
     return ''.join([idx_to_char[idx] for idx in idces])

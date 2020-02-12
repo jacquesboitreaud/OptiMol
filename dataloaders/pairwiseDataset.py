@@ -197,7 +197,8 @@ class pairDataset(Dataset):
         g_i, a_i, props_i, targets_i, profile1 = self.df.__getitem__(i)
         g_j, a_j, props_j, targets_j, profile2 = self.df.__getitem__(j)
         
-        if(profile1==profile2 and profile1<2): # Both have same profile, and not 'HERG nonblocker'. 
+        # Adapt condition for positive pairs and negative pairs as desired 
+        if(profile1==profile2): # Both have same profile, and not 'HERG nonblocker'. 
             label = 1 # positive pair
         else:
             label = 0
