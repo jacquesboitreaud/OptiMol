@@ -66,7 +66,7 @@ def pca_plot_color(z, pca, color, label):
     """ Takes fitted PCA and applies on latent batch z (N*latent_dim) """
     z2 = pca.transform(z)
     sns.scatterplot(x=z2[:,0], y=z2[:,1], s=10, color=color, label = label)
-    plt.title("Latent embeddings visualized in 2D PCA space")
+    #plt.title("Latent embeddings visualized in 2D PCA space")
     plt.legend()
     plt.xlabel('PC 1')
     plt.ylabel('PC 2')
@@ -79,7 +79,7 @@ def pca_plot_hue(z, variable, pca):
     chosen=palettes[-1]
     
     ax=sns.scatterplot(x=z2[:,0], y=z2[:,1], s=15, hue = variable, palette = chosen)
-    plt.title("Latent embeddings visualized in 2D PCA space")
+    #plt.title("Latent embeddings visualized in 2D PCA space")
     plt.xlabel('PC 1')
     plt.ylabel('PC 2')
     # Fixing the issue of too many decimals in legend

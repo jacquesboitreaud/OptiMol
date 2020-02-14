@@ -77,7 +77,7 @@ if (__name__ == "__main__"):
     log_path='./saved_model_w/logs_pairs'
     
     # Dataloading 
-    data = 'data/exp/gpcr.csv'
+    data = 'data/exp/unique_gpcr.csv'
 
     #Load train set and test set
     loaders = Loader(csv_data=data,

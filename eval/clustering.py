@@ -41,12 +41,12 @@ if(__name__=='__main__'):
 
     # Extend for either 1 or 2 targets 
     
-    target = 'herg+'
-    target2 = 'herg-'
+    target = 'gpcr'
+    target2 = None
     
-    fold = 1
+    fold = 2
     # Actives 
-    df_a = pd.read_csv(f'data/targets/herg+.csv')
+    df_a = pd.read_csv(f'../data/exp/gpcr.csv')
     df_a = df_a[df_a['fold']==fold]
     
     if(target2!=None):
@@ -55,8 +55,8 @@ if(__name__=='__main__'):
     
     
     # Random ZINC 
-    df_r = pd.read_csv(f'../data/moses_test.csv')
-    df_r = df_r.sample(10000)
+    #df_r = pd.read_csv(f'../data/moses_test.csv')
+    #df_r = df_r.sample(10000)
     
     
     z_a = embed(model,device, loaders, df_a)
@@ -69,8 +69,8 @@ if(__name__=='__main__'):
     fitted_pca = load('fitted_pca.joblib') 
     
     # Refit pca ? 
-    z_prime = np.concatenate((z_a,z_a2))
-    fitted_pca=fit_pca(z_prime)
+    #z_prime = np.concatenate((z_a,z_a2))
+    fitted_pca=fit_pca(z_a)
     
     plt.figure()
 
@@ -79,7 +79,7 @@ if(__name__=='__main__'):
     pca_plot_color(z= z_a2, pca = fitted_pca, color = 'red', label = 'cluster 2') # actives 2
 
     # Pairwise distances 
-    D_a = pairwise_distances(z_a, metric='l2')
+    D_a = pairwise_distances(z_a, metric='l2') # todo : change to euclidian or cosine to compare 
     D_d = pairwise_distances(z_a2, metric='l2')
     
     """

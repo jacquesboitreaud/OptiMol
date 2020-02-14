@@ -128,7 +128,8 @@ class molDataset(Dataset):
         # TODO : Put back the true values if we use affinities labels
         targets = np.zeros(2, dtype=np.float32)
         # Binding profile for similarity training 
-        profile = row['profile']
+        profile = np.array(row['aa2ar','adrb1','adrb2','cxcr4','drd3'])
+        active = row['active']
         
         # Checks
         if(len(smiles)>self.max_smi_len):
@@ -173,7 +174,7 @@ class molDataset(Dataset):
         idces.append(self.char_to_index['\n'])
         a[:len(idces)]=idces
         
-        return g_dgl, a, props, targets, profile
+        return g_dgl, a, props, targets, profile, active
         
     
 class pairDataset(Dataset):
@@ -191,14 +192,18 @@ class pairDataset(Dataset):
     def __getitem__(self,idx):
         
         
-        # Select random pairs
-        i, j = np.random.randint(0,self.n,2) # two random actives 
+        # Select random pairs. constraint ; first mol is active 
+        i= np.random.randint(0,674) # two random actives 
+        j = np.random.randint(0,self.n) # two random actives 
         
-        g_i, a_i, props_i, targets_i, profile1 = self.df.__getitem__(i)
-        g_j, a_j, props_j, targets_j, profile2 = self.df.__getitem__(j)
+        g_i, a_i, props_i, targets_i, profile1, activ1 = self.df.__getitem__(i)
+        g_j, a_j, props_j, targets_j, profile2, activ2 = self.df.__getitem__(j)
         
         # Adapt condition for positive pairs and negative pairs as desired 
-        if(profile1==profile2): # Both have same profile, and not 'HERG nonblocker'. 
+        if( activ2==0):
+            label = 0 # no dot product loss applied here 
+            
+        elif(np.sum(profile1==profile2)>0): # Both have same profile
             label = 1 # positive pair
         else:
             label = 0
