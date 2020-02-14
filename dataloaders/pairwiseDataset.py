@@ -128,7 +128,7 @@ class molDataset(Dataset):
         # TODO : Put back the true values if we use affinities labels
         targets = np.zeros(2, dtype=np.float32)
         # Binding profile for similarity training 
-        profile = np.array(row['aa2ar','adrb1','adrb2','cxcr4','drd3'])
+        profile = np.array(row[['aa2ar','adrb1','adrb2','cxcr4','drd3']])
         active = row['active']
         
         # Checks
