@@ -46,7 +46,7 @@ if (__name__ == "__main__"):
     from plot_tools import *
     
     # Eval config 
-    model_path= f'saved_model_w/g2s_gpcr.pth'
+    model_path= f'saved_model_w/g2s_pairwise_1t.pth'
     
     recompute_pca = False
     reload_model = True
