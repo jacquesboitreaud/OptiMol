@@ -41,17 +41,10 @@ if(__name__=='__main__'):
 
     # Extend for either 1 or 2 targets 
     
-    target = 'gpcr'
-    target2 = None
-    
-    fold = 2
+    fold = 1
     # Actives 
-    df_a = pd.read_csv(f'../data/exp/gpcr.csv')
+    df_a = pd.read_csv(f'../data/exp/unique_gpcr.csv')
     df_a = df_a[df_a['fold']==fold]
-    
-    if(target2!=None):
-        df_a2 = pd.read_csv(f'data/targets/drd3+.csv')
-        df_a2 = df_a2[df_a2['fold']==fold]
     
     
     # Random ZINC 
@@ -60,9 +53,7 @@ if(__name__=='__main__'):
     
     
     z_a = embed(model,device, loaders, df_a)
-    if(target2 != None):
-        z_a2 = embed(model,device, loaders, df_a2)
-    z_r = embed(model,device, loaders, df_r)
+    #z_r = embed(model,device, loaders, df_r)
     
     
     # Plot in PCA space 

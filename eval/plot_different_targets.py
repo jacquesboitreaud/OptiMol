@@ -56,11 +56,10 @@ if(__name__=='__main__'):
         target= target_f[:-5]
         print(target)
     
-        df_a = pd.read_csv(f'../data/targets/gpcr/{target_f}', index_col = 0)
+        df_a = pd.read_csv(f'../data/exp/unique_gpcr.csv')
         print(df_a.shape)
-        N = df_a.shape[0]
-        k = int(N/2)
-        df_a=df_a.iloc[:k,:]
+        #df_a=df_a[df_a['fold']==2]
+        df_a =df_a[df_a[target]==1]
     
         # Select a split fold of the data or a subsample 
         # df_a = df_a[df_a['fold']==1]
@@ -83,7 +82,7 @@ if(__name__=='__main__'):
     
     # Pairwise distances 
     for i in range(len(Z)):
-        D_a = pairwise_distances(Z[i], metric='cosine')
+        D_a = pairwise_distances(z_all, metric='cosine')
         print(np.mean(D_a))
     #D_d = pairwise_distances(z_d, metric='l2')
     
