@@ -11,7 +11,8 @@ import torch
 from rdkit.Chem import Draw
 import sys
     
-def sample_around_mol(model, smi, d, beam_search=False, attempts = 1):
+def sample_around_mol(model, smi, d, beam_search=False, attempts = 1,
+                      props=False, aff=False):
     # Samples molecules at a distance around molecules in dataframe 'can' column
     data=molDataset()
     data.pass_smiles_list(smi)
@@ -21,9 +22,17 @@ def sample_around_mol(model, smi, d, beam_search=False, attempts = 1):
     
     # pass to model
     with torch.no_grad():
-        gen_seq = model.sample_around_mol(g_dgl, dist=d, beam_search=beam_search, attempts=attempts)
+        gen_seq, _,_ = model.sample_around_mol(g_dgl, dist=d, beam_search=beam_search, 
+                                               attempts=attempts,props=props,aff=aff) # props & affs returned in _
         
-    return gen_seq
+    # Sequence to smiles 
+    if(not beam_search):
+        smiles = model.probas_to_smiles(gen_seq)
+        
+    else:
+        smiles = model.beam_out_to_smiles(gen_seq)
+        
+    return smiles
 
 def sample_prior():
     # Sample from uniform prior 
@@ -44,34 +53,22 @@ if(__name__=='__main__'):
     from utils import *
     
     
-    sampling_df, frac_valid,_ = log_smiles_from_indices(None, indices, 
-                                                  loaders.dataset.index_to_char)
-    # Uncomment for beam search decoding 
-    # beam_output = model.decode_beam(z,k=3, cutoff_mols=10)
-    # mols = log_from_beam(beam_output,loaders.dataset.index_to_char)
-    
-    props, affs = model.props(r).detach().cpu().numpy(), model.affs(r).detach().cpu().numpy()
-    mols= [Chem.MolFromSmiles(s) for s in list(sampling_df['output smiles'])]
-    fig = Draw.MolsToGridImage(mols)
-    
     # Sampling around given molecule 
     use_beam = False
     smi = ['Oc4ccc3C(Cc1ccccc1)N(c2ccccc2)CCc3c4']
-    out = sample_around_mol(model, smi, d=4, beam_search=use_beam, attempts = 1000)
-    if(not use_beam):
-        v, indices = torch.max(out, dim=1)
-        indices = indices.cpu().numpy()
-        sampling_df, frac_valid,_ = log_smiles_from_indices(None, indices, 
-                                                  loaders.dataset.index_to_char)
-        sampling_df=filter_mols(sampling_df)
-        mols= [Chem.MolFromSmiles(s) for s in list(sampling_df['output smiles'])]
-    else:
-        smiles = log_from_beam(out,loaders.dataset.index_to_char)
-        mols= [Chem.MolFromSmiles(s) for s in smiles]
-        mols = [m for m in mols if m!=None]
+    m0 = Chem.MolFromSmiles(smi[0])
+    Draw.MolToMPL(m0, size=(120, 120))
+    plt.show(block=False)
+    
+    out_smi = sample_around_mol(model, smi, d=0, beam_search=use_beam, attempts = 200)
+
+    mols= [Chem.MolFromSmiles(s) for s in out_smi]
+    mols = [m for m in mols if m!=None]
     
     size = (120, 120)
     for m in mols:
         Draw.MolToMPL(m, size=size)
+        if(m==m0):
+            break
         plt.show(block=False)
         plt.pause(0.1)

@@ -155,21 +155,6 @@ def i2s(idces, idx_to_char):
     # list of indices to sequence of characters (=smiles)
     return ''.join([idx_to_char[idx] for idx in idces])
 
-def log_from_beam(idces, idx_to_char):
-    """ Takes array of possibilities : (N, k_beam, sequences_length) """
-    N, k_beam, length = idces.shape
-    smiles = []
-    for i in range(N):
-        k,m = 0, None 
-        while(k<2 and m==None):
-            smi = ''.join([idx_to_char[idx] for idx in idces[i,k]])
-            smi = smi.rstrip()
-            m=Chem.MolFromSmiles(smi)
-            k+=1
-        smiles.append(smi)
-        print(smi)
-    return smiles
-
 
 def disable_rdkit_logging():
     """

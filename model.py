@@ -19,6 +19,8 @@ import itertools
 from queue import PriorityQueue
 import json
 
+from rdkit import Chem
+
 import dgl
 from dgl import mean_nodes
 from dgl import function as fn
@@ -26,6 +28,7 @@ from dgl.nn.pytorch.glob import SumPooling
 from dgl.nn.pytorch.conv import GATConv, RelGraphConv
 
 from utils import *
+import pickle
 
 class MultiGRU(nn.Module):
     """ 
@@ -142,6 +145,17 @@ class Model(nn.Module):
                 nn.ReLU(),
                 nn.Linear(32,self.N_targets))
         
+    def load(self, trained_path):
+        # Loads trained model weights 
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    
+        params = pickle.load(open('saved_model_w/params.pickle','rb'))
+        self.load_state_dict(torch.load(trained_path))
+        self.to(device)
+        print(f'Loaded weights from {trained_path} to {device}')
+        
+        return device
+        
     def set_smiles_chars(self,char_file="map_files/zinc_chars.json"):
         # Adds dict to convert indices to smiles chars 
         self.char_list = json.load(open(char_file))
@@ -195,7 +209,7 @@ class Model(nn.Module):
                 z: (batch_size * latent_shape) : a sampled vector in latent space
                 x_true: (batch_size * sequence_length ) a batch of indices of sequences 
             Outputs:
-                gen_seq : (batch_size * voc_size* seq_length) a batch of generated sequences
+                gen_seq : (batch_size * voc_size* seq_length) a batch of generated sequences (probas)
                 
         """
         batch_size=z.shape[0]
@@ -219,7 +233,7 @@ class Model(nn.Module):
             # Input to next step: either autoregressive or Teacher forced
             rnn_in =F.one_hot(indices,self.voc_size).float()
                 
-        return gen_seq
+        return gen_seq # probas 
     
     def probas_to_smiles(self, gen_seq):
         # Takes tensor of shape (N, voc_size, seq_len), returns list of corresponding smiles
@@ -241,6 +255,21 @@ class Model(nn.Module):
         smiles = []
         for i in range(N):
             smiles.append(''.join([self.index_to_char[idx] for idx in indices[i]]).rstrip())
+        return smiles
+    
+    def beam_out_to_smiles(self,indices):
+        """ Takes array of possibilities : (N, k_beam, sequences_length)  returned by decode_beam"""
+        N, k_beam, length = indices.shape
+        smiles = []
+        for i in range(N):
+            k,m = 0, None 
+            while(k<2 and m==None):
+                smi = ''.join([self.index_to_char[idx] for idx in indices[i,k]])
+                smi = smi.rstrip()
+                m=Chem.MolFromSmiles(smi)
+                k+=1
+            smiles.append(smi)
+            print(smi)
         return smiles
     
     def decode_beam(self, z, k=3, cutoff_mols=None):
@@ -292,7 +321,7 @@ class Model(nn.Module):
     
     # ========================== Sampling functions ======================================
     
-    def sample_around_mol(self, g, dist, beam_search=False, attempts = 1):
+    def sample_around_mol(self, g, dist, beam_search=False, attempts = 1, props=False, aff=False):
         """ Samples around embedding of molecular graph g, within a l2 distance of d """
         e_out = self.encoder(g)
         mu, var = self.encoder_mean(e_out), self.encoder_logv(e_out)
@@ -316,8 +345,15 @@ class Model(nn.Module):
             dec = self.decode_beam(samples)
         else:
             dec = self.decode(samples)
+            
+        # props ad affinity if requested 
+        p,a = 0,0
+        if(props):
+            p = self.props(samples)
+        if(aff):
+            a = self.aff(samples)
         
-        return dec
+        return dec, p, a
     
     def sample_z_prior(self, n_mols):
         """Sampling z ~ p(z) = N(0, I)
@@ -325,6 +361,35 @@ class Model(nn.Module):
         :return: (n_batch, d_z) of floats, sample of latent z
         """
         return torch.randn(n_mols, self.l_size, device=self.device)
+    
+    # ========================= Packaged functions to use trained model ========================
+    
+    def embed(self, loader, df):
+    # Gets latent embeddings of molecules in df. 
+    # Inputs : 
+    # 0. loader object to convert smiles into batches of inputs 
+    # 1. dataframe with 'can' column containing smiles to embed 
+    # Outputs :
+    # 0. np array of embeddings, (N_molecules , latent_size)
+    
+        loader.dataset.pass_dataset(df)
+        _, _, test_loader = loader.get_data()
+        batch_size=loader.batch_size
+        
+        # Latent embeddings
+        z_all = torch.zeros(loader.dataset.n,self.l_size)
+        
+        with torch.no_grad():
+            for batch_idx, (graph, smiles, p_target, a_target) in enumerate(test_loader):
+                
+                graph=send_graph_to_device(graph,self.device)
+            
+                z = self.encode(graph, mean_only=True) #z_shape = N * l_size
+                z=z.cpu()
+                z_all[batch_idx*batch_size:(batch_idx+1)*batch_size]=z
+                
+        z_all = z_all.numpy()
+        return z_all
         
 # ======================= Loss functions ====================================
     
@@ -362,6 +427,7 @@ def pairwiseLoss(z_i,z_j,pair_label):
     """ Learning objective: dot product of embeddings ~ 1_(i and j bind same target) """
     prod = torch.sigmoid(torch.bmm(z_i.unsqueeze(1),z_j.unsqueeze(2)).squeeze())
     CE = F.binary_cross_entropy(prod, pair_label)
+    #print(prod, pair_label)
     return CE
 
 def RecLoss(out, indices):

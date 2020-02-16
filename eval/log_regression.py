@@ -24,7 +24,7 @@ if(__name__=='__main__'):
 
 from model_utils import load_trained_model, embed
 
-def evaluate_LR(features, labels):
+def evaluate_LR(features, labels, exp_id):
     # 3-fold fitting and scoring of logistic regression 
     X,y = features, labels
     cv = KFold(n_splits = 3, shuffle = True)
@@ -44,13 +44,13 @@ def evaluate_LR(features, labels):
         y_pred = clf.predict(X_test)
         
         score = f1_score(y_test, y_pred )
-        print(f'Split n°{i}, accuracy : {score}')
+        #print(f'Split n°{i}, accuracy : {score}')
         avg_lr_f1 += score
         
     avg_lr_f1 = avg_lr_f1/(i)
-    print(f'kfold lr F1 score : {avg_lr_f1}')
+    print(f'kfold lr F1 score for {exp_id} : {avg_lr_f1}')
     
-    return clf
+    return clf, avg_lr_f1
 
 def morgan_fp(df):
     # computes morgan fingerprints for molecules in df 
@@ -81,16 +81,27 @@ def morgan_fp(df):
 # TODO 
 #z_vae = 
 
+tars = ['aa2ar','adrb1','adrb2','cxcr4','drd3']
+
+f1_r = []
 
 # Affinity shaped vae 
-z_affvae = np.concatenate((Z[0], Z[1]))
-na, nn = Z[0].shape[0], Z[1].shape[0]
-labels = np.concatenate((np.ones(na), np.zeros(nn)))
+for i in range(len(Z)):
+    for j in  range(len(Z)):
+        if(i!=j):
+            pos = Z[i]
+            neg = Z[j]
+            z_affvae = np.concatenate((pos,neg))
+            na, nn = pos.shape[0], neg.shape[0]
+            labels = np.concatenate((np.ones(na), np.zeros(nn)))
+            
+            clf, sc = evaluate_LR(z_affvae, labels, exp_id=f'{tars[i]} - {tars[j]}')
+            
+            f1_r.append(sc)
 
-clf = evaluate_LR(z_affvae, labels)
-
-
-
-
+ar=np.arange(len(f1_r))*3
+plt.bar(ar, f1_b)
+plt.bar(ar+1, f1_r)
+plt.show()
     
     

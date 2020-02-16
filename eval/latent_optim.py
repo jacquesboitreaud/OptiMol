@@ -28,12 +28,15 @@ if(__name__=='__main__'):
     from utils import *
     
     # Set to true if providing a seed compound to start optimization. Otherwise, random start in the latent space
-    seed= False
+    seed= True
     N_steps=10
-    lr=0.1
+    lr=0.001
+    size = (120, 120) # plotting 
     
     def eps(props):
-        return (props[1]-2)**2+(props[0]-1)**2
+        # props = [QED, logP, molWt]
+        QED, logP, molWt = props
+        return (logP -2)**2 + (QED-1)**2
     
     molecules =[]
     data = molDataset()
@@ -41,7 +44,10 @@ if(__name__=='__main__'):
     if(seed):
         # Begin optimization with seed compound : a DUD decoy   
         s_seed='COc1ccc(CN(C)C(=O)C(=O)N[C@@H](C)c2ccc(F)cc2)c(O)c1'
-        fig = Draw.MolToImage(Chem.MolFromSmiles(s_seed))
+        m0= Chem.MolFromSmiles(s_seed)
+        Draw.MolToMPL(m0, size=size)
+        plt.show(block=False)
+        plt.pause(0.1)
     
         # Pass to loader 
         data.pass_smiles_list([s_seed])
@@ -70,6 +76,11 @@ if(__name__=='__main__'):
             smi = model.probas_to_smiles(out)[0]
             print(smi)
             m=Chem.MolFromSmiles(smi)
+
+            if(m!=None):
+                Draw.MolToMPL(m, size=size)
+                plt.show(block=False)
+                plt.pause(0.1)
             logP=0
             if(m!=None):
                 logP= Chem.Crippen.MolLogP(m)

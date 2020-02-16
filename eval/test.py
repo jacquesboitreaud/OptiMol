@@ -46,7 +46,7 @@ if (__name__ == "__main__"):
     from plot_tools import *
     
     # Eval config 
-    model_path= f'saved_model_w/g2s_pairwise_1t.pth'
+    model_path= f'saved_model_w/baseline.pth'
     
     recompute_pca = False
     reload_model = True
@@ -60,7 +60,7 @@ if (__name__ == "__main__"):
 
     #Load eval set: USE MOSES TEST SET !!!!!!!!!!!!!!!!!
     loaders = Loader(csv_path='data/moses_test.csv',
-                     n_mols=10,
+                     n_mols=100,
                      num_workers=0, 
                      batch_size=100, 
                      props = properties,
@@ -74,14 +74,18 @@ if (__name__ == "__main__"):
     
     # Validation pass
     if(reload_model):
-         model,device=load_trained_model(model_path)
-         model.set_smiles_chars()
-         model.eval()
+        params = pickle.load(open('saved_model_w/params.pickle','rb'))
+        model = Model(**params)
+        device = model.load(model_path)
+        model.set_smiles_chars()
+        model.eval()
     else:
         try:
             model.eval()
         except NameError:
-            model,device=load_trained_model(model_path)
+            params = pickle.load(open('saved_model_w/params.pickle','rb'))
+            model = Model(**params)
+            device = model.load(model_path)
             model.set_smiles_chars()
             model.eval()
     

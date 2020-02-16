@@ -129,6 +129,7 @@ class molDataset(Dataset):
         targets = np.zeros(2, dtype=np.float32)
         # Binding profile for similarity training 
         profile = row['profile']
+        #print(profile)
         
         # Checks
         if(len(smiles)>self.max_smi_len):
@@ -192,7 +193,7 @@ class pairDataset(Dataset):
         
         
         # Select random pairs. constraint ; first mol is active 
-        i= np.random.randint(0,674) # two random actives 
+        i= np.random.randint(0,self.n) # two random actives 
         j = np.random.randint(0,self.n) # two random actives 
         
         g_i, a_i, props_i, targets_i, profile1 = self.df.__getitem__(i)

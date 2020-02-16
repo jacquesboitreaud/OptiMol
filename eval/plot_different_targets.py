@@ -45,21 +45,20 @@ if(__name__=='__main__'):
     # Random ZINC // no need to re-embed if already done 
     #pca_plot_color(z= z_r, pca = fitted_pca, color = 'lightblue', label='random ZINC')
     
-    tars = os.listdir('../data/targets/gpcr')
-    tars = [t for t in tars if '+' in t ]
+    tars = ['herg','drd','common']
     p = sns.color_palette()
+    
+    fold = 2
     
     Z=[]
     labels = []
     
-    for i,target_f in enumerate(tars) :
-        target= target_f[:-5]
-        print(target)
+    for i,target in enumerate(tars) :
     
-        df_a = pd.read_csv(f'../data/exp/unique_gpcr.csv')
+        df_a = pd.read_csv(f'../data/exp/herg_drd.csv')
         print(df_a.shape)
-        #df_a=df_a[df_a['fold']==2]
-        df_a =df_a[df_a[target]==1]
+        df_a=df_a[df_a['fold']==fold]
+        df_a =df_a[df_a['profile']==i]
     
         # Select a split fold of the data or a subsample 
         # df_a = df_a[df_a['fold']==1]
@@ -76,15 +75,13 @@ if(__name__=='__main__'):
     #fitted_pca = fit_pca(z_all)
         
     for i,z in enumerate(Z) :
-        target = tars[i][:-5]
-        pca_plot_color(z= z, pca = fitted_pca, color = p[i], label = f'{target}') 
+        pca_plot_color(z= z, pca = fitted_pca, color = p[i], label = f'{tars[i]}') 
     
     
     # Pairwise distances 
     for i in range(len(Z)):
-        D_a = pairwise_distances(z_all, metric='cosine')
+        D_a = pairwise_distances(Z[i], metric='cosine')
         print(np.mean(D_a))
-    #D_d = pairwise_distances(z_d, metric='l2')
     
     """
     #avg_a, avg_d = np.mean(D_a), np.mean(D_d)
