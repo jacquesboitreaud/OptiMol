@@ -54,7 +54,9 @@ class molDataset(Dataset):
                 targets=None,
                 debug=False,
                 shuffle=False,
-                select_target=None):
+                select_target=None,
+                maps_dir='./map_files/'):
+        
         print('**************** dataset building ******************')
         # 1/ two solutions: dataframe given or csv path given 
         if(csv_path is None):
@@ -86,9 +88,7 @@ class molDataset(Dataset):
         
         # =========== 2/ Graphs handling ====================
         
-        mapspath='map_files/edges_and_nodes_map.pickle'
-        
-        with open(mapspath,"rb") as f:
+        with open(os.path.join(maps_dir,'edges_and_nodes_map.pickle'),"rb") as f:
             self.edge_map= pickle.load(f)
             self.at_map = pickle.load(f)
             self.chi_map= pickle.load(f)
@@ -102,7 +102,7 @@ class molDataset(Dataset):
         
         # 3/ =========== SMILES handling : ==================
         
-        char_file="map_files/zinc_chars.json"
+        char_file=os.path.join(maps_dir,"./zinc_chars.json")
         self.char_list = json.load(open(char_file))
         self.char_to_index= dict((c, i) for i, c in enumerate(self.char_list))
         self.index_to_char= dict((i, c) for i, c in enumerate(self.char_list))

@@ -148,8 +148,7 @@ class Model(nn.Module):
     def load(self, trained_path):
         # Loads trained model weights 
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    
-        params = pickle.load(open('saved_model_w/params.pickle','rb'))
+
         self.load_state_dict(torch.load(trained_path))
         self.to(device)
         print(f'Loaded weights from {trained_path} to {device}')
