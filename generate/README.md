@@ -1,10 +1,10 @@
 generate_around.py : script to sample around a molecule in latent space 
 usage : 
-generate_around.py -m [smiles of seed compound] -N [number of molecules to sample] -o [name of output file]
+generate_around.py -s [smiles of seed compound] -n [number of molecules to sample] -o [name of output file]
 
-generate_prior.py: script to generate molecules from normal prior. 
+generate_prior.py: script to generate molecules from normal prior. (TODO)
 usage : 
-generate_around.py -m [smiles of seed compound] -N [number of molecules to sample] -o [name of output file]
+generate_around.py -s [smiles of seed compound] -n [number of molecules to sample] -o [name of output file]
 
 novelty.py : 
 functions to assess novelty of generated compounds;
