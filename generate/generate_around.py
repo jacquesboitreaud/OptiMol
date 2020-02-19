@@ -4,7 +4,8 @@ Created on Thu Jan 23 16:24:31 2020
 
 @author: jacqu
 
-Sampling molecules in latent space 
+Sampling molecules in latent space // around a given seed molecule
+
 """
 import os
 import sys
@@ -27,24 +28,27 @@ import torch.nn.functional as F
 
 if __name__ == "__main__":
 
-    from dataloaders.molDataset import molDataset, Loader
-
-    from model import Model, Loss, RecLoss
+    from dataloaders.molDataset import molDataset
+    from model import Model
     from utils import *
 
     parser = argparse.ArgumentParser()
 
     parser.add_argument('-s', '--seed', help="seed SMILES", type=str,
                         default='O=C(O)CCCc1ccc(N(CCF)CCCl)cc1')
+    parser.add_argument('-d', "--distance", help="Euclidian distance to seed mean", type=int, default=5)
     parser.add_argument('-n', "--n_mols", help="Nbr to generate", type=int, default=100)
+    parser.add_argument('-m', '--model', help="saved model weights fname. Located in saved_model_w subdir",
+                        default='baseline.pth')
     parser.add_argument('-o', '--output_file', type=str, default='gen_batch.txt')
     parser.add_argument('-b', '--use_beam', action='store_true', help="use beam search")
+    
 
     args = parser.parse_args()
 
     # ==============
 
-    model_path = f'../saved_model_w/baseline.pth'
+    model_path = f'../saved_model_w/{args.model}'
     # Load model (on gpu if available)
     params = pickle.load(open('../saved_model_w/params.pickle', 'rb'))  # model hparams
     model = Model(**params)
@@ -54,15 +58,15 @@ if __name__ == "__main__":
     model.eval()
 
     compounds = []
-    D = 1
 
-    data = molDataset(maps_dir='../map_files/')
+    data = molDataset(maps_path='../map_files/',
+                      csv_path=None)
     data.pass_smiles_list([args.seed])
     g_dgl, _, _, _ = data.__getitem__(0)
 
     with torch.no_grad():
         send_graph_to_device(g_dgl, model.device)
-        gen_seq, _, _ = model.sample_around_mol(g_dgl, dist=D, beam_search=args.use_beam,
+        gen_seq, _, _ = model.sample_around_mol(g_dgl, dist=args.distance, beam_search=args.use_beam,
                                                 attempts=args.n_mols, props=False,
                                                 aff=False)  # props & affs returned in _
 

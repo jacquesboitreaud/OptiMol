@@ -44,7 +44,8 @@ if(__name__=='__main__'):
         return (logP -2)**2 + (QED-1)**2
     
     molecules =[]
-    data = molDataset()
+    data = molDataset(maps_path='../map_files/',
+                      csv_path=None)
     
     if(seed):
         # Begin optimization with seed compound : a DUD decoy   

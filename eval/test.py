@@ -39,21 +39,19 @@ from sklearn.decomposition import PCA
 # Execution is set to take place in graph2smiles root dir 
 if __name__ == "__main__":
     from dataloaders.molDataset import molDataset, Loader
-    from data_processing.trdkit_to_nx import smiles_to_nx
+    from data_processing.rdkit_to_nx import smiles_to_nx
     from model import Model, Loss, RecLoss
-    # from model_utils import load_trained_model
     
     from eval.eval_utils import *
     from utils import *
-    from plot_tools import *
     
     # Eval config 
-    model_path= f'saved_model_w/baseline.pth'
+    model_path= f'../saved_model_w/baseline.pth'
     
     recompute_pca = False
     reload_model = True
     
-    # Should be same as for training...
+    # Should be same as for training
     properties = ['QED','logP','molWt']
     targets = ['aa2ar','drd3']
     
@@ -61,7 +59,8 @@ if __name__ == "__main__":
     plot_target = 'aa2ar'
 
     #Load eval set: USE MOSES TEST SET !!!!!!!!!!!!!!!!!
-    loaders = Loader(csv_path='data/moses_test.csv',
+    loaders = Loader(csv_path='../data/moses_test.csv',
+                     maps_path= '../map_files/',
                      n_mols=100,
                      num_workers=0, 
                      batch_size=100, 
@@ -76,16 +75,16 @@ if __name__ == "__main__":
     
     # Validation pass
     if(reload_model):
-        params = pickle.load(open('saved_model_w/params.pickle','rb'))
+        params = pickle.load(open('../saved_model_w/params.pickle','rb'))
         model = Model(**params)
         device = model.load(model_path)
-        model.set_smiles_chars()
+        model.set_smiles_chars('../map_files/zinc_chars.json')
         model.eval()
     else:
         try:
             model.eval()
         except NameError:
-            params = pickle.load(open('saved_model_w/params.pickle','rb'))
+            params = pickle.load(open('../saved_model_w/params.pickle','rb'))
             model = Model(**params)
             device = model.load(model_path)
             model.set_smiles_chars()
@@ -200,11 +199,11 @@ if __name__ == "__main__":
         # ===================================================================
         if(recompute_pca):
             fitted_pca = fit_pca(z)
-            dump(fitted_pca, 'eval/fitted_pca.joblib') 
+            dump(fitted_pca, '../eval/fitted_pca.joblib') 
             print('Fitted and saved PCA for next time!')
         else:
             try:
-                fitted_pca = load('eval/fitted_pca.joblib') 
+                fitted_pca = load('../eval/fitted_pca.joblib') 
             except(FileNotFoundError):
                 print('Fitted PCA object not found at ~/eval/fitted_pca.joblib, new PCA will be fitted on current data.')
                 fitted_pca = fit_pca(z)

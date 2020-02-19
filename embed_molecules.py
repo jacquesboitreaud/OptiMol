@@ -42,7 +42,8 @@ if __name__=='__main__':
     model.eval()
 
     # Initialize dataloader with empty dataset
-    dataloader = Loader(test_only=True, num_workers=0)
+    dataloader = Loader(maps_path='map_files/',
+                        test_only=True, num_workers=0)
     
     # Load dataframe with mols to embed
     smiles_df=pd.read_csv('data/moses_test.csv')

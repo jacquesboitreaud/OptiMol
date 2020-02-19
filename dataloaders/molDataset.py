@@ -51,14 +51,14 @@ class molDataset(Dataset):
     pytorch Dataset for training on small molecules graphs + smiles 
     """
 
-    def __init__(self, csv_path=None,
+    def __init__(self, csv_path,
+                 maps_path,
                  n_mols=-1,
                  props=None,
                  targets=None,
                  debug=False,
                  shuffle=False,
-                 select_target=None,
-                 maps_dir='./map_files/'):
+                 select_target=None):
 
         print('**************** dataset building ******************')
         # 1/ two solutions: dataframe given or csv path given 
@@ -91,7 +91,7 @@ class molDataset(Dataset):
 
         # =========== 2/ Graphs handling ====================
 
-        with open(os.path.join(maps_dir, 'edges_and_nodes_map.pickle'), "rb") as f:
+        with open(os.path.join(maps_path, 'edges_and_nodes_map.pickle'), "rb") as f:
             self.edge_map = pickle.load(f)
             self.at_map = pickle.load(f)
             self.chi_map = pickle.load(f)
@@ -105,7 +105,7 @@ class molDataset(Dataset):
 
         # 3/ =========== SMILES handling : ==================
 
-        char_file = os.path.join(maps_dir, "./zinc_chars.json")
+        char_file = os.path.join(maps_path, "zinc_chars.json")
         self.char_list = json.load(open(char_file))
         self.char_to_index = dict((c, i) for i, c in enumerate(self.char_list))
         self.index_to_char = dict((i, c) for i, c in enumerate(self.char_list))
@@ -201,6 +201,7 @@ class molDataset(Dataset):
 class Loader():
     def __init__(self,
                  csv_path=None,
+                 maps_path ='../map_files/',
                  n_mols=None,
                  props=None,
                  targets=None,
@@ -219,7 +220,9 @@ class Loader():
 
         self.batch_size = batch_size
         self.num_workers = num_workers
-        self.dataset = molDataset(csv_path, n_mols,
+        self.dataset = molDataset(csv_path,
+                                  maps_path, 
+                                  n_mols,
                                   debug=debug,
                                   props=props,
                                   targets=targets,
@@ -283,4 +286,4 @@ class Loader():
 
 
 if __name__ == '__main__':
-    d = molDataset()
+    L=Loader(csv_path=None)

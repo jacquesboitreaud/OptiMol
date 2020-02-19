@@ -84,7 +84,8 @@ if __name__ == "__main__":
 
 
     #Load train set and test set
-    loaders = Loader(csv_path=args.train,
+    loaders = Loader(maps_path='map_files/',
+                     csv_path=args.train,
                      n_mols=args.cutoff,
                      num_workers=0,
                      batch_size=args.batch_size,
