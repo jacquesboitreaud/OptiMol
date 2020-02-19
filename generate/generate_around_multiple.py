@@ -46,6 +46,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # ==============
+    
+    disable_rdkit_logging() # function from utils to disable rdkit logs
 
     model_path = f'../saved_model_w/{args.model}'
     # Load model (on gpu if available)
