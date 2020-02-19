@@ -4,7 +4,7 @@ Created on Thu Oct 24 15:26:06 2019
 
 @author: jacqu
 
-COmpute chemical properties for a dataframe 
+Compute chemical properties for a dataframe
 """
 import numpy as np
 from rdkit import Chem

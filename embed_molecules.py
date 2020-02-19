@@ -24,13 +24,10 @@ from rdkit.Chem import Draw
 import matplotlib.pyplot as plt
 
 
-if(__name__=='__main__'):
-    sys.path.append('data_processing')
-    sys.path.append('dataloaders')
-    sys.path.append('eval')
-    
-    from molDataset import molDataset, Loader
-    from rdkit_to_nx import smiles_to_nx
+if __name__=='__main__':
+
+    from dataloaders.molDataset import molDataset, Loader
+    from data_processing.rdkit_to_nx import smiles_to_nx
     from model import Model 
     
     model_path= f'saved_model_w/baseline.pth'
