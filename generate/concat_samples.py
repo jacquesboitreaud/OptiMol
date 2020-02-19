@@ -9,6 +9,7 @@ Sampling around actives in latent space
 
 import pandas as pd 
 import numpy as np 
+import os
 
 
 if __name__ == "__main__":
@@ -28,4 +29,5 @@ if __name__ == "__main__":
         d['seed']+= seed_n *len(smiles)
         
 df = pd.DataFrame.from_dict(d)
+print(f'Dataframe contains {df.shape[0]} samples')
 df.to_csv('outputs/act_sampling.csv')
