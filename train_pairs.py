@@ -29,7 +29,7 @@ import torch.nn.functional as F
 
 import torch.optim.lr_scheduler as lr_scheduler
 
-if (__name__ == "__main__"):
+if __name__ == "__main__":
     
     parser = argparse.ArgumentParser()
     
@@ -59,11 +59,9 @@ if (__name__ == "__main__"):
     parser.add_argument('--save_iter', type=int, default=10000) # save model weights every _ step 
     
     args=parser.parse_args()
-    
-    sys.path.append("./data_processing")
-    sys.path.append("./dataloaders")
+
     from model import Model, Loss, RecLoss, pairwiseLoss
-    from pairwiseDataset import Loader
+    from dataloaders.pairwiseDataset import Loader
     from utils import *
     
     # config

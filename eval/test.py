@@ -8,7 +8,12 @@ Evaluate training of Graph2Smiles VAE (RGCN encoder, GRU decoder, beam search de
 
 
 """
+import os
 import sys
+if __name__ == "__main__":
+    script_dir = os.path.dirname(os.path.realpath(__file__))
+    sys.path.append(os.path.join(script_dir, '..'))
+
 import torch
 import dgl
 
@@ -32,16 +37,13 @@ from sklearn.decomposition import PCA
 
 
 # Execution is set to take place in graph2smiles root dir 
-if (__name__ == "__main__"):
-    sys.path.append('eval')
-    sys.path.append('dataloaders')
-    sys.path.append("data_processing")
-    from molDataset import molDataset, Loader
-    from rdkit_to_nx import smiles_to_nx
+if __name__ == "__main__":
+    from dataloaders.molDataset import molDataset, Loader
+    from data_processing.trdkit_to_nx import smiles_to_nx
     from model import Model, Loss, RecLoss
-    from model_utils import load_trained_model
+    # from model_utils import load_trained_model
     
-    from eval_utils import *
+    from eval.eval_utils import *
     from utils import *
     from plot_tools import *
     

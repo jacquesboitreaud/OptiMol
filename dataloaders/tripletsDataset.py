@@ -11,8 +11,8 @@ Dataset class for passing triplets of molecules to model
 import os 
 import sys
 if __name__ == "__main__":
-    sys.path.append("..")
-    sys.path.append("data_processing")
+    script_dir = os.path.dirname(os.path.realpath(__file__))
+    sys.path.append(os.path.join(script_dir, '..'))
     
 import torch
 import dgl
@@ -23,7 +23,7 @@ import pickle
 import json
 import networkx as nx
 from torch.utils.data import Dataset, DataLoader, Subset
-from rdkit_to_nx import smiles_to_nx
+from data_processing.rdkit_to_nx import smiles_to_nx
 
 
 def collate_block(samples):

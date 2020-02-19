@@ -8,6 +8,7 @@ Logistic regression using learned latent rpz for affinity prediction
 
 """
 import pandas as pd
+import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import KFold
@@ -17,12 +18,15 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 
 import pybel
-
 import sys
-if(__name__=='__main__'):
-    sys.path.append('eval')
 
-from model_utils import load_trained_model, embed
+import os
+import sys
+if __name__ == "__main__":
+    script_dir = os.path.dirname(os.path.realpath(__file__))
+    sys.path.append(os.path.join(script_dir, '..'))
+
+# from model_utils import load_trained_model, embed
 
 def evaluate_LR(features, labels, exp_id):
     # 3-fold fitting and scoring of logistic regression 

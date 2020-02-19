@@ -7,6 +7,12 @@ Created on Fri Jul  5 14:45:02 2019
 Gradient descent optimization of objective target function in latent space.
 """
 
+import os
+import sys
+if __name__ == "__main__":
+    script_dir = os.path.dirname(os.path.realpath(__file__))
+    sys.path.append(os.path.join(script_dir, '..'))
+
 import torch
 import numpy as np
 from numpy.linalg import norm
@@ -22,9 +28,8 @@ import seaborn as sns
 from model import Model
 
 if(__name__=='__main__'):
-    sys.path.append("data_processing")
-    from rdkit_to_nx import smiles_to_nx
-    from molDataset import molDataset
+    from data_processing.rdkit_to_nx import smiles_to_nx
+    from dataloaders.molDataset import molDataset
     from utils import *
     
     # Set to true if providing a seed compound to start optimization. Otherwise, random start in the latent space
