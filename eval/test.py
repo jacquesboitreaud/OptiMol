@@ -24,6 +24,8 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
+from sklearn.metrics import pairwise_distances, silhouette_score
+
 
 import pickle
 import torch.utils.data
@@ -61,7 +63,7 @@ if __name__ == "__main__":
     #Load eval set: USE MOSES TEST SET !!!!!!!!!!!!!!!!!
     loaders = Loader(csv_path='../data/moses_test.csv',
                      maps_path= '../map_files/',
-                     n_mols=100,
+                     n_mols=10000,
                      num_workers=0, 
                      batch_size=100, 
                      props = properties,
@@ -150,6 +152,9 @@ if __name__ == "__main__":
         # ===================================================================
         
         plot_kde(z_all)
+        
+        D_a = pairwise_distances(z_all, metric='l2')
+        print('Average l2 distance in latent space : ', np.mean(D_a))
         
         # ===================================================================
         # Decoding statistics 

@@ -84,3 +84,4 @@ if __name__ == "__main__":
         for s in unique:
             f.write(s)
             f.write('\n')
+    print(f'wrote output batch to {args.output_file}')

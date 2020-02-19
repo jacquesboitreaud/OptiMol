@@ -329,7 +329,7 @@ class Model(nn.Module):
         tensors_list = []
         for i in range(attempts):
             noise = torch.randn_like(mu) * sigma
-            noise = (dist/torch.norm(noise,p=2,dim=1))*noise
+            noise = (dist/torch.norm(noise,p=2,dim=1))*noise # rescale noise norm to be equal to dist 
             noise = noise.to(self.device)
             sp=mu + noise 
             tensors_list.append(sp)
