@@ -84,8 +84,12 @@ if __name__ == "__main__":
     
         unique = list(np.unique(compounds))
         nbr_out = 0
-    
-        with open(f'outputs/{args.output_prefix}_{i}.txt', 'w') as f:
+        
+        if(args.use_beam):
+            output_filepath = f'beam_outputs/{args.output_prefix}_{i}.txt'
+        else:
+            output_filepath = f'outputs/{args.output_prefix}_{i}.txt'
+        with open(output_filepath, 'w') as f:
             for s in unique:
                 if('CCCCCCCCCCC' in s or 'ccccccccc' in s):
                     pass
@@ -95,4 +99,4 @@ if __name__ == "__main__":
                         nbr_out+=1
                         f.write(s)
                         f.write('\n')
-        print(f'wrote {nbr_out} mols to outputs/{args.output_prefix}_{i}.txt')
+        print(f'wrote {nbr_out} mols to {output_filepath}')
