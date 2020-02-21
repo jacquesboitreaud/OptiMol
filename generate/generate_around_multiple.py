@@ -36,7 +36,7 @@ if __name__ == "__main__":
 
     parser.add_argument('-i', '--input_path', help="Path to dataframe with seeds", type=str, default='drd3_seeds.csv')
     parser.add_argument('-d', "--distance", help="Euclidian distance to seed mean", type=int, default=3)
-    parser.add_argument('-n', "--n_mols", help="Nbr to generate", type=int, default=10000)
+    parser.add_argument('-n', "--n_mols", help="Nbr to generate", type=int, default=1000)
     parser.add_argument('-m', '--model', help="saved model weights fname. Located in saved_model_w subdir",
                         default='baseline.pth')
     parser.add_argument('-o', '--output_prefix', type=str, default='gen')
