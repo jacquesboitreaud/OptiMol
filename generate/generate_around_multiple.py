@@ -38,7 +38,7 @@ if __name__ == "__main__":
     parser.add_argument('-d', "--distance", help="Euclidian distance to seed mean", type=int, default=3)
     parser.add_argument('-n', "--n_mols", help="Nbr to generate", type=int, default=10000)
     parser.add_argument('-m', '--model', help="saved model weights fname. Located in saved_model_w subdir",
-                        default='g2s_herg_final.pth')
+                        default='g2s_baseline.pth')
     parser.add_argument('-o', '--output_prefix', type=str, default='gen')
     parser.add_argument('-b', '--use_beam', action='store_true', help="use beam search")
     
@@ -86,9 +86,9 @@ if __name__ == "__main__":
         nbr_out = 0
         
         if(args.use_beam):
-            output_filepath = f'beam_outputs/{args.output_prefix}_{i}.txt'
+            output_filepath = f'beam_outputs/{i}_{args.output_prefix}txt'
         else:
-            output_filepath = f'outputs/{args.output_prefix}_{i}.txt'
+            output_filepath = f'outputs/{i}_{args.output_prefix}.txt'
         with open(output_filepath, 'w') as f:
             for s in unique:
                 if('CCCCCCCCCCC' in s or 'ccccccccc' in s):
