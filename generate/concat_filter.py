@@ -20,7 +20,7 @@ if __name__ == "__main__":
          'seed':[]}
     
     train = pd.read_csv('../data/moses_train.csv')    
-    finetune = pd.read_csv('../data/exp/gpcr/gpcr.csv')
+    finetune = pd.read_csv('../data/exp/herg_drd.csv')
     finetune = finetune[finetune['fold'] == 1]
 
     seen = set(train['can'])
