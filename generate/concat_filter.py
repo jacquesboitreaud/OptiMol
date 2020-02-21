@@ -34,15 +34,16 @@ if __name__ == "__main__":
     
     for b in batches: 
         seed_n = b[:-8]
+        print(seed_n)
         with open(f'outputs/{b}','r') as f:
             smiles = f.readlines()
             
         smiles = [s.rstrip() for s in smiles if s not in seen]
-        print(len(smiles))
+        #print(len(smiles))
         d['can']+=smiles
         d['seed']+= [seed_n  for i in range(len(smiles))]
-        print(len(d['seed']))
-        print(len(d['can']))
+        #print(len(d['seed']))
+        #print(len(d['can']))
         
     df = pd.DataFrame.from_dict(d)
     print(f'Dataframe contains {df.shape[0]} samples')
