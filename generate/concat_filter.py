@@ -38,8 +38,11 @@ if __name__ == "__main__":
             smiles = f.readlines()
             
         smiles = [s.rstrip() for s in smiles if s not in seen]
+        print(len(smiles))
         d['can']+=smiles
         d['seed']+= seed_n *len(smiles)
+        print(len(d['seed']))
+        print(len(d['can']))
         
     df = pd.DataFrame.from_dict(d)
     print(f'Dataframe contains {df.shape[0]} samples')
