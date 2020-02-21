@@ -28,8 +28,6 @@ if __name__ == "__main__":
     
     print(len(seen), ' non-novel molecules loaded to filter')
     
-    novel=[]
-    
     
     batches = os.listdir('outputs')
     batches = [ f for f in batches if '.txt' in f]
@@ -43,6 +41,6 @@ if __name__ == "__main__":
         d['can']+=smiles
         d['seed']+= seed_n *len(smiles)
         
-df = pd.DataFrame.from_dict(d)
-print(f'Dataframe contains {df.shape[0]} samples')
-df.to_csv('outputs/act_sampling_baseline.csv')
+    df = pd.DataFrame.from_dict(d)
+    print(f'Dataframe contains {df.shape[0]} samples')
+    df.to_csv('outputs/act_sampling_baseline.csv')
