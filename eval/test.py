@@ -215,20 +215,10 @@ if __name__ == "__main__":
                 dump(fitted_pca, 'eval/fitted_pca.joblib') 
                 print('Fitted and saved PCA for next time!')
         
-        # Retrieve affinities of each molecule 
-        
-        bool1 = [int(a[0]==1) for a in a_target_all] # actives for t1
-        
-        bit = np.array(bool1)
-        bit = [str(i) for i in bit]
-        mapping = {'0':'Decoy','1':'Active'}
-        bit = [mapping[b] for b in bit]
-        bit=pd.Series(bit,index=np.arange(len(bit)))
-        
         
         # Plot PCA with desired hue variable 
         plt.figure()
-        pca_plot_hue(z= z_all, variable = bit, pca = fitted_pca)
+        pca_plot_hue(z= z_all, variable = p_target_all[:,1], pca = fitted_pca)
         
         # ====================================================================
         # Random sampling in latent space 

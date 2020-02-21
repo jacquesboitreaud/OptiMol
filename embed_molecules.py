@@ -47,14 +47,17 @@ if __name__=='__main__':
     
     # Load dataframe with mols to embed
     smiles_df=pd.read_csv('data/moses_test.csv')
-    smiles_df=smiles_df.sample(1000)
+    #smiles_df=smiles_df.sample(1000)
     
     # embed molecules in latent space of dimension 64
+    print('Embedding all moses_test molecules')
     z = model.embed( dataloader, smiles_df) # z has shape (N_molecules, latent_size)
     
+    np.save('latent_moses_test',z)
+    
     # Decode to smiles 
-    decoded = model.decode(torch.tensor(z, dtype=torch.float32).to(device))
-    smiles_out = model.probas_to_smiles(decoded)
+    #decoded = model.decode(torch.tensor(z, dtype=torch.float32).to(device))
+    #smiles_out = model.probas_to_smiles(decoded)
     
     """
     # Plotting molecules 
