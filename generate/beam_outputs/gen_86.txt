@@ -1,0 +1,10 @@
+CCc1ccc(cc1Cc1ccccc1)CNCc1ccccc1C
+CCc1ccccc1c1ccccc1CCCCCCCCCOC
+CCc1ccccc1c1ccccc1CCCc1ccccc1CC
+CCc1ccccc1c1ccccc1CCCc1ccccc1OC
+CCc1ccccc1c2ccccc2CCCCCCCC
+COc1ccccc1CCCCc1ccc(cc1)CCCCC
+Cc1ccccc1c1ccccc1c1ccc(cc1)CCCCCC
+Cc1ccccc1c1ccccc1c1ccccc1CCCC(=O)NCC
+Cc1ccccc1c1ccccc1c1ccccc1CCCCCCCOC
+Cc1ccccc1c1ccccc1c1ccccc1CCCCCCOCCOC

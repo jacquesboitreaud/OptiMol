@@ -1,0 +1,15 @@
+CCc1ccccc1c1ccccc1c1ccccc1C(=O)NC[C@@H](CC1)c2ccccc2c1=O
+CCc1ccccc1c1ccccc1c1ccccc1C(=O)Nc2ccccc2C(C)=O
+CCc1ccccc1c1ccccc1c1ccccc1c1nncn1CCC(=O)NCCC
+CCc1ccccc1c1ccccc1c1ccccc1c1nncn1CCC(=O)NCCC(C)(C)C
+CCc1ccccc1c1ccccc1c1ccccc1c1nncn1CCC(=O)NCCC(C)(C)C(=O)c1cccnc1
+CCc1ccccc1c1ccccc1c1ccccc1c1nncn1CCCC(=O)NCC
+CCc1ccccc1c1ccccc1c1ccccc1c1nncn1CCCC(=O)NCCC
+CCc1ccccc1c1ccccc1c1ccccc1c1nncn1CCCNC(=O)C
+CCc1ccccc1c1ccccc1c1ccccc1c1nncn1Cc2ccccc2
+CCc1ccccc1c1ccccc1c2ccccc2C(=O)CCCCCCC(=O)OC
+CCc1ccccc1c1ccccc1c2ccccc2C(=O)CCCCCCCC(=O)O
+Cc1ccccc1c1ccccc1c1ccccc1c1nncn1CCCCCCC(=O)N1CCC1
+Cc1ccccc1c1ccccc1c1ccccc1c1nncn1CCCCCCC(C)(C)C
+Cc1ccccc1c1ccccc1c1ccccc1c1nncn1CCCCCCCCCC
+Cn1nc(ccn1Cc1ccccc1ccccc1C)C(=O)Nccccc1CC(C)(C)C

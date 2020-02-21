@@ -1,0 +1,3 @@
+CC1CCc2ccccc2Cc3ccccc3CCNCCc2ccccc2C1=O
+CC1CCc2ccccc2Cc3ccccc3CC[C@H](CCCCCC)c1=O
+CCc1ccccc1c1ccccc1c1ccccc1c1nncn1CCCC(C)(C)C

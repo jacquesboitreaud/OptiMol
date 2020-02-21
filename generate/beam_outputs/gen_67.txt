@@ -1,0 +1,4 @@
+C3CCCCc2ccccc2n1C[C@H]1CCc2nc(nnn2)c5ccc(CC(=O)OC)cc35
+Cn1nc(cnn1Cc1ccccc1)c1ccc(nn1)c1nc(Cc2ccccc2)ccc1C(=O)C
+Cn1nc(cnn1Cc1ccccc1)c1ccc(nn1)c2ccccc2C(=O)Nc5ccccc5
+Cn1nc(cnn1Cc1ccccc1)c1ccc(nn1)c2ccccc2C(=O)c5ccccc5

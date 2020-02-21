@@ -1,0 +1,4 @@
+CC[C@H]1CC[C@H]1CCc1ccc(cc1)c2ccccc2C(=O)OCC
+CCc1ccccc1c1ccccc1CCCc1nc(C)ncc1CC
+CCc1ccccc1c1ccccc1c2ccccc2CCCCC
+Cc1ccccc1c1ccccc1c1ccccc1CCc2ccnnc2

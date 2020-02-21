@@ -1,0 +1,9 @@
+CCCCc1ccccc1c1nncn1CCCCNC(=O)c2ccccc2
+CCc1ccccc1c1ccccc1c1ccc(cc1)c2ccccc2C(=O)N[C@H]2CC=CC2=O
+CCc1ccccc1c1ccccc1c1ccccc1C(=O)NC[C@@H]2CCCCC2
+CCc1ccccc1c1ccccc1c1ccccc1C(=O)Nc2ccccn2
+CCc1ccccc1c1ccccc1c1ccccc1NC(=O)[C@@H]2CCCCC2
+CCc1ccccc1c1ccccc1c2ccccc2C(=O)CCCCCC(=O)O
+CCc1ccccc1c1ccccc1c2ccccc2C(=O)[C@@H]2CCCCC2
+CCc1ccccc1c1ccccc1c2ccccc2CCNC(=O)[C@@H]2CCCC2
+Cc1ccccc1c1ccccc1c1ccccc1c1nncn1CCCCCCC(C)C(C)C

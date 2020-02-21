@@ -1,0 +1,10 @@
+C3CCCCc1ccccc1nc1nnc(n1)c2ccccc2CC(=O)N5CCCC5[C@@H]3C
+CCCCc1ccccc1c1ccccc1c1nncn1CCC(=O)NCCCCC(C)(C)C
+CCCCc1ccccc1c1ccccc1c1nnnnc1CCCCCC(=O)NCC
+CCCCc1ccccc1c1nncn1CC(=O)NC[C@@H]1CCCCCc2ccccc2c1=O
+CCCCc1ccccc1c1nnnnc1CCCCCCCCOc1ccccn1
+CCCCc1ccccc1c1nnnnc1CCCCOc1ccc(C(=O)OCC)cc1C
+CCCCc1ccccc1c1nnnnc1CCCCc1ccccc1CCCCC
+CCc1ccccc1c1ccccc1c1ccccc1C(=O)NC[C@@H]1CCCCCc1=O
+COc1ccccc1Cc1ccccc1C(=O)NC[C@@H]1CCCCCc2ccccc2c1=O
+Cn1nccc1Cc1ccccc1c1ccccc1C(=O)NC[C@@H](Cc1ccccc1)C

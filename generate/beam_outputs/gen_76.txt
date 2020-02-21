@@ -1,0 +1,4 @@
+Cn1cc(ccc1nc(nnn1)c2ccccc2cc1ccc(cc1)c2ccc(cc2)C(=O)C(C)(C)C)cnc1
+Cn1nc(cnn1Cc1cccc(c1)c1ccc(cc1)c1ccccc1)c1ccc(nn1)C(=O)Cc1ccccc1
+Cn1nc(cnn1Cc1cccc(c1)c2ccccc2C(=O)c6ccccc1)C(=O)c6ccccc1C
+Cn1nc(cnn1Cc1ccccc1)c1ccc(nn1)c2ccc(nc2)c7ccccc1ccccc17C=CC

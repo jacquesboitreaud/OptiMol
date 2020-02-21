@@ -1,0 +1,4 @@
+C3CCCCC1Cc1ccccc1C(=O)NC[C@H]1CCc5n[nH]cc3C(=O)c2ccccc25
+C3CCCc2ccccc3CCc1ccc(cc12)c2ccccc2CCNC(=O)OC
+CCc1ccccc1c1ccccc1c1ccccc1c1nncn1CCCC(=O)NCCC
+Cc1ccccc1c1ccccc1c1nncn1Cc1ccccc1CCc2ccccc2

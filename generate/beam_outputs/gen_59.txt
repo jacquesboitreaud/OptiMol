@@ -1,0 +1,3 @@
+CCc1ccccc1c1ccccc1c2[nH]ncc2CCCCCCC(C)(C)C(=O)N
+Cc1ccccc1c1ccccc1c1ccccc1c2ccnn2C(=O)N
+Cc1ccccc1c1ccccc1c1ccccc1c2ccnn2C[C@@H]2CCNC2=O
