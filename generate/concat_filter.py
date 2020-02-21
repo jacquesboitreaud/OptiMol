@@ -40,7 +40,7 @@ if __name__ == "__main__":
         smiles = [s.rstrip() for s in smiles if s not in seen]
         print(len(smiles))
         d['can']+=smiles
-        d['seed']+= seed_n *len(smiles)
+        d['seed']+= [seed_n  for i in range(len(smiles))]
         print(len(d['seed']))
         print(len(d['can']))
         
