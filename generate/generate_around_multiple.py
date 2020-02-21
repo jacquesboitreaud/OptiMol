@@ -38,7 +38,7 @@ if __name__ == "__main__":
     parser.add_argument('-d', "--distance", help="Euclidian distance to seed mean", type=int, default=3)
     parser.add_argument('-n', "--n_mols", help="Nbr to generate", type=int, default=10000)
     parser.add_argument('-m', '--model', help="saved model weights fname. Located in saved_model_w subdir",
-                        default='g2s_baseline.pth')
+                        default='baseline.pth')
     parser.add_argument('-o', '--output_prefix', type=str, default='gen')
     parser.add_argument('-b', '--use_beam', action='store_true', help="use beam search")
     
