@@ -459,7 +459,7 @@ def Loss(out, indices, mu, logvar, y_p, p_pred,
     else: 
         aff_loss = torch.tensor(0) # No affinity prediction 
     
-    return CE, KLD, mse, aff_loss # returns 4 values
+    return CE, KLD, mse, 10*aff_loss # returns 4 values, weight aff loss
 
 def tripletLoss(z_i, z_j, z_l, margin=2):
     """ For disentangling by separating known actives in latent space """
