@@ -48,7 +48,7 @@ if __name__ == "__main__":
     from utils import *
     
     # Eval config 
-    model_path= f'../saved_model_w/baseline.pth'
+    model_path= f'../saved_model_w/g2s_herg_final.pth'
     
     recompute_pca = False
     reload_model = True
@@ -63,7 +63,7 @@ if __name__ == "__main__":
     #Load eval set: USE MOSES TEST SET !!!!!!!!!!!!!!!!!
     loaders = Loader(csv_path='../data/moses_test.csv',
                      maps_path= '../map_files/',
-                     n_mols=10000,
+                     n_mols=100,
                      num_workers=0, 
                      batch_size=100, 
                      props = properties,

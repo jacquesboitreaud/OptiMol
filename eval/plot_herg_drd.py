@@ -59,9 +59,11 @@ if(__name__=='__main__'):
     
         df_a=df[df['profile']==i]
         
+        
         print('selecting fold ', fold)
         df_a=df_a[df_a['fold']==fold]
         print(prof, df_a.shape[0])
+        
         
         z_a = model.embed(loaders, df_a)
         labels.append(np.ones(z_a.shape[0])*i)
@@ -70,10 +72,10 @@ if(__name__=='__main__'):
     z_all = np.concatenate(Z)
     lab_all = np.concatenate(labels)
     
-    #fitted_pca = load('fitted_pca.joblib') 
+    fitted_pca = load('fitted_pca.joblib') 
     fitted_pca = fit_pca(z_all)
-    #plt.xlim(-5.3,6.9)
-    #plt.ylim(-2.8,2.4)
+    plt.xlim(-5,6)
+    plt.ylim(-2.8,2.8)
         
     for i,z in enumerate(Z) :
         prof = profiles[i]

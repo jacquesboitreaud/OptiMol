@@ -26,6 +26,8 @@ import torch.optim.lr_scheduler as lr_scheduler
 import torch.nn.utils.clip_grad as clip
 import torch.nn.functional as F
 
+import pybel
+
 if __name__ == "__main__":
 
     from dataloaders.molDataset import molDataset
@@ -35,8 +37,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument('-i', '--input_path', help="Path to dataframe with seeds", type=str, default='drd3_seeds.csv')
-    parser.add_argument('-d', "--distance", help="Euclidian distance to seed mean", type=int, default=3)
-    parser.add_argument('-n', "--n_mols", help="Nbr to generate", type=int, default=1000)
+    parser.add_argument('-d', "--distance", help="Euclidian distance to seed mean", type=int, default=1)
+    parser.add_argument('-n', "--n_mols", help="Nbr to generate", type=int, default=50)
     parser.add_argument('-m', '--model', help="saved model weights fname. Located in saved_model_w subdir",
                         default='g2s_herg_final.pth')
     parser.add_argument('-o', '--output_prefix', type=str, default='gen')
@@ -60,6 +62,11 @@ if __name__ == "__main__":
     
     data = molDataset(maps_path='../map_files/',
                       csv_path=None)
+    smiles = pd.read_csv('drd3_seeds.csv')
+    smiles=list(smiles['can'])
+    mols = [pybel.readstring('smi',s) for s in smiles]
+    fps = [m.calcfp() for m in mols ]
+    
     # Pass the actives 
     data.pass_dataset_path(args.input_path)
     
@@ -94,9 +101,15 @@ if __name__ == "__main__":
                 if('CCCCCCCCCCC' in s or 'ccccccccc' in s):
                     pass
                 else:
-                    m=Chem.MolFromSmiles(s)
-                    if(m!=None):
+                    try:
+                        m=pybel.readstring('smi',s)
+                        fp = m.calcfp()
+                        sim = fp|fps[i]
+                        print(sim)
                         nbr_out+=1
                         f.write(s)
                         f.write('\n')
+                    except:
+                        pass
+                        
         print(f'wrote {nbr_out} mols to {output_filepath}')

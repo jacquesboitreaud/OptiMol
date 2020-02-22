@@ -52,6 +52,8 @@ if(__name__=='__main__'):
     
     z_a = model.embed(loaders, df_a)
     
+    z_all=np.load('../data/latent_moses_test.npy', allow_pickle=True)
+    
     fitted_pca = load('fitted_pca.joblib') 
     #fitted_pca = fit_pca(z_all)
     #plt.xlim(-4.1,4.1)

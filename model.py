@@ -354,6 +354,39 @@ class Model(nn.Module):
         
         return dec, p, a
     
+    def sample_around_z(self, z, dist, beam_search=False, attempts = 1, props=False, aff=False):
+        """ Samples around embedding of molecular graph g, within a l2 distance of d """
+
+        sigma = torch.exp(.5 * torch.randn_like(z)).to(self.device)
+        z=z.to(self.device)
+        tensors_list = []
+        for i in range(attempts):
+            noise = torch.randn_like(z) * sigma
+            noise = (dist/torch.norm(noise,p=2,dim=1))*noise # rescale noise norm to be equal to dist 
+            noise = noise.to(self.device)
+            sp=z + noise 
+            tensors_list.append(sp)
+        
+        if(attempts>1):
+            samples=torch.stack(tensors_list, dim=0)
+            samples = torch.squeeze(samples)
+        else:
+            samples = sp
+            
+        if(beam_search):
+            dec = self.decode_beam(samples)
+        else:
+            dec = self.decode(samples)
+            
+        # props ad affinity if requested 
+        p,a = 0,0
+        if(props):
+            p = self.props(samples)
+        if(aff):
+            a = self.aff(samples)
+        
+        return dec, p, a
+    
     def sample_z_prior(self, n_mols):
         """Sampling z ~ p(z) = N(0, I)
         :param n_batch: number of batches
@@ -389,6 +422,17 @@ class Model(nn.Module):
                 
         z_all = z_all.numpy()
         return z_all
+    
+    def load_my_state_dict(self, state_dict):
+ 
+        own_state = self.state_dict()
+        for name, param in state_dict.items():
+            if name not in own_state:
+                 continue
+            if isinstance(param, Parameter):
+                # backwards compatibility for serialized parameters
+                param = param.data
+            own_state[name].copy_(param)
         
 # ======================= Loss functions ====================================
     
@@ -408,7 +452,10 @@ def Loss(out, indices, mu, logvar, y_p, p_pred,
     if(train_on_aff and binary_aff):
         aff_loss = F.cross_entropy(a_pred, y_a, reduction="sum") # binary binding labels
     elif(train_on_aff):
-        aff_loss = F.mse_loss(a_pred,y_a,reduction='sum') # regression IC50 values 
+        aff_loss=0
+        for i in range(y_a.shape[0]):
+            if(y_a[i]<0):
+                aff_loss+= F.mse_loss(a_pred[i],y_a[i],reduction='sum')
     else: 
         aff_loss = torch.tensor(0) # No affinity prediction 
     

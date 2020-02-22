@@ -249,8 +249,7 @@ class Loader():
         n = len(self.dataset)
         print(f"Splitting dataset with {n} samples")
         indices = list(range(n))
-        # np.random.shuffle(indices)
-        np.random.seed(0)
+        np.random.shuffle(indices)
         if (not self.test_only):
             split_train, split_valid = 0.95, 0.95
             train_index, valid_index = int(split_train * n), int(split_valid * n)
