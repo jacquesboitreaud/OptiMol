@@ -141,9 +141,9 @@ class Model(nn.Module):
         self.aff_net = nn.Sequential(
                 nn.Linear(self.l_size,32),
                 nn.ReLU(),
-                nn.Linear(32,32),
+                nn.Linear(32,16),
                 nn.ReLU(),
-                nn.Linear(32,self.N_targets))
+                nn.Linear(16,self.N_targets))
         
     def load(self, trained_path, aff_net=False):
         # Loads trained model weights 
