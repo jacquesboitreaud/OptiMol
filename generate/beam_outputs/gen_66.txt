@@ -1,3 +1,0 @@
-Cn1nccc1C1=CC(=O)Nc2nc(CC)nnc2C5CCCCCCc5ncccc1
-Cn1nccc1Cc1nncnc1Cc1ccc(nn1)c2ccccc2C(=O)c5ccccc5
-Cn1nccc1Cn1nccc1CNC(=O)NCc1ccc(cc1)C(=O)c5ccccc5

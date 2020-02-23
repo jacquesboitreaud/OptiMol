@@ -1,5 +1,0 @@
-CC(C)c1ccccc1c1ccccc1c1ccccc1c2ccccc1c2ccc(C)nc1C(=O)CCCCCCCCC
-CC(C)c1nc(ccc1c2ccccc1c2c[nH]cc1C)c1ccccc1C(=O)CCCCCCC(O)CCOC
-CC(C)c1nc(ccc1c2ccccc1c2ccccc1)C(=O)Cc1ccccc1c2nnnn2C(CC(C)C)C(C)(C)C
-CCc1ccccc1n1cccc1c1ccccc1c1ccccc1c1ccc(C)nc1C(O)CCCCC(C)(C)C(C)C
-CCc1ccccc1n1cccc1c1ccccc1c2ccccc1c2ccc(C)nc1C(=O)[C@@H](CC1CC)C(=O)OCCC1

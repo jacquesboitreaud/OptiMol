@@ -1,3 +1,0 @@
-C1CCCc2ccccc2Cc3[nH]ccc3cc1CCc1ccccc1OCCC
-C1CCCc2ccccc2Cc3ccccc3CCCCCCCCCCc1=O
-CCCCc1ccccc1c1ccccc1c1ccc(cc1)[C@@H](CCCOC)C#C

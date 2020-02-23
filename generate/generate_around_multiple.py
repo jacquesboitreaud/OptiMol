@@ -38,7 +38,7 @@ if __name__ == "__main__":
 
     parser.add_argument('-i', '--input_path', help="Path to dataframe with seeds", type=str, default='drd3_seeds.csv')
     parser.add_argument('-d', "--distance", help="Euclidian distance to seed mean", type=int, default=1)
-    parser.add_argument('-n', "--n_mols", help="Nbr to generate", type=int, default=50)
+    parser.add_argument('-n', "--n_mols", help="Nbr to generate", type=int, default=15)
     parser.add_argument('-m', '--model', help="saved model weights fname. Located in saved_model_w subdir",
                         default='g2s_herg_final.pth')
     parser.add_argument('-o', '--output_prefix', type=str, default='gen')
@@ -70,6 +70,8 @@ if __name__ == "__main__":
     # Pass the actives 
     data.pass_dataset_path(args.input_path)
     
+    generated, seeds = [], []
+    
     # Iterate over actives
     for i in range(len(data)):
         g_dgl, _, _, _ = data.__getitem__(i)
@@ -93,10 +95,10 @@ if __name__ == "__main__":
         nbr_out = 0
         
         if(args.use_beam):
-            output_filepath = f'beam_outputs/{i}_{args.output_prefix}txt'
+            output_filepath = f'beam_outputs/{args.output_prefix}.txt'
         else:
-            output_filepath = f'outputs/{i}_{args.output_prefix}.txt'
-        with open(output_filepath, 'w') as f:
+            output_filepath = f'outputs/{args.output_prefix}.txt'
+        with open(output_filepath, 'a') as f:
             for s in unique:
                 if('CCCCCCCCCCC' in s or 'ccccccccc' in s):
                     pass
@@ -107,6 +109,8 @@ if __name__ == "__main__":
                         sim = fp|fps[i]
                         print(sim)
                         nbr_out+=1
+                        f.write(f'seed_{i}')
+                        f.write('\t')
                         f.write(s)
                         f.write('\n')
                     except:

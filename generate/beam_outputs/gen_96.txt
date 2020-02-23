@@ -1,1 +1,0 @@
-CC(C)c1nc(ccc1c2ccccc1c2ccccc1)C(=O)Cc1ccccc1c2nnnn2CC(=O)C(C)(C)C

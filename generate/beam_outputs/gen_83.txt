@@ -1,2 +1,0 @@
-CC1=CC=C(n2nnnn2)c3ccccc3ncccc2ccccc12
-CC1CCc2nnc(n2[nH]nc1C(=O)Nc2ccc(nn2)c3cc(C)cc(C)c3)c1ccc(C(=O)CC)cc1

@@ -101,7 +101,7 @@ class Model(nn.Module):
                  l_size, voc_size,
                  N_properties, N_targets,
                  device,
-                 binary_labels = True):
+                 binary_labels = False):
         super(Model, self).__init__()
         
         # params:
@@ -145,11 +145,14 @@ class Model(nn.Module):
                 nn.ReLU(),
                 nn.Linear(32,self.N_targets))
         
-    def load(self, trained_path):
+    def load(self, trained_path, aff_net=False):
         # Loads trained model weights 
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
-
-        self.load_state_dict(torch.load(trained_path))
+        
+        if(aff_net):
+            self.load_state_dict(torch.load(trained_path))
+        else:
+            self.load_no_aff_net(trained_path)
         self.to(device)
         print(f'Loaded weights from {trained_path} to {device}')
         
@@ -425,16 +428,16 @@ class Model(nn.Module):
         z_all = z_all.numpy()
         return z_all
     
-    def load_my_state_dict(self, state_dict):
- 
-        own_state = self.state_dict()
-        for name, param in state_dict.items():
-            if name not in own_state:
-                 continue
-            if isinstance(param, Parameter):
-                # backwards compatibility for serialized parameters
-                param = param.data
-            own_state[name].copy_(param)
+    def load_no_aff_net(self, state_dict):
+        # Workaround to be able to load a model with not same size of affinity predictor... 
+        pretrained_dict = torch.load(state_dict)
+        model_dict = self.state_dict()
+        # 1. filter out unnecessary keys
+        pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict and v.size() == model_dict[k].size()}
+        # 2. overwrite entries in the existing state dict
+        model_dict.update(pretrained_dict) 
+        # 3. load the new state dict
+        self.load_state_dict(model_dict)
         
 # ======================= Loss functions ====================================
     
@@ -451,9 +454,9 @@ def Loss(out, indices, mu, logvar, y_p, p_pred,
     10*F.mse_loss(p_pred[:,1], y_p[:,1], reduction="sum") + 0.1* F.mse_loss(p_pred[:,2], y_p[:,2], reduction="sum")
     
     #affinities: 
-    if(train_on_aff and binary_aff):
-        aff_loss = F.cross_entropy(a_pred, y_a, reduction="sum") # binary binding labels
-    elif(train_on_aff):
+    #if(train_on_aff and binary_aff):
+    #aff_loss = F.cross_entropy(a_pred, y_a, reduction="sum") # binary binding labels
+    if(train_on_aff):
         aff_loss=0
         for i in range(y_a.shape[0]):
             if(y_a[i]<0):

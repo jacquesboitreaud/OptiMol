@@ -1,7 +1,0 @@
-C1CCC[C@H]1CCc1ccc(cc1)c2ccccc2CCNC(=O)[C@@H]2CC5[CH]nc25
-C1CCCc2ccccc2Cc3ccccc3CC(=O)c5ccccc5CO1
-CC1CCc2ccccc2Cc3ccccc3CCc5ccccc5CO1
-CC1CCc2ccccc2Cc3ccccc3Cc5ccccc5C(=O)O1
-CCc1ccccc1c1ccccc1c1ccccc1c1nnnn1Cc2ccccc2
-CCc1ccccc1c1ccccc1c1ccccc1c1nnnn1Cc5ccccc5
-CCc1ccccc1c1ccccc1c2ccccc2C(=O)Nc2ccccc2

@@ -1,1 +1,0 @@
-CC1=CC=CCc2cccnc2n1C[C@H]c1nc(C(=O)OCCCCCCCC)ccc1CC

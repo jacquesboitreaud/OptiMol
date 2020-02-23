@@ -1,4 +1,0 @@
-COc1ccccc1Cc1ccccc1C(=O)NC[C@@H]1CCCCCCCCCCc1=O
-COc1ccccc1Cc1ccccc1C(=O)NC[C@@H]1CCCCCNC(=O)c2ccccc2c1=O
-Cc1ccccc1c1ccccc1c1ccccc1c1nnnn1CCCC(=O)NCCCC
-Cn1nccc1Cc1ccccc1C(=O)NC[C@@H]1CCCNC(=O)c2cccc(c2)CC1

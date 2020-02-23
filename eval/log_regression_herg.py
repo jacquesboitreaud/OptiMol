@@ -11,7 +11,7 @@ import pandas as pd
 import numpy as np
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import KFold
-from sklearn.metrics import f1_score
+from sklearn.metrics import f1_score, accuracy_score
 
 from rdkit import Chem
 from rdkit.Chem import AllChem
@@ -42,7 +42,7 @@ def evaluate_LR(features, labels, exp_id):
         clf.fit(X_train,y_train)
         y_pred = clf.predict(X_test)
         
-        score = f1_score(y_test, y_pred )
+        score = accuracy_score(y_test, y_pred )
         #print(f'Split n°{i}, accuracy : {score}')
         avg_lr_f1 += score
         
@@ -88,8 +88,8 @@ f1_r = []
 for i in range(len(Z)):
     for j in  range(len(Z)):
         if(i!=j):
-            pos = Z[i]
-            neg = Z[j]
+            pos = Z[i][:227]
+            neg = Z[j][:227]
             z_affvae = np.concatenate((pos,neg))
             na, nn = pos.shape[0], neg.shape[0]
             labels = np.concatenate((np.ones(na), np.zeros(nn)))

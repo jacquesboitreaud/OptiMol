@@ -1,7 +1,0 @@
-C3CCCCCc1nc(nnn1)C(=O)Nc2ccccc2CC(=O)Nc5ccccc35
-CC1CCCCC1CCCCCCCCCC1=CC(=O)Nc2n[nH]cc2CC=CC1=O
-CC1CCCCC1CCCCCCCCCC1=CC(=O)n2nc(nn2)c2ccccc2C1=O
-Cc1ccccc1c1ccccc1c1ccccc1c1nncn1CCCCCCCCCC
-Cn1nc(cc1n1CCc1cccc(c1)c2ccccc2)n1CCNC(=O)c5ccccc5
-Cn1nc(cnn1Cc1ccccc1)c1ccc(nn1)c2ccccc2C(=O)c5ccccn5
-Cn1nc(cnn1Cc1ccccc1Cc1ccccc1)[n@H]1CCc5ccccc5C(=O)O1

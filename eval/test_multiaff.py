@@ -6,6 +6,8 @@ Created on Wed Nov  6 18:44:04 2019
 
 Evaluate training of Graph2Smiles VAE (RGCN encoder, GRU decoder, beam search decoding). 
 
+Open multitask affinity model and test it 
+
 
 """
 import os
@@ -48,22 +50,22 @@ if __name__ == "__main__":
     from utils import *
     
     # Eval config 
-    model_path= f'../saved_model_w/baseline.pth'
+    model_path= f'../saved_model_w/multiaff_iter_870000.pth'
     
     recompute_pca = False
     reload_model = True
     
     # Should be same as for training
     properties = ['QED','logP','molWt']
-    targets = ['aa2ar','drd3']
+    targets = ['drd3']
     
     # Select only DUDE subset to plot in PCA space 
-    plot_target = 'aa2ar'
+    plot_target = 'drd3'
 
     #Load eval set: USE MOSES TEST SET !!!!!!!!!!!!!!!!!
-    loaders = Loader(csv_path='../data/moses_test.csv',
+    loaders = Loader(csv_path='../data/moses_sc_f.csv',
                      maps_path= '../map_files/',
-                     n_mols=100,
+                     n_mols=1000,
                      num_workers=0, 
                      batch_size=100, 
                      props = properties,
@@ -79,7 +81,7 @@ if __name__ == "__main__":
     if(reload_model):
         params = pickle.load(open('../saved_model_w/params.pickle','rb'))
         model = Model(**params)
-        device = model.load(model_path)
+        device = model.load(model_path, aff_net=True)
         model.set_smiles_chars('../map_files/zinc_chars.json')
         model.eval()
     else:
@@ -173,7 +175,7 @@ if __name__ == "__main__":
             reconstruction_dataframe[p+'_pred']=p_all[:,i]
         
         for i,t in enumerate(targets):
-            reconstruction_dataframe[t]=-np.log(10e-9*a_target_all[:,i])
+            reconstruction_dataframe[t]=a_target_all[:,i]
             reconstruction_dataframe[t+'_pred']=a_all[:,i]
         reconstruction_dataframe=reconstruction_dataframe.replace([np.inf, -np.inf], 0)
         
@@ -189,16 +191,12 @@ if __name__ == "__main__":
         sns.scatterplot(reconstruction_dataframe['molWt'],reconstruction_dataframe['molWt_pred'])
         sns.lineplot([0,700],[0,700],color='r')
         
-        """
+        
         # Affinities prediction plots
         plt.figure()
         sns.scatterplot(reconstruction_dataframe[targets[0]],reconstruction_dataframe[f'{targets[0]}_pred'])
-        sns.lineplot([0,20],[0,20],color='r')
+        #sns.lineplot([-15,0],[-15,0],color='r')
         
-        plt.figure()
-        sns.scatterplot(reconstruction_dataframe[targets[1]],reconstruction_dataframe[f'{targets[1]}_pred'])
-        sns.lineplot([0,20],[0,20],color='r')
-        """
         # ===================================================================
         # PCA plot 
         # ===================================================================

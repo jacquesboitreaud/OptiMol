@@ -1,6 +1,0 @@
-CCCCc1ccccc1c1ccccc1CCc2ccc(nn2)C(=O)N
-CCc1ccccc1c1ccccc1c1ccccc1C(=O)Nc2ccccn2
-CCc1ccccc1c1ccccc1c1ccccc1CCc2ccccn2
-CCc1ccccc1c1ccccc1c1ccccc1CCc2cnccn2
-CCc1ccccc1c1ccccc1c2ccccc2CCCCCC(=O)N
-CCc1ccccc1c1ccccc1c2ccccc2CCC[C@H]2CCOC2=O

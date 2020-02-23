@@ -38,8 +38,8 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--train', help="path to training dataframe", type=str, default='data/moses_sc_f.csv')
-    parser.add_argument("--cutoff", help="Max number of molecules to use. Set to -1 for all", type=int, default=35)
+    parser.add_argument('--train', help="path to training dataframe", type=str, default='data/moses_sc.csv')
+    parser.add_argument("--cutoff", help="Max number of molecules to use. Set to -1 for all", type=int, default=1000)
     parser.add_argument('--save_path', type=str, default = './saved_model_w/multiaff')
     parser.add_argument('--load_model', type=bool, default=True)
     parser.add_argument('--load_iter', type=int, default=800000)
@@ -52,7 +52,7 @@ if __name__ == "__main__":
 
     parser.add_argument('--lr', type=float, default=1e-3) # Initial learning rate
     parser.add_argument('--clip_norm', type=float, default=50.0) # Gradient clipping max norm
-    parser.add_argument('--beta', type=float, default=0.0) # initial KL annealing weight
+    parser.add_argument('--beta', type=float, default=0.8) # initial KL annealing weight
     parser.add_argument('--step_beta', type=float, default=0.002) # beta increase per step
     parser.add_argument('--max_beta', type=float, default=1.0) # maximum KL annealing weight
     parser.add_argument('--warmup', type=int, default=40000) # number of steps with only reconstruction loss (beta=0)
@@ -68,7 +68,6 @@ if __name__ == "__main__":
      # =======
 
     args=parser.parse_args()
-
 
 
     # config
@@ -170,6 +169,7 @@ if __name__ == "__main__":
 
             # Forward pass
             mu, logv, _, out_smi, out_p, out_a = model(graph,smiles)
+            print(out_a)
 
             #Compute loss terms : change according to supervision
             rec, kl, pmse, amse= Loss(out_smi, smiles, mu, logv, p_target, out_p,\

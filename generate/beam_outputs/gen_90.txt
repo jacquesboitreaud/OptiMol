@@ -1,2 +1,0 @@
-CC(C)c1nc(ccc1c2ccccc1c2ccc[nH]1)C(=O)Cc1ccccc1OCCCCOc1ccc(cc1C)C
-CC1=CC=C(n2nnnnc2ccccc1c6ccccc1C(=O)[n@H](CC(=O)Oc6ccccc1)c2ccccc2C)C
