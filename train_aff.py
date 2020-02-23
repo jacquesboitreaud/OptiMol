@@ -39,7 +39,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--train', help="path to training dataframe", type=str, default='data/moses_sc_f.csv')
-    parser.add_argument("--cutoff", help="Max number of molecules to use. Set to -1 for all", type=int, default=100)
+    parser.add_argument("--cutoff", help="Max number of molecules to use. Set to -1 for all", type=int, default=35)
     parser.add_argument('--save_path', type=str, default = './saved_model_w/multiaff')
     parser.add_argument('--load_model', type=bool, default=True)
     parser.add_argument('--load_iter', type=int, default=800000)

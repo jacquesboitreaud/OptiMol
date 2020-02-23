@@ -269,13 +269,13 @@ class Loader():
 
         if (not self.test_only):
             train_loader = DataLoader(dataset=train_set, shuffle=True, batch_size=self.batch_size,
-                                      num_workers=self.num_workers, collate_fn=collate_block)
+                                      num_workers=self.num_workers, collate_fn=collate_block, drop_last=True)
 
         # valid_loader = DataLoader(dataset=valid_set, shuffle=True, batch_size=self.batch_size,
         #                           num_workers=self.num_workers, collate_fn=collate_block)
 
         test_loader = DataLoader(dataset=test_set, shuffle=not self.test_only, batch_size=self.batch_size,
-                                 num_workers=self.num_workers, collate_fn=collate_block)
+                                 num_workers=self.num_workers, collate_fn=collate_block, drop_last=True)
 
         # return train_loader, valid_loader, test_loader
         if (not self.test_only):

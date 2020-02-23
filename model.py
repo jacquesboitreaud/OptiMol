@@ -212,6 +212,8 @@ class Model(nn.Module):
                 
         """
         batch_size=z.shape[0]
+        #ls= z.shape[1]
+        #print('batch size is', batch_size, 'latent size is ', ls)
         seq_length=self.max_len
         # Create first input to RNN : start token is full of zeros
         start_token = self.rnn_in(z).view(batch_size,1,self.voc_size)
