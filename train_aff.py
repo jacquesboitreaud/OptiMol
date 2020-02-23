@@ -57,12 +57,12 @@ if __name__ == "__main__":
     parser.add_argument('--max_beta', type=float, default=1.0) # maximum KL annealing weight
     parser.add_argument('--warmup', type=int, default=40000) # number of steps with only reconstruction loss (beta=0)
 
-    parser.add_argument('--n_epochs', type=int, default=20) # nbr training epochs
+    parser.add_argument('--n_epochs', type=int, default=60) # nbr training epochs
     parser.add_argument('--anneal_rate', type=float, default=0.9) # Learning rate annealing
     parser.add_argument('--anneal_iter', type=int, default=40000) # update learning rate every _ step
     parser.add_argument('--kl_anneal_iter', type=int, default=2000) # update beta every _ step
-    parser.add_argument('--print_iter', type=int, default=100) # print loss metrics every _ step
-    parser.add_argument('--print_smiles_iter', type=int, default=1000) # print reconstructed smiles every _ step
+    parser.add_argument('--print_iter', type=int, default=1000) # print loss metrics every _ step
+    parser.add_argument('--print_smiles_iter', type=int, default=5000) # print reconstructed smiles every _ step
     parser.add_argument('--save_iter', type=int, default=10000) # save model weights every _ step
 
      # =======
