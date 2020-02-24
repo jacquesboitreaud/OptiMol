@@ -38,7 +38,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--train', help="path to training dataframe", type=str, default='data/moses_sc_f.csv')
+    parser.add_argument('--train', help="path to training dataframe", type=str, default='data/moses_sc_only.csv')
     parser.add_argument("--cutoff", help="Max number of molecules to use. Set to -1 for all", type=int, default=1000)
     parser.add_argument('--save_path', type=str, default = './saved_model_w/multiaff')
     parser.add_argument('--load_model', type=bool, default=True)
@@ -75,7 +75,7 @@ if __name__ == "__main__":
     targets = ['drd3'] # Change target names according to dataset
 
 
-    load_path= 'saved_model_w/baseline'
+    load_path= 'saved_model_w/multiaff_iter_820000.pth'
     log_path='./saved_model_w/logs_g2s'
     load_model = args.load_model
 

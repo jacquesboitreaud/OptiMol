@@ -76,7 +76,9 @@ def pca_plot_hue(z, variable, pca):
     z2 = pca.transform(z)
     
     palettes = ['YlGnBu','GnBu','GnBu_r','BuGn','Blues','YlOrRd_r']
-    chosen=palettes[-1]
+    
+    
+    chosen='YlGnBu_r'
     
     ax=sns.scatterplot(x=z2[:,0], y=z2[:,1], s=15, hue = variable, palette = chosen)
     #plt.title("Latent embeddings visualized in 2D PCA space")

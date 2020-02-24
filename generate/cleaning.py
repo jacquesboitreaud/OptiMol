@@ -6,11 +6,11 @@ Created on Sun Feb 23 20:07:32 2020
 """
 
 
-with open('samp/samp_batch.txt','r') as f:
+with open('samp/hard_samp_batch.txt','r') as f:
         lines = f.readlines()
         
-        
-with open('samp/samp_batch_clean.txt', "w") as f:
+print(len(lines))
+with open('samp/hard_samp_batch.txt', "w") as f:
         for l in lines : 
             try:
                 m= l.split()[1]

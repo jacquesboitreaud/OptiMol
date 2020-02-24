@@ -36,12 +36,12 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-i', '--input_path', help="Path to dataframe with seeds", type=str, default='easy_seeds.csv')
-    parser.add_argument('-d', "--distance", help="Euclidian distance to seed mean", type=int, default=2)
+    parser.add_argument('-i', '--input_path', help="Path to dataframe with seeds", type=str, default='hard_seeds.csv')
+    parser.add_argument('-d', "--distance", help="Euclidian distance to seed mean", type=int, default=1)
     parser.add_argument('-n', "--n_mols", help="Nbr to generate", type=int, default=100)
     parser.add_argument('-m', '--model', help="saved model weights fname. Located in saved_model_w subdir",
                         default='g2s_herg_final.pth')
-    parser.add_argument('-o', '--output_prefix', type=str, default='samp_batch')
+    parser.add_argument('-o', '--output_prefix', type=str, default='hard_samp_batch')
     parser.add_argument('-b', '--use_beam', action='store_true', help="use beam search")
     
 

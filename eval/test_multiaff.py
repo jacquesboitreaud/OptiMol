@@ -50,7 +50,7 @@ if __name__ == "__main__":
     from utils import *
     
     # Eval config 
-    model_path= f'../saved_model_w/multiaff_iter_870000.pth'
+    model_path= f'../saved_model_w/multiaff_iter_810000.pth'
     
     recompute_pca = False
     reload_model = True
@@ -195,7 +195,7 @@ if __name__ == "__main__":
         # Affinities prediction plots
         plt.figure()
         sns.scatterplot(reconstruction_dataframe[targets[0]],reconstruction_dataframe[f'{targets[0]}_pred'])
-        #sns.lineplot([-15,0],[-15,0],color='r')
+        sns.lineplot([-12,-5],[-12,-5],color='r')
         
         # ===================================================================
         # PCA plot 
@@ -217,6 +217,10 @@ if __name__ == "__main__":
         # Plot PCA with desired hue variable 
         plt.figure()
         pca_plot_hue(z= z_all, variable = p_target_all[:,1], pca = fitted_pca)
+        
+        # PCA Affinities
+        plt.figure()
+        pca_plot_hue(z= z_all, variable = a_target_all[:,0], pca = fitted_pca)
         
         # ====================================================================
         # Random sampling in latent space 

@@ -462,7 +462,10 @@ def Loss(out, indices, mu, logvar, y_p, p_pred,
         aff_loss=0
         for i in range(y_a.shape[0]):
             if(y_a[i]<0):
-                aff_loss+= F.mse_loss(a_pred[i],y_a[i],reduction='sum')
+                if(y_a[i]<-9 or y_a[i]>-7):
+                    aff_loss+= 3*F.mse_loss(a_pred[i],y_a[i],reduction='sum')
+                else:
+                    aff_loss+= F.mse_loss(a_pred[i],y_a[i],reduction='sum')        
     else: 
         aff_loss = torch.tensor(0) # No affinity prediction 
     
