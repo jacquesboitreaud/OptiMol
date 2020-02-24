@@ -36,18 +36,19 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-i', '--input_path', help="Path to dataframe with seeds", type=str, default='drd3_seeds.csv')
-    parser.add_argument('-d', "--distance", help="Euclidian distance to seed mean", type=int, default=1)
-    parser.add_argument('-n', "--n_mols", help="Nbr to generate", type=int, default=15)
+    parser.add_argument('-i', '--input_path', help="Path to dataframe with seeds", type=str, default='easy_seeds.csv')
+    parser.add_argument('-d', "--distance", help="Euclidian distance to seed mean", type=int, default=2)
+    parser.add_argument('-n', "--n_mols", help="Nbr to generate", type=int, default=100)
     parser.add_argument('-m', '--model', help="saved model weights fname. Located in saved_model_w subdir",
                         default='g2s_herg_final.pth')
-    parser.add_argument('-o', '--output_prefix', type=str, default='gen')
+    parser.add_argument('-o', '--output_prefix', type=str, default='samp_batch')
     parser.add_argument('-b', '--use_beam', action='store_true', help="use beam search")
     
 
     args = parser.parse_args()
 
     # ==============
+    
     
     disable_rdkit_logging() # function from utils to disable rdkit logs
 
@@ -62,12 +63,15 @@ if __name__ == "__main__":
     
     data = molDataset(maps_path='../map_files/',
                       csv_path=None)
+    
+    """
     smiles = pd.read_csv('drd3_seeds.csv')
     smiles=list(smiles['can'])
     mols = [pybel.readstring('smi',s) for s in smiles]
     fps = [m.calcfp() for m in mols ]
+    """
     
-    # Pass the actives 
+    # Pass the seeds 
     data.pass_dataset_path(args.input_path)
     
     generated, seeds = [], []
@@ -95,24 +99,28 @@ if __name__ == "__main__":
         nbr_out = 0
         
         if(args.use_beam):
-            output_filepath = f'beam_outputs/{args.output_prefix}.txt'
+            output_filepath = f'samp/{args.output_prefix}.txt'
         else:
-            output_filepath = f'outputs/{args.output_prefix}.txt'
+            output_filepath = f'samp/{args.output_prefix}.txt'
         with open(output_filepath, 'a') as f:
             for s in unique:
                 if('CCCCCCCCCCC' in s or 'ccccccccc' in s):
                     pass
                 else:
                     try:
-                        m=pybel.readstring('smi',s)
+                        m=Chem.MolFromSmiles(s)
+                        #m=pybel.readstring('smi',s)
+                        """
                         fp = m.calcfp()
                         sim = fp|fps[i]
                         print(sim)
-                        nbr_out+=1
-                        f.write(f'seed_{i}')
-                        f.write('\t')
-                        f.write(s)
-                        f.write('\n')
+                        """
+                        if(m!=None):
+                            nbr_out+=1
+                            f.write(f'seed_{i}_{nbr_out}')
+                            f.write('\t')
+                            f.write(s)
+                            f.write('\n')
                     except:
                         pass
                         

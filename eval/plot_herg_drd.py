@@ -89,15 +89,6 @@ if(__name__=='__main__'):
     for i in range(len(Z)):
         D_a = pairwise_distances(Z[i], metric='cosine')
         print(np.mean(D_a))
-    
-    """
-    hclust = AgglomerativeClustering(distance_threshold=1,n_clusters = None,
-                                        linkage="average", affinity='precomputed')
-    hclust=hclust.fit(D_a)
-    plt.figure()
-    plot_dendrogram(hclust,truncate_mode='level', p=10)
-    plt.show()
-    """
 
 s= silhouette_score(z_all, lab_all, metric='cosine')
 print('silhouette score ', s)

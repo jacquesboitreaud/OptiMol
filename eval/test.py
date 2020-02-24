@@ -48,7 +48,7 @@ if __name__ == "__main__":
     from utils import *
     
     # Eval config 
-    model_path= f'../saved_model_w/baseline.pth'
+    model_path= f'../saved_model_w/g2s_herg_final.pth'
     
     recompute_pca = False
     reload_model = True

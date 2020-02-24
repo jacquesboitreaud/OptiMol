@@ -377,7 +377,7 @@ class Model(nn.Module):
             samples = torch.squeeze(samples)
         else:
             samples = sp
-            
+        """
         if(beam_search):
             dec = self.decode_beam(samples)
         else:
@@ -391,6 +391,8 @@ class Model(nn.Module):
             a = self.aff(samples)
         
         return dec, p, a
+        """
+        return samples
     
     def sample_z_prior(self, n_mols):
         """Sampling z ~ p(z) = N(0, I)
