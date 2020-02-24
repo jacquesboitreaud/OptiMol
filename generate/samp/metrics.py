@@ -5,7 +5,7 @@ Created on Mon Feb 24 09:04:06 2020
 @author: jacqu
 """
 
-results_file = 'hard_herg_out/Final_results.txt'
+results_file = 'herg_out/Final_results.txt'
 
 with open(results_file,'r') as f:
     lines = f.readlines()
