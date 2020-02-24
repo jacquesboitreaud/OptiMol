@@ -1266,7 +1266,6 @@ seed_121_12	C=CCn1nnc(C=CCC=CC=C)c1CCc1ccccc1
 seed_121_13	CC(Cl)SCC(=O)NCCc1ccccc1Cl
 seed_121_14	CC(Cl)SCCSc1ccccc1Cl
 seed_121_15	CC(Cl)SCCSc1ccccc1Cl
-l
 seed_121_16	CS(=O)(=O)c1ccccc1SCCCCCc1ccco1
 seed_121_17	CS(=O)c1ccccc1SCCCCCc1ccco1
 seed_121_18	Cc1cccc(CCCCCCCC(=O)c2ccccc2)n1
