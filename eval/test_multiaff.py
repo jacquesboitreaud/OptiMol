@@ -8,6 +8,8 @@ Evaluate training of Graph2Smiles VAE (RGCN encoder, GRU decoder, beam search de
 
 Open multitask affinity model and test it 
 
+Plot all diagnostic plots 
+
 
 """
 import os
@@ -50,7 +52,7 @@ if __name__ == "__main__":
     from utils import *
     
     # Eval config 
-    model_path= f'../saved_model_w/multiaff_iter_810000.pth'
+    model_path= f'../saved_model_w/g2s_multitask_affinity.pth'
     
     recompute_pca = False
     reload_model = True
@@ -63,9 +65,9 @@ if __name__ == "__main__":
     plot_target = 'drd3'
 
     #Load eval set: USE MOSES TEST SET !!!!!!!!!!!!!!!!!
-    loaders = Loader(csv_path='../data/moses_sc_f.csv',
+    loaders = Loader(csv_path='../data/moses_affs_test.csv',
                      maps_path= '../map_files/',
-                     n_mols=1000,
+                     n_mols=100,
                      num_workers=0, 
                      batch_size=100, 
                      props = properties,
@@ -155,8 +157,8 @@ if __name__ == "__main__":
         
         plot_kde(z_all)
         
-        D_a = pairwise_distances(z_all, metric='l2')
-        print('Average l2 distance in latent space : ', np.mean(D_a))
+        D_a = pairwise_distances(z_all, metric='cosine')
+        print('Average cosine distance in latent space : ', np.mean(D_a))
         
         # ===================================================================
         # Decoding statistics 
@@ -197,6 +199,9 @@ if __name__ == "__main__":
         sns.scatterplot(reconstruction_dataframe[targets[0]],reconstruction_dataframe[f'{targets[0]}_pred'])
         sns.lineplot([-12,-5],[-12,-5],color='r')
         
+        MAE = np.mean(np.abs(reconstruction_dataframe[targets[0]]-reconstruction_dataframe[f'{targets[0]}_pred']))
+        print(f'MAE = {MAE} kcal/mol')
+        
         # ===================================================================
         # PCA plot 
         # ===================================================================
@@ -220,13 +225,13 @@ if __name__ == "__main__":
         
         # PCA Affinities
         plt.figure()
-        pca_plot_hue(z= z_all, variable = a_target_all[:,0], pca = fitted_pca)
+        pca_plot_hue(z= z_all, variable = a_all[:,0], pca = fitted_pca)
         
         # ====================================================================
         # Random sampling in latent space 
         # ====================================================================
         
-        r = torch.tensor(2*np.random.normal(size = z.shape), dtype=torch.float).to('cuda')
+        r = torch.tensor(np.random.normal(size = z.shape), dtype=torch.float).to('cuda')
         
         out = model.decode(r)
         v, indices = torch.max(out, dim=1)

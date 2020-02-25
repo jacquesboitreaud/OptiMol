@@ -3,6 +3,11 @@
 Created on Sun Feb 23 20:07:32 2020
 
 @author: jacqu
+
+
+Cleans text file for formatting errors (smiles which contained '\n' and got split into two when writing)
+
+Run it before using the .txt file for docking or anyother downstream task !
 """
 
 

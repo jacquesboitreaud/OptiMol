@@ -40,7 +40,7 @@ if __name__ == "__main__":
     parser.add_argument('-d', "--distance", help="Euclidian distance to seed mean", type=int, default=1)
     parser.add_argument('-n', "--n_mols", help="Nbr to generate", type=int, default=100)
     parser.add_argument('-m', '--model', help="saved model weights fname. Located in saved_model_w subdir",
-                        default='g2s_herg_final.pth')
+                        default='baseline.pth')
     parser.add_argument('-o', '--output_prefix', type=str, default='hard_samp_batch')
     parser.add_argument('-b', '--use_beam', action='store_true', help="use beam search")
     
@@ -64,12 +64,11 @@ if __name__ == "__main__":
     data = molDataset(maps_path='../map_files/',
                       csv_path=None)
     
-    """
+    
     smiles = pd.read_csv('drd3_seeds.csv')
     smiles=list(smiles['can'])
     mols = [pybel.readstring('smi',s) for s in smiles]
-    fps = [m.calcfp() for m in mols ]
-    """
+    fps = [m.calcfp('FP2') for m in mols ]
     
     # Pass the seeds 
     data.pass_dataset_path(args.input_path)
@@ -103,17 +102,19 @@ if __name__ == "__main__":
         else:
             output_filepath = f'samp/{args.output_prefix}.txt'
         with open(output_filepath, 'a') as f:
+            SIM = 0
+            cpt=0
             for s in unique:
                 if('CCCCCCCCCCC' in s or 'ccccccccc' in s):
                     pass
                 else:
                     try:
-                        m=Chem.MolFromSmiles(s)
-                        #m=pybel.readstring('smi',s)
-                        """
-                        fp = m.calcfp()
-                        sim = fp|fps[i]
-                        print(sim)
+                        #m=Chem.MolFromSmiles(s)
+                        m=pybel.readstring('smi',s)
+                        fp = m.calcfp('FP2')
+                        SIM += fp|fps[i]
+                        nbr_out+=1
+                        
                         """
                         if(m!=None):
                             nbr_out+=1
@@ -121,7 +122,10 @@ if __name__ == "__main__":
                             f.write('\t')
                             f.write(s)
                             f.write('\n')
+                        """
                     except:
                         pass
+        print(SIM/nbr_out)
+                
                         
         print(f'wrote {nbr_out} mols to {output_filepath}')

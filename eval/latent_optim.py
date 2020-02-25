@@ -5,6 +5,8 @@ Created on Fri Jul  5 14:45:02 2019
 @author: jacqu
 
 Gradient descent optimization of objective target function in latent space.
+
+Starts from 1 seed compound or random point in latent space (sampled from prior N(0,1))
 """
 
 import os
@@ -34,14 +36,16 @@ if(__name__=='__main__'):
     
     # Set to true if providing a seed compound to start optimization. Otherwise, random start in the latent space
     seed= True
-    N_steps=10
-    lr=0.001
+    N_steps=100
+    lr=0.1
     size = (120, 120) # plotting 
     
-    def eps(props):
+    def eps(props, aff):
         # props = [QED, logP, molWt]
+        # aff = [drd3_aff] is negative !!!!
         QED, logP, molWt = props
-        return (logP -2)**2 + (QED-1)**2
+        #return  (QED-1)**2 + aff[0]
+        return  -10*QED + aff[0]
     
     molecules =[]
     data = molDataset(maps_path='../map_files/',
@@ -49,7 +53,7 @@ if(__name__=='__main__'):
     
     if(seed):
         # Begin optimization with seed compound : a DUD decoy   
-        s_seed='COc1ccc(CN(C)C(=O)C(=O)N[C@@H](C)c2ccc(F)cc2)c(O)c1'
+        s_seed='O=C(NC1=CCCC1=O)NC1=CCN(c2ncnc3ccccc23)CC1'
         m0= Chem.MolFromSmiles(s_seed)
         Draw.MolToMPL(m0, size=size)
         plt.show(block=False)
@@ -69,30 +73,38 @@ if(__name__=='__main__'):
         z.requires_grad=True
     
     # ================= Optimization process ================================
-    
     for i in range(N_steps):
         # Objective function 
-        epsilon= eps(model.props(z)[0])
+        epsilon= eps(model.props(z)[0], model.affs(z)[0])
         g=torch.autograd.grad(epsilon,z)
         with torch.no_grad(): # Gradient descent, don't track
             z = z - lr*g[0]
-            lr=0.9*lr
+            if(i%20==0):
+                lr=0.9*lr
             
             out=model.decode(z)
             smi = model.probas_to_smiles(out)[0]
+            
+            #out=model.decode_beam(z)
+            #smi = model.beam_out_to_smiles(out)[0]
+            
             print(smi)
             m=Chem.MolFromSmiles(smi)
-
-            if(m!=None):
+            logP=0
+            if(i==0):
+                prev_s=smi
+            
+            if(m!=None and smi!=prev_s):
                 Draw.MolToMPL(m, size=size)
                 plt.show(block=False)
                 plt.pause(0.1)
-            logP=0
-            if(m!=None):
+            
+                prev_s=smi
                 logP= Chem.Crippen.MolLogP(m)
                 qed = Chem.QED.default(m)
                 print(f'predicted logP: {model.props(z)[0,1].item():.2f}, true: {logP:.2f}')
                 print(f'predicted QED: {model.props(z)[0,0].item():.2f}, true: {qed:.2f}')
+                print(f'predicted aff: {model.affs(z)[0,0].item():.2f}')
             else:
                 print(f'predicted logP / QED : {model.props(z)[0,1].item():.2f} / {model.props(z)[0,0].item():.2f}, invalid smiles')
         z.requires_grad =True

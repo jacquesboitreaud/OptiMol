@@ -48,7 +48,7 @@ if __name__ == "__main__":
     from utils import *
     
     # Eval config 
-    model_path= f'../saved_model_w/g2s_herg_final.pth'
+    model_path= f'../saved_model_w/baseline.pth'
     
     recompute_pca = False
     reload_model = True
@@ -57,11 +57,9 @@ if __name__ == "__main__":
     properties = ['QED','logP','molWt']
     targets = ['aa2ar','drd3']
     
-    # Select only DUDE subset to plot in PCA space 
-    plot_target = 'aa2ar'
 
     #Load eval set: USE MOSES TEST SET !!!!!!!!!!!!!!!!!
-    loaders = Loader(csv_path='../data/moses_test.csv',
+    loaders = Loader(csv_path='../data/drd3_dude.csv',
                      maps_path= '../map_files/',
                      n_mols=100,
                      num_workers=0, 
@@ -153,8 +151,8 @@ if __name__ == "__main__":
         
         plot_kde(z_all)
         
-        D_a = pairwise_distances(z_all, metric='l2')
-        print('Average l2 distance in latent space : ', np.mean(D_a))
+        D_a = pairwise_distances(z_all, metric='cosine')
+        print('Average cosine distance in latent space : ', np.mean(D_a))
         
         # ===================================================================
         # Decoding statistics 
@@ -223,8 +221,8 @@ if __name__ == "__main__":
         # ====================================================================
         # Random sampling in latent space 
         # ====================================================================
-        
-        r = torch.tensor(2*np.random.normal(size = z.shape), dtype=torch.float).to('cuda')
+        """
+        r = torch.tensor(*np.random.normal(size = z.shape), dtype=torch.float).to('cuda')
         
         out = model.decode(r)
         v, indices = torch.max(out, dim=1)
@@ -236,7 +234,7 @@ if __name__ == "__main__":
         
         mols= [Chem.MolFromSmiles(s) for s in list(sampling_df['output smiles'])]
         fig = Draw.MolsToGridImage(mols)
-        """
+        
         for m in mols:
             fig = Draw.MolToMPL(m, size = (100,100))
         """
