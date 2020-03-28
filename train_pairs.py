@@ -34,8 +34,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     
     parser.add_argument('--save_path', type=str, default = './saved_model_w/g2s_herg')
-    parser.add_argument('--load_model', type=bool, default=True)
+    parser.add_argument('--load_model', type=bool, default=False)
     parser.add_argument('--load_fname', type=str, default='baseline.pth')
+    
+    parser.add_argument('--dataset', type=str, default='data/exp/offtarget/herg_drd.csv')
     
     parser.add_argument('--use_aff', type=bool, default=False)
     
@@ -75,10 +77,9 @@ if __name__ == "__main__":
     log_path='./saved_model_w/logs_pairs'
     
     # Dataloading 
-    data = 'data/exp/herg_drd.csv'
 
     #Load train set and test set
-    loaders = Loader(csv_data=data,
+    loaders = Loader(csv_data=args.dataset,
                      num_workers=0, 
                      batch_size=batch_size, 
                      props = properties,

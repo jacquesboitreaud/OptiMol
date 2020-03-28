@@ -34,7 +34,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--save_path', type=str, default='./saved_model_w/g2s_triplets')
-    parser.add_argument('--load_model', type=bool, default=True)
+    parser.add_argument('--load_model', type=bool, default=False)
     parser.add_argument('--load_fname', type=str, default='baseline.pth')
 
     parser.add_argument('--use_aff', type=bool, default=False)

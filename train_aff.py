@@ -75,7 +75,7 @@ if __name__ == "__main__":
     targets = ['drd3'] # Change target names according to dataset
 
 
-    load_path= 'saved_model_w/multiaff_iter_820000.pth'
+    load_path= 'saved_model_w/g2s_multitask_affinity.pth'
     log_path='./saved_model_w/logs_g2s'
     load_model = args.load_model
 
@@ -125,7 +125,7 @@ if __name__ == "__main__":
     if(load_model):
         
         # Workaround to be able to load a model with not same size of affinity predictor... 
-        pretrained_dict = torch.load(f'{load_path}.pth')
+        pretrained_dict = torch.load(f'{load_path}')
         model_dict = model.state_dict()
         # 1. filter out unnecessary keys
         pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict and v.size() == model_dict[k].size()}

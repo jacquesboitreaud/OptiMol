@@ -46,14 +46,18 @@ if __name__=='__main__':
                         test_only=True, num_workers=0)
     
     # Load dataframe with mols to embed
-    smiles_df=pd.read_csv('data/moses_test.csv')
+    csv = 'data/moses_test.csv'
+    smiles_df=pd.read_csv(csv, nrows = 100 ) # cutoff csv at nrows
     #smiles_df=smiles_df.sample(1000)
     
     # embed molecules in latent space of dimension 64
-    print('Embedding all moses_test molecules')
+    print('>>> Start computation of molecules embeddings...')
     z = model.embed( dataloader, smiles_df) # z has shape (N_molecules, latent_size)
     
-    np.save('latent_moses_test',z)
+    # Save molecules latent embeds to pickle.
+    with open('latent_rpz.pickle','wb') as f:
+        pickle.dump(z,f)
+    print(f'>>> Saved latent representations of {z.shape[0]} molecules to ~/latent_rpz.pickle')
     
     # Decode to smiles 
     #decoded = model.decode(torch.tensor(z, dtype=torch.float32).to(device))

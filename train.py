@@ -17,7 +17,7 @@ pass corresponding args + load_model = True
 """
 
 import argparse
-import sys
+import sys, os
 import torch
 import numpy as np
 
@@ -30,6 +30,9 @@ import torch.nn.utils.clip_grad as clip
 import torch.nn.functional as F
 
 if __name__ == "__main__":
+    script_dir = os.path.dirname(os.path.realpath(__file__))
+    sys.path.append(os.path.join(script_dir, 'dataloaders'))
+    sys.path.append(os.path.join(script_dir, 'data_processing'))
     from model import Model, Loss, RecLoss
     from dataloaders.molDataset import molDataset, Loader
     from utils import *
