@@ -247,7 +247,7 @@ class Loader():
 
     def get_data(self):
         n = len(self.dataset)
-        print(f"Dataset contains {n} samples")
+        
         indices = list(range(n))
         np.random.shuffle(indices)
         if (not self.test_only):
@@ -265,6 +265,7 @@ class Loader():
         train_set = Subset(self.dataset, train_indices)
         valid_set = Subset(self.dataset, valid_indices)
         test_set = Subset(self.dataset, test_indices)
+        print(f"Dataset contains {n} samples (train subset: {len(train_set)}, Test subset:{len(test_set)}) ")
         print(f"Train subset contains {len(train_set)} samples")
         print(f"Test subset contains {len(test_set)} samples")
 

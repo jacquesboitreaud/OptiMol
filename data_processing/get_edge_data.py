@@ -15,7 +15,7 @@ if __name__ == "__main__":
     sys.path.append(os.path.join(script_dir, '..'))
 
 import pandas as pd
-import pysmiles
+import argparse
 import networkx as nx
 import numpy as np
 from tqdm import tqdm
@@ -24,15 +24,22 @@ from multiprocessing import Pool, freeze_support, RLock
 
 from data_processing.rdkit_to_nx import smiles_to_nx
 
+if __name__=='__main__':
 
-def main():
-    freeze_support()
-    # PARAMS : path to data and suffix for created pickle file. 
-    suffix = ''
-    data = pd.read_csv('data/DUD_clean.csv')
-    smiles = list(data['can'])
-    data = pd.read_csv('data/CHEMBL_formatted.csv')
-    smiles = smiles + list(data['can'])
+    parser = argparse.ArgumentParser()
+    
+    parser.add_argument('-csv', '--csv', help="path to molecules dataset. Column with smiles labeled 'can'", type=str, default='../data/moses_train.csv')
+    
+    # =======
+
+    args=parser.parse_args()
+
+    data = pd.read_csv(args.csv)
+    try:
+        smiles = list(data['can'])
+    except:
+        print('No column with label "can" found in csv file. Assuming canonical smiles are in column 0.')
+        smiles = list(data.iloc[0])
 
     print('Parsing ', len(smiles), ' molecules')
 
@@ -77,14 +84,9 @@ def main():
     formal_charges = list(formal_charges)
     formal_charges = {t: i for (i, t) in enumerate(formal_charges)}
 
-    # np.save('../edge_map.npy',edge_map)
-
-    with open(f"map_files/edges_and_nodes_map{suffix}.pickle", "wb") as f:
+    with open("map_files/edges_and_nodes_map.pickle", "wb") as f:
         pickle.dump(edge_types, f)
         pickle.dump(atom_types, f)
         pickle.dump(chiral_types, f)
         pickle.dump(formal_charges, f)
-
-
-if (__name__ == '__main__'):
-    main()
+    print('Successfully built features maps. ')

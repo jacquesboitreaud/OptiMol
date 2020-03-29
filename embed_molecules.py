@@ -17,6 +17,7 @@ import numpy as np
 import pandas as pd 
 import torch
 import pickle
+import argparse
 
 
 from rdkit import Chem
@@ -30,7 +31,19 @@ if __name__=='__main__':
     from data_processing.rdkit_to_nx import smiles_to_nx
     from model import Model 
     
-    model_path= f'saved_model_w/baseline.pth'
+    parser = argparse.ArgumentParser()
+    
+    parser.add_argument('-csv', '--csv', help="path to csv containing molecules", type=str, default='data/moses_test.csv')
+    parser.add_argument('-n', "--cutoff", help="Number of molecules to embed. -1 for all", type=int, default=10)
+    parser.add_argument('-m', '--model', type=str, default='saved_model_w/baseline.pth')
+    
+    parser.add_argument('-d', '--decode', action='store_true', default=False)
+    
+    # =====================
+    
+    args=parser.parse_args()
+    
+    model_path= args.model
     
     # Load model (on gpu if available)
     params = pickle.load(open('saved_model_w/params.pickle','rb')) # model hparams
@@ -46,9 +59,10 @@ if __name__=='__main__':
                         test_only=True, num_workers=0)
     
     # Load dataframe with mols to embed
-    csv = 'data/moses_test.csv'
-    smiles_df=pd.read_csv(csv, nrows = 100 ) # cutoff csv at nrows
-    #smiles_df=smiles_df.sample(1000)
+    if(args.cutoff>0):
+        smiles_df=pd.read_csv(args.csv, nrows = args.cutoff) # cutoff csv at nrows
+    else:
+        smiles_df=pd.read_csv(args.csv)
     
     # embed molecules in latent space of dimension 64
     print('>>> Start computation of molecules embeddings...')
@@ -60,8 +74,10 @@ if __name__=='__main__':
     print(f'>>> Saved latent representations of {z.shape[0]} molecules to ~/latent_rpz.pickle')
     
     # Decode to smiles 
-    #decoded = model.decode(torch.tensor(z, dtype=torch.float32).to(device))
-    #smiles_out = model.probas_to_smiles(decoded)
+    if(args.decode):
+        print('>>> Decoding to smiles')
+        decoded = model.decode(torch.tensor(z, dtype=torch.float32).to(device))
+        smiles_out = model.probas_to_smiles(decoded)
     
     """
     # Plotting molecules 
