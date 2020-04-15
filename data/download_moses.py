@@ -15,9 +15,14 @@ train = moses.get_dataset('train')
 test = moses.get_dataset('test')
 test_scaffolds = moses.get_dataset('test_scaffolds')
 
-train = pd.DataFrame(train)
-test = pd.DataFrame(test)
-scaf = pd.DataFrame(test_scaffolds)
+train = pd.DataFrame(train).rename(columns = {0:'smiles'})
+
+test = pd.DataFrame(test).rename(columns = {0:'smiles'})
+
+scaf = pd.DataFrame(test_scaffolds).rename(columns = {0:'smiles'})
+
+
+print(scaf.head())
 
 print('>>> Saving data to csv files in ./data')
 train.to_csv('data/moses_train.csv')

@@ -23,6 +23,8 @@ import numpy as np
 import pickle
 import json
 import networkx as nx
+import selfies
+
 from torch.utils.data import Dataset, DataLoader, Subset
 from data_processing.rdkit_to_nx import smiles_to_nx
 
@@ -42,7 +44,7 @@ def collate_block(samples):
 
 def oh_tensor(category, n):
     t = torch.zeros(n, dtype=torch.float)
-    t[category] = 1
+    t[category] = 1.0
     return t
 
 
@@ -53,15 +55,13 @@ class molDataset(Dataset):
 
     def __init__(self, csv_path,
                  maps_path,
+                 vocab,
+                 props,
+                 targets,
                  n_mols=-1,
-                 props=None,
-                 targets=None,
-                 debug=False,
-                 shuffle=False,
-                 select_target=None):
+                 debug=False):
 
-        print('**************** dataset building ******************')
-        # 1/ two solutions: dataframe given or csv path given 
+        # 0/ two solutions: empty loader or csv path given 
         if (csv_path is None):
             print("Empty dataset initialized. Use pass_dataset or pass_dataset_path to add molecules.")
             self.df = None
@@ -75,12 +75,6 @@ class molDataset(Dataset):
                 print('columns:', self.df.columns)
             else:
                 self.df = pd.read_csv(csv_path)
-                self.n = self.df.shape[0]
-                print('Dataset columns:', self.df.columns)
-
-            if (select_target != None):  # keep only actives and decoys for a specific target (use for test plots)
-                print('Restricting dataset to a selected target')
-                self.df = self.df[self.df[select_target] != 0]
                 self.n = self.df.shape[0]
                 print('Dataset columns:', self.df.columns)
 
@@ -99,20 +93,32 @@ class molDataset(Dataset):
 
         self.num_edge_types, self.num_atom_types = len(self.edge_map), len(self.at_map)
         self.num_charges, self.num_chir = len(self.charges_map), len(self.chi_map)
-        print('Loaded edge and atoms types maps.')
+        print('> Loaded edge and atoms types to one-hot mappings')
 
-        self.emb_size = self.num_atom_types + self.num_charges  # node embedding size
+        self.emb_size = 16  # node embedding size = number of node features 
 
-        # 3/ =========== SMILES handling : ==================
+        # 3/ =========== SMILES handling : ================== ************************** TODO ******************
+        
+        self.language = vocab # smiles or selfies 
+        
+        if(self.language == 'smiles'):
+            
+            vocab = os.path.join(maps_path, "zinc_chars.json")
+            
+        elif(self.language == 'selfies'):
+            
+        else:
+            print("decode format not understood: 'smiles' or 'selfies' ")
+            raise NotImplementedError
 
-        char_file = os.path.join(maps_path, "zinc_chars.json")
-        self.char_list = json.load(open(char_file))
+        self.max_smi_len = 151  # can be changed
+        self.char_list = json.load(open(vocab))
         self.char_to_index = dict((c, i) for i, c in enumerate(self.char_list))
         self.index_to_char = dict((i, c) for i, c in enumerate(self.char_list))
         self.n_chars = len(self.char_list)
 
-        self.max_smi_len = 151  # can be changed
-        print(f"Loaded smiles characters file. Max smiles length is {self.max_smi_len}")
+
+        print(f"> Loaded alphabet. Max sequence length allowed is {self.max_smi_len}")
 
         if (debug):
             # special case for debugging
@@ -137,15 +143,49 @@ class molDataset(Dataset):
 
     def __len__(self):
         return self.n
+    
+    def _get_selfie_and_smiles_alphabets(self):
+        """
+        Returns alphabet and length of largest molecule in SMILES and SELFIES, for the training set passed.
+            self.df Column's name must be 'smiles'.
+        output:
+            - selfies alphabet
+            - longest selfies string
+            - smiles alphabet (character based)
+            - longest smiles string
+        """
+    
+        smiles_list = np.asanyarray(self.df.smiles)
+        
+        smiles_alphabet=list(set(''.join(smiles_list)))
+        largest_smiles_len=len(max(smiles_list, key=len))
+        selfies_list=[]    
+        selfies_len=[]
+        
+        print('--> Translating SMILES to SELFIES...')
+        for individual_smile in smiles_list:
+            individual_selfie=selfies.encoder(individual_smile)
+            selfies_list.append(individual_selfie)
+            selfies_len.append(len(individual_selfie)-len(individual_selfie.replace('[',''))) # len of SELFIES
+        selfies_alphabet_pre=list(set(''.join(selfies_list)[1:-1].split('][')))
+        selfies_alphabet=[]
+        for selfies_element in selfies_alphabet_pre:
+            selfies_alphabet.append('['+selfies_element+']')        
+        largest_selfies_len=max(selfies_len)
+        print('Finished translating SMILES to SELFIES.')
+        
+        return (selfies_alphabet, largest_selfies_len, smiles_alphabet, largest_smiles_len)
 
     def __getitem__(self, idx):
-        # Return as dgl graph, smiles (indexes), targets properties.
+        # Returns tuple 
+        # Smiles has to be in first column of the csv !!
 
-        row = self.df.iloc[idx]
-        smiles = row['can']
+        row = self.df.iloc[idx,:]
+        smiles = row.smiles
+        
         # Checks
         if (len(smiles) > self.max_smi_len):
-            print(f'smiles length error: l={len(smiles)}, longer than {self.max_smi_len}')
+            print(f'smiles length error: l={len(smiles)} > {self.max_smi_len}')
 
         # 1 - Graph building
         graph = smiles_to_nx(smiles)
@@ -159,58 +199,71 @@ class molDataset(Dataset):
                        (nx.get_node_attributes(graph, 'atomic_num')).items()}
             nx.set_node_attributes(graph, name='atomic_num', values=at_type)
         except KeyError:
-            print(smiles)
+            print('Atom type to one-hot error for input ', smiles)
 
         at_charge = {a: oh_tensor(self.charges_map[label], self.num_charges) for a, label in
                      (nx.get_node_attributes(graph, 'formal_charge')).items()}
         nx.set_node_attributes(graph, name='formal_charge', values=at_charge)
+        
+        hydrogens = {a: torch.tensor(self.chi_map[label], dtype=torch.float) for a, label in
+                   (nx.get_node_attributes(graph, 'num_explicit_hs')).items()}
+        nx.set_node_attributes(graph, name='num_explicit_hs', values=hydrogens)
+        
+        aromatic = {a: torch.tensor(self.chi_map[label], dtype=torch.float) for a, label in
+                   (nx.get_node_attributes(graph, 'is_aromatic')).items()}
+        nx.set_node_attributes(graph, name='is_aromatic', values=aromatic)
 
-        at_chir = {a: torch.tensor(self.chi_map[label]) for a, label in
+        at_chir = {a: torch.tensor(self.chi_map[label], dtype=torch.float) for a, label in
                    (nx.get_node_attributes(graph, 'chiral_tag')).items()}
         nx.set_node_attributes(graph, name='chiral_tag', values=at_chir)
 
         # to dgl 
         g_dgl = dgl.DGLGraph()
+        node_features = ['atomic_num', 'formal_charge', 'num_explicit_hs', 'is_aromatic', 'chiral_tag']
         g_dgl.from_networkx(nx_graph=graph,
-                            node_attrs=['atomic_num', 'chiral_tag', 'formal_charge', 'num_explicit_hs', 'is_aromatic'],
-                            edge_attrs=['one_hot'])
+                            node_attrs=node_features,
+                            edge_attrs=['one_hot']) 
+        
+        N=g_dgl.number_of_nodes()
 
-        g_dgl.ndata['h'] = torch.cat([g_dgl.ndata['formal_charge'], g_dgl.ndata['atomic_num']], dim=1)
+        g_dgl.ndata['h'] = torch.cat([g_dgl.ndata[f].view(N,-1) for f in node_features], dim=1)
 
-        # 2 - Smiles array 
+        # 2 - Smiles / selfies array 
+        
         a = np.zeros(self.max_smi_len)
         idces = [self.char_to_index[c] for c in smiles]
         idces.append(self.char_to_index['\n'])
         a[:len(idces)] = idces
 
         # 3 - Optional props and affinities 
+        
         props, targets = 0, 0
-        if (self.props != None):
+        if len(self.props)>0:
             props = np.array(row[self.props], dtype=np.float32)
 
-        if (self.targets != None):
+        if len(self.targets)>0:
             try:
                 targets = np.array(row[self.targets], dtype=np.float32)
             except:
                 targets = np.zeros(len(self.targets), dtype=np.float32)
             targets = np.nan_to_num(targets)
+            
 
         return g_dgl, a, props, targets
 
 
 class Loader():
     def __init__(self,
+                 props, 
+                 targets,
                  csv_path=None,
                  maps_path ='../map_files/',
+                 vocab='smiles',
                  n_mols=None,
-                 props=None,
-                 targets=None,
                  batch_size=64,
-                 num_workers=20,
+                 num_workers=12,
                  debug=False,
-                 test_only=False,
-                 shuffle=False,
-                 select_target=None):
+                 test_only=False):
         """
         Wrapper for test loader, train loader 
         Uncomment to add validation loader 
@@ -218,16 +271,16 @@ class Loader():
 
         """
 
+        self.vocab = vocab
         self.batch_size = batch_size
         self.num_workers = num_workers
-        self.dataset = molDataset(csv_path,
-                                  maps_path, 
-                                  n_mols,
-                                  debug=debug,
-                                  props=props,
+        self.dataset = molDataset(props=props,
                                   targets=targets,
-                                  shuffle=shuffle,
-                                  select_target=select_target)
+                                  csv_path=csv_path,
+                                  maps_path=maps_path, 
+                                  vocab=vocab,
+                                  n_mols=n_mols,
+                                  debug=debug)
 
         self.num_edge_types, self.num_atom_types = self.dataset.num_edge_types, self.dataset.num_atom_types
         self.num_charges = self.dataset.num_charges
@@ -250,33 +303,31 @@ class Loader():
         
         indices = list(range(n))
         np.random.shuffle(indices)
-        if (not self.test_only):
-            split_train, split_valid = 0.95, 0.95
+        if (not self.test_only): # 90% train ; 10 % valid
+            split_train, split_valid = 0.9, 0.9
             train_index, valid_index = int(split_train * n), int(split_valid * n)
 
-        else:
+        else: # all mols in test (use for test time)
             split_train, split_valid = 0, 0
             train_index, valid_index = 0, 0
 
         train_indices = indices[:train_index]
-        valid_indices = indices[train_index:valid_index]
+
         test_indices = indices[valid_index:]
 
         train_set = Subset(self.dataset, train_indices)
-        valid_set = Subset(self.dataset, valid_indices)
+
         test_set = Subset(self.dataset, test_indices)
         print(f"Dataset contains {n} samples (train subset: {len(train_set)}, Test subset:{len(test_set)}) ")
         print(f"Train subset contains {len(train_set)} samples")
         print(f"Test subset contains {len(test_set)} samples")
 
         if (not self.test_only):
-            train_loader = DataLoader(dataset=train_set, shuffle=True, batch_size=self.batch_size,
+            train_loader = DataLoader(dataset=train_set, shuffle=False, batch_size=self.batch_size,
                                       num_workers=self.num_workers, collate_fn=collate_block, drop_last=True)
 
-        # valid_loader = DataLoader(dataset=valid_set, shuffle=True, batch_size=self.batch_size,
-        #                           num_workers=self.num_workers, collate_fn=collate_block)
 
-        test_loader = DataLoader(dataset=test_set, shuffle=not self.test_only, batch_size=self.batch_size,
+        test_loader = DataLoader(dataset=test_set, shuffle=False, batch_size=self.batch_size,
                                  num_workers=self.num_workers, collate_fn=collate_block, drop_last=True)
 
         # return train_loader, valid_loader, test_loader
@@ -287,4 +338,4 @@ class Loader():
 
 
 if __name__ == '__main__':
-    L=Loader(csv_path=None)
+    L=Loader(props=[], targets = [], csv_path=None)

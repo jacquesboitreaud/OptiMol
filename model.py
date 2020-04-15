@@ -443,11 +443,22 @@ class Model(nn.Module):
         self.load_state_dict(model_dict)
         
 # ======================= Loss functions ====================================
-    
-def Loss(out, indices, mu, logvar, y_p, p_pred,
-         y_a, a_pred, train_on_aff, binary_aff=False):
+        
+def Loss(out, indices, mu, logvar):
     """ 
-    Loss function for VAE + multitask.
+    plain VAE loss. 
+    """
+    CE = F.cross_entropy(out, indices, reduction="sum")
+    KL = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
+    
+    # returns zeros for multitask loss terms
+    return CE, KL, torch.tensor(0), torch.tensor(0)
+
+    
+def multiLoss(out, indices, mu, logvar, y_p, p_pred,
+         y_a, a_pred, train_on_aff ):
+    """ 
+    Loss function for VAE + multitask, with weights on properties and affinities 
     """
     CE = F.cross_entropy(out, indices, reduction="sum")
     KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
