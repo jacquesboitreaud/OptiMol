@@ -1,6 +1,4 @@
 __pycache__
-data
+*.csv
 data_curation
 eval/plots
-generate/outputs
-generate/beam_outputs

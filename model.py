@@ -4,7 +4,10 @@ Created on Mon Apr 22 11:44:23 2019
 
 @author: jacqu
 
-RGCN encoder, GRU decoder to can smiles 
+Graph to sequence molecular VAE
+RGCN encoder, GRU decoder to SELFIES 
+
+RGCN layer at 
 https://docs.dgl.ai/tutorials/models/1_gnn/4_rgcn.html#sphx-glr-tutorials-models-1-gnn-4-rgcn-py
 
 
@@ -14,8 +17,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from functools import partial
-import itertools
 from queue import PriorityQueue
 import json
 
