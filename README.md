@@ -24,11 +24,17 @@ To train a graph2selfies model, selfies need to be precomputed for the train set
 ```
 python data/get_selfies.py 
 ```
-
 To compute selfies for another dataset stored in csv, with smiles in column entitled 'smiles', run : 
 ```
-python data/get_selfies.py-i [path_to_my_csv_dataset]
+python data/get_selfies.py -i [path_to_my_csv_dataset]
 ```
+
+Chemical properties (QED, logP, molWt) can be computed for a csv dataset by running 
+```
+python data/properties.py -i [path_to_csv_file]
+```
+
+
 
 ### Model training 
 
