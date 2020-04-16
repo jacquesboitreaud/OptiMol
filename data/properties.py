@@ -22,7 +22,7 @@ if __name__=='__main__':
 
     args=parser.parse_args()
     
-    data = pd.read_csv(args.csv, index_col = 0 )
+    data = pd.read_csv(args.input, index_col = 0 )
     
     smiles = data.smiles
     d={}
@@ -46,7 +46,7 @@ if __name__=='__main__':
     # Drop lines with Nan properties
     data = data.dropna(axis=0, subset = prop_names)
     
-    savename = args.csv
+    savename = args.input
     print(f'>>> saving dataframe to {savename}')
     data.to_csv(savename)
     
