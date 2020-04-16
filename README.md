@@ -20,6 +20,15 @@ After installing the moses python library, the data can be reached by running
 ```
 python data/download_moses.py 
 ```
+To train a graph2selfies model, selfies need to be precomputed for the train set by running 
+```
+python data/get_selfies.py 
+```
+
+To compute selfies for another dataset stored in csv, with smiles in column entitled 'smiles', run : 
+```
+python data/get_selfies.py-i [path_to_my_csv_dataset]
+```
 
 ### Model training 
 
