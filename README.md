@@ -3,12 +3,13 @@
 Molecular graph to SELFIES VAE. 
 
 Required : 
-pytorch, dgl 
-pandas 
-moses to get the data (pip install molsets)
-selfies (pip install selfies)
-rdkit
-tqdm
+- pytorch
+- dgl 
+- pandas 
+- moses to get the data (pip install molsets)
+- selfies (pip install selfies)
+- rdkit
+- tqdm
 
 ### Data loading
 
@@ -35,6 +36,9 @@ python train.py --train [my_dataset.csv]
 ### Embedding molecules 
 
 To compute embeddings for molecules in csv file:
+```
+python embed_mols.py -i [my_dataset.csv] -v [output_type]
+```
 The column containing the smiles should be labeled 'smiles'. 
 
 Arguments : 
@@ -43,13 +47,14 @@ Arguments :
 - -m : path to .pth file containing trained model weights (default is 'saved_model_w/baseline.pth')
 - -d : Optional argument without input value, store true to decode the latent points into smiles
 
-```
-python embed_mols.py -i [my_dataset.csv] -v [output_type]
-```
+
 
 ### Generating samples
 
 To generate N samples from the trained model, run : 
+```
+python generate/sample_prior.py -n N
+```
 Arguments : 
 - -n : number of molecules to sample 
 - -m : path to .pth file containing trained model weights (default is 'saved_model_w/baseline.pth')
@@ -57,8 +62,6 @@ Arguments :
 - -o : path to write output text file. Default is './data/gen.txt'
 - -b : Optional argument: store true to use beam search decoding for smiles (slow!)
  
-```
-python generate/sample_prior.py -n N
-```
+
 
 

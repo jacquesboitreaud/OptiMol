@@ -1,5 +1,5 @@
 __pycache__
 *.csv
+runs
 data_curation
 eval/plots
-old
