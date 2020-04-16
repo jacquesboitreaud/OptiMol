@@ -103,23 +103,29 @@ class Model(nn.Module):
                  l_size, voc_size, max_len, 
                  N_properties, N_targets,
                  device,
-                 binary_labels = False):
+                 index_to_char):
         super(Model, self).__init__()
         
         # params:
+        
+        # Encoding
         self.features_dim = features_dim
         self.gcn_hdim = 64
         self.gcn_outdim = 64
         self.num_rels = num_rels
+        
+        # Bottleneck
         self.l_size = l_size
+        
+        # Decoding
         self.voc_size = voc_size 
         self.max_len = max_len
+        self.index_to_char= index_to_char
         
         self.N_properties=N_properties
         self.N_targets = N_targets
         
         self.device = device
-        self.binary_labels = binary_labels
         
         # layers:
         self.encoder=RGCN(self.features_dim, self.gcn_hdim, self.gcn_outdim, self.num_rels, 
@@ -160,10 +166,6 @@ class Model(nn.Module):
         
         return device
         
-    def set_alphabet(self,index_to_char):
-        # Adds dict to convert indices to smiles chars 
-        self.index_to_char= index_to_char
-        
     # ======================== Model pass functions ==========================
     
     def forward(self, g, smiles):
@@ -174,8 +176,6 @@ class Model(nn.Module):
         out = self.decode(z, smiles, teacher_forced=True) # teacher forced decoding 
         properties = self.MLP(z)
         affinities = self.aff_net(z)
-        if(self.binary_labels):
-            affinities = torch.sigmoid(affinities)
         
         return mu, logv,z, out, properties, affinities
         
@@ -200,11 +200,8 @@ class Model(nn.Module):
     
     def affs(self,z):
         # returns predicted affinities 
-        a = self.aff_net(z)
-        if(self.binary_labels):
-            return torch.sigmoid(a)
-        else:
-            return a 
+        return self.aff_net(z)
+
         
     def decode(self, z, x_true=None,teacher_forced=False):
         """

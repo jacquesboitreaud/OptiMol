@@ -123,7 +123,8 @@ if __name__ == "__main__":
              'max_len': loaders.dataset.max_len,
              'N_properties':len(properties),
              'N_targets':len(targets),
-             'device':device}
+             'device':device, 
+             'index_to_char': loaders.dataset.index_to_char }
     pickle.dump(params, open('saved_model_w/model_params.pickle','wb'))
 
     model = Model(**params).to(device)

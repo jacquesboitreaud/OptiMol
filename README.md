@@ -34,7 +34,7 @@ python train.py --train [my_dataset.csv]
 
 ### Embedding molecules 
 
-To compute embeddings for molecules in csv file, run 
+To compute embeddings for molecules in csv file:
 The column containing the smiles should be labeled 'smiles'. 
 
 Arguments : 
@@ -47,11 +47,18 @@ Arguments :
 python embed_mols.py -i [my_dataset.csv] -v [output_type]
 ```
 
-### Generating samples (TODO)
+### Generating samples
 
 To generate N samples from the trained model, run : 
-smiles of molecules generated will be written to text file 'data/gen.txt' if no -o arg specified. 
+Arguments : 
+- -n : number of molecules to sample 
+- -m : path to .pth file containing trained model weights (default is 'saved_model_w/baseline.pth')
+- -v : 'smiles' or 'selfies', the type of output the model was trained for 
+- -o : path to write output text file. Default is './data/gen.txt'
+- -b : Optional argument: store true to use beam search decoding for smiles (slow!)
+ 
 ```
-python generate/sample_prior.py -n N -o [my_output_file]
+python generate/sample_prior.py -n N
 ```
+
 

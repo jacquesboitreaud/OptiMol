@@ -84,7 +84,6 @@ if __name__=='__main__':
     
     # Decode to smiles 
     if(args.decode):
-        model.set_alphabet(dataloader.dataset.index_to_char)
         
         if args.vocab == 'smiles':
             print('>>> Decoding to smiles')
