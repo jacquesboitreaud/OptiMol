@@ -32,7 +32,7 @@ if __name__=='__main__':
     
     print(f'>>> computing {prop_names} for {len(smiles)} molecules')
     for i,s in enumerate(smiles) : 
-        if(i%1000==0 and i >0):
+        if(i%100000==0 and i >0):
             print(i)
         m=Chem.MolFromSmiles(s)
         d['QED'].append(QED.default(m))
