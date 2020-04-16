@@ -11,8 +11,7 @@ Writes output to csv
 
 Change the objective function in eps(props, aff)
 Change learning rate accordingly
-
-TODO : finetune this for better results + more rigorous process. 
+ 
 
 """
 
@@ -49,7 +48,7 @@ if(__name__=='__main__'):
     
     seeds_df = pd.read_csv('../data/moses_affs_test.csv') # dataframe with seeds for optim start 
     seeds_df= seeds_df.sample(N).reset_index(drop=True)
-    seeds= list(seeds_df['can'])
+    seeds= list(seeds_df['smiles'])
     
     # PB / Without beam search, most steps lead to invalid smiles decoding 
     N_steps=50 # N steps per molecule 

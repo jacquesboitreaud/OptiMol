@@ -42,7 +42,8 @@ def collate_block(samples):
     return batched_graph, smiles, p_labels, a_labels
 
 
-def oh_tensor(category, n):
+def oh_tensor(category, n): 
+    # One-hot float tensor construction
     t = torch.zeros(n, dtype=torch.float)
     t[category] = 1.0
     return t
@@ -55,13 +56,14 @@ class molDataset(Dataset):
 
     def __init__(self, csv_path,
                  maps_path,
-                 vocab,
+                 vocab, 
+                 build_alphabet,
                  props,
                  targets,
                  n_mols=-1,
                  debug=False):
 
-        # 0/ two solutions: empty loader or csv path given 
+        # 0/ two options: empty loader or csv path given 
         if (csv_path is None):
             print("Empty dataset initialized. Use pass_dataset or pass_dataset_path to add molecules.")
             self.df = None
@@ -72,7 +74,7 @@ class molDataset(Dataset):
             if (n_mols != -1):
                 self.df = pd.read_csv(csv_path, nrows=n_mols)
                 self.n = n_mols
-                print('columns:', self.df.columns)
+                print('Dataset columns:', self.df.columns)
             else:
                 self.df = pd.read_csv(csv_path)
                 self.n = self.df.shape[0]
@@ -94,31 +96,45 @@ class molDataset(Dataset):
         self.num_edge_types, self.num_atom_types = len(self.edge_map), len(self.at_map)
         self.num_charges, self.num_chir = len(self.charges_map), len(self.chi_map)
         print('> Loaded edge and atoms types to one-hot mappings')
-
         self.emb_size = 16  # node embedding size = number of node features 
 
-        # 3/ =========== SMILES handling : ================== ************************** TODO ******************
+        # 3/ =========== SMILES and SELFIES handling : ================== 
         
         self.language = vocab # smiles or selfies 
         
-        if(self.language == 'smiles'):
+        if( build_alphabet): # Parsing dataset to build custom alphabets 
             
-            vocab = os.path.join(maps_path, "zinc_chars.json")
+            selfies_a , len_selfies, smiles_a, len_smiles = self._get_selfie_and_smiles_alphabets()
+            if(self.language == 'smiles'):
+                self.max_len = len_smiles
+                self.alphabet = smiles_a
+                
+            elif(self.language=='selfies'):
+                self.max_len = len_selfies
+                self.alphabet = selfies_a
             
-        elif(self.language == 'selfies'):
+        else: # default alphabets and length 
             
-        else:
-            print("decode format not understood: 'smiles' or 'selfies' ")
-            raise NotImplementedError
+            with open(os.path.join(maps_path, 'moses_alphabets.pickle'), 'rb') as f :
+                alphabets_dict = pickle.load(f)
+                
+            if(self.language == 'smiles'):
+                self.alphabet = alphabets_dict['smiles_alphabet']
+                self.max_len = alphabets_dict['largest_smiles_len']
+                
+            elif(self.language=='selfies'):
+                self.alphabet = alphabets_dict['selfies_alphabet']
+                self.max_len = alphabets_dict['largest_selfies_len']
+                
+            else:
+                print("decode format not understood: 'smiles' or 'selfies' ")
+                raise NotImplementedError
+        
+        self.char_to_index = dict((c, i) for i, c in enumerate(self.alphabet))
+        self.index_to_char = dict((i, c) for i, c in enumerate(self.alphabet))
+        self.n_chars = len(self.alphabet)
 
-        self.max_smi_len = 151  # can be changed
-        self.char_list = json.load(open(vocab))
-        self.char_to_index = dict((c, i) for i, c in enumerate(self.char_list))
-        self.index_to_char = dict((i, c) for i, c in enumerate(self.char_list))
-        self.n_chars = len(self.char_list)
-
-
-        print(f"> Loaded alphabet. Max sequence length allowed is {self.max_smi_len}")
+        print(f"> Loaded alphabet. Using {self.language}. Max sequence length allowed is {self.max_len}")
 
         if (debug):
             # special case for debugging
@@ -157,35 +173,66 @@ class molDataset(Dataset):
     
         smiles_list = np.asanyarray(self.df.smiles)
         
+        selfies_list = np.asanyarray(self.df.selfies)
+        
         smiles_alphabet=list(set(''.join(smiles_list)))
         largest_smiles_len=len(max(smiles_list, key=len))
-        selfies_list=[]    
         selfies_len=[]
         
-        print('--> Translating SMILES to SELFIES...')
-        for individual_smile in smiles_list:
-            individual_selfie=selfies.encoder(individual_smile)
-            selfies_list.append(individual_selfie)
+        print(f'--> Building alphabets for {smiles_list.shape[0]} smiles and selfies in dataset...')
+        for individual_selfie in selfies_list:
             selfies_len.append(len(individual_selfie)-len(individual_selfie.replace('[',''))) # len of SELFIES
         selfies_alphabet_pre=list(set(''.join(selfies_list)[1:-1].split('][')))
         selfies_alphabet=[]
         for selfies_element in selfies_alphabet_pre:
             selfies_alphabet.append('['+selfies_element+']')        
         largest_selfies_len=max(selfies_len)
-        print('Finished translating SMILES to SELFIES.')
+        
+        print('Finished parsing smiles and selfies alphabet. Saving to pickle file custom_alphabets.pickle')
+        print('Longest selfies : ',  largest_selfies_len)
+        print('Longest smiles : ',  largest_smiles_len)
+        
+        d= {'selfies_alphabet':selfies_alphabet,
+            'largest_selfies_len':largest_selfies_len,
+            'smiles_alphabet': smiles_alphabet,
+            'largest_smiles_len': largest_smiles_len}
+        
+        with open('custom_alphabets.pickle', 'wb') as f :
+            pickle.dump(d,f)
         
         return (selfies_alphabet, largest_selfies_len, smiles_alphabet, largest_smiles_len)
+    
+    def selfies_to_hot(self, molecule):
+        """
+        Go from a single selfies string to a list of integers
+        """
+        # integer encode input smile
+        len_of_molecule=len(molecule)-len(molecule.replace('[',''))
+        for _ in range(self.max_len - len_of_molecule): # selfies padding 
+            molecule+='[epsilon]'
+    
+        selfies_char_list_pre=molecule[1:-1].split('][')
+        selfies_char_list=[]
+        for selfies_element in selfies_char_list_pre:
+            selfies_char_list.append('['+selfies_element+']')   
+    
+        integer_encoded = [self.char_to_index[char] for char in selfies_char_list]
+        a = np.array(integer_encoded)
+                
+        return a
 
     def __getitem__(self, idx):
         # Returns tuple 
         # Smiles has to be in first column of the csv !!
 
         row = self.df.iloc[idx,:]
-        smiles = row.smiles
         
-        # Checks
-        if (len(smiles) > self.max_smi_len):
-            print(f'smiles length error: l={len(smiles)} > {self.max_smi_len}')
+        smiles = row.smiles # needed anyway to build graph 
+        string_representation = smiles
+        if self.language == 'selfies':
+            selfies = row.selfies
+            string_representation = selfies
+        
 
         # 1 - Graph building
         graph = smiles_to_nx(smiles)
@@ -228,12 +275,15 @@ class molDataset(Dataset):
 
         g_dgl.ndata['h'] = torch.cat([g_dgl.ndata[f].view(N,-1) for f in node_features], dim=1)
 
-        # 2 - Smiles / selfies array 
+        # 2 - Smiles / selfies to integer indices array
         
-        a = np.zeros(self.max_smi_len)
-        idces = [self.char_to_index[c] for c in smiles]
-        idces.append(self.char_to_index['\n'])
-        a[:len(idces)] = idces
+        if self.language == 'selfies' : # need to tokenize selfies properly 
+            a = self.selfies_to_hot(string_representation)
+            
+        else:
+            a = np.zeros(self.max_len)
+            idces = [self.char_to_index[c] for c in string_representation]
+            a[:len(idces)] = idces
 
         # 3 - Optional props and affinities 
         
@@ -259,6 +309,7 @@ class Loader():
                  csv_path=None,
                  maps_path ='../map_files/',
                  vocab='smiles',
+                 build_alphabet = False,
                  n_mols=None,
                  batch_size=64,
                  num_workers=12,
@@ -279,6 +330,7 @@ class Loader():
                                   csv_path=csv_path,
                                   maps_path=maps_path, 
                                   vocab=vocab,
+                                  build_alphabet = build_alphabet,
                                   n_mols=n_mols,
                                   debug=debug)
 

@@ -36,22 +36,22 @@ if __name__ == "__main__":
     script_dir = os.path.dirname(os.path.realpath(__file__))
     sys.path.append(os.path.join(script_dir, 'dataloaders'))
     sys.path.append(os.path.join(script_dir, 'data_processing'))
-    from model import Model, Loss, RecLoss
+    from model import Model, Loss
     from dataloaders.molDataset import molDataset, Loader
     
 
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--train', help="path to training dataframe", type=str, default='data/moses_train.csv')
-    parser.add_argument("--cutoff", help="Max number of molecules to use. Set to -1 for all", type=int, default=120)
+    parser.add_argument("--cutoff", help="Max number of molecules to use. Set to -1 for all", type=int, default=-1)
     parser.add_argument('--save_path', type=str, default = './saved_model_w/g2s')
     parser.add_argument('--load_model', type=bool, default=False)
-    parser.add_argument('--load_iter', type=int, default=0)
+    parser.add_argument('--load_iter', type=int, default=0) # resume training at optimize step n°
 
-    parser.add_argument('--decode', type=str, default='smiles') # 'smiles' or 'selfies'
-
-    parser.add_argument('--hidden_size', type=int, default=450)
-    parser.add_argument('--latent_size', type=int, default=64)
+    parser.add_argument('--decode', type=str, default='selfies') # 'smiles' or 'selfies'
+    parser.add_argument('--build_alphabet', action='store_true', default = True) 
+    
+    parser.add_argument('--latent_size', type=int, default=64) # size of latent code
 
     parser.add_argument('--lr', type=float, default=1e-3) # Initial learning rate
     parser.add_argument('--clip_norm', type=float, default=50.0) # Gradient clipping max norm
@@ -60,15 +60,17 @@ if __name__ == "__main__":
     parser.add_argument('--max_beta', type=float, default=1.0) # maximum KL annealing weight
     parser.add_argument('--warmup', type=int, default=40000) # number of steps with only reconstruction loss (beta=0)
 
+    parser.add_argument('--processes', type=int, default=8) # num workers 
+    
     parser.add_argument('--batch_size', type=int, default=10)
     parser.add_argument('--epochs', type=int, default=20) # nbr training epochs
     parser.add_argument('--anneal_rate', type=float, default=0.9) # Learning rate annealing
     parser.add_argument('--anneal_iter', type=int, default=40000) # update learning rate every _ step
     parser.add_argument('--kl_anneal_iter', type=int, default=2000) # update beta every _ step
     
-    parser.add_argument('--print_iter', type=int, default=100) # print loss metrics every _ step
+    parser.add_argument('--print_iter', type=int, default=1000) # print loss metrics every _ step
     parser.add_argument('--print_smiles_iter', type=int, default=1000) # print reconstructed smiles every _ step
-    parser.add_argument('--save_iter', type=int, default=10000) # save model weights every _ step
+    parser.add_argument('--save_iter', type=int, default=1000) # save model weights every _ step
 
      # =======
 
@@ -89,7 +91,7 @@ if __name__ == "__main__":
     use_props = bool(len(properties)>0)
     use_affs = bool(len(targets)>0)
     
-    
+    writer = SummaryWriter()
     if not os.path.exists('runs'):
         _make_dir('runs')
         print('> tensorboard logging in ./runs')
@@ -103,8 +105,9 @@ if __name__ == "__main__":
     loaders = Loader(maps_path='map_files/',
                      csv_path=args.train,
                      vocab = args.decode,
+                     build_alphabet = args.build_alphabet,
                      n_mols=args.cutoff,
-                     num_workers=0,
+                     num_workers=args.processes,
                      batch_size=args.batch_size,
                      props = properties,
                      targets=targets)
@@ -114,15 +117,14 @@ if __name__ == "__main__":
     #Model & hparams
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     params ={'features_dim':loaders.dataset.emb_size, #node embedding dimension
-             'gcn_hdim':128,
-             'gcn_outdim':64,
              'num_rels':loaders.num_edge_types,
              'l_size':args.latent_size,
              'voc_size':loaders.dataset.n_chars,
+             'max_len': loaders.dataset.max_len,
              'N_properties':len(properties),
              'N_targets':len(targets),
              'device':device}
-    pickle.dump(params, open('saved_model_w/params.pickle','wb'))
+    pickle.dump(params, open('saved_model_w/model_params.pickle','wb'))
 
     model = Model(**params).to(device)
     if(load_model):
@@ -150,7 +152,7 @@ if __name__ == "__main__":
 
     for epoch in range(1, args.epochs+1):
         print(f'Starting epoch {epoch}')
-        epoch_rec, epoch_kl, epoch_pmse, epoch_amse=0,0,0,0
+        epoch_train_rec, epoch_train_kl, epoch_train_pmse, epoch_train_amse=0,0,0,0
 
         for batch_idx, (graph, smiles, p_target, a_target) in enumerate(train_loader):
 
@@ -171,14 +173,9 @@ if __name__ == "__main__":
                 rec, kl, pmse, amse= Loss(out_smi, smiles, mu, logv)
             else:
                 raise NotImplementedError
-            
-            epoch_rec+=rec.item()
-            epoch_kl+= kl.item()
-            epoch_pmse+=pmse.item()
-            epoch_amse += amse.item()
 
             # COMPOSE TOTAL LOSS TO BACKWARD
-            if(total_steps<args.warmup):
+            if(total_steps<args.warmup): # Only reconstruction (warmup)
                 t_loss = rec
             else:
                 t_loss = rec + beta*kl + pmse + amse
@@ -199,21 +196,33 @@ if __name__ == "__main__":
 
             #logs and monitoring
             if total_steps % args.print_iter == 0:
-                print('epoch {}, opt. step n°{}, rec_loss {:.2f}, properties mse_loss {:.2f}, \
-aff mse_loss {:.2f}'.format(epoch, total_steps, rec.item(),pmse.item(), amse.item()))
+                 print(f'Opt step {total_steps}, rec: {rec.item():.2f}, props mse: {pmse.item():.2f}, aff mse: {amse.item():.2f}')
+                 writer.add_scalar('BatchRec/train', rec.item(), total_steps )
+                 writer.add_scalar('BatchKL/train', kl.item(), total_steps )
+                 if len(properties)>0:
+                     writer.add_scalar('BatchPropMse/train', pmse.item(), total_steps )
+                 if len(targets)>0:
+                     writer.add_scalar('BatchAffMse/train', amse.item(), total_steps )   
 
             if(total_steps % args.print_smiles_iter == 0):
-                reconstruction_dataframe, frac_valid = log_smiles(smiles, out_smi.detach(),
-                                                      loaders.dataset.index_to_char)
-                print(reconstruction_dataframe)
-                print('fraction of valid smiles in training batch: ', frac_valid)
+                reconstruction_dataframe, frac_valid = log_reconstruction(smiles, out_smi.detach(),
+                                                      loaders.dataset.index_to_char, string_type = args.decode)
+                # Only when using smiles 
+                #print(reconstruction_dataframe)
+                # print('fraction of valid smiles in batch: ', frac_valid)
 
             if total_steps % args.save_iter == 0:
                 torch.save( model.state_dict(), f"{args.save_path}_iter_{total_steps}.pth")
+            
+            # keep track of epoch loss
+            epoch_train_rec+=rec.item()
+            epoch_train_kl+= kl.item()
+            epoch_train_pmse+=pmse.item()
+            epoch_train_amse += amse.item()
 
         # Validation pass
         model.eval()
-        t_rec, t_kl, t_amse, t_pmse = 0,0,0,0
+        val_rec, val_kl, val_amse, val_pmse = 0,0,0,0
         with torch.no_grad():
             for batch_idx, (graph, smiles, p_target, a_target) in enumerate(test_loader):
 
@@ -233,18 +242,33 @@ aff mse_loss {:.2f}'.format(epoch, total_steps, rec.item(),pmse.item(), amse.ite
                 else:
                     raise NotImplementedError
                     
-                t_rec += rec.item()
-                t_kl +=kl.item()
-                t_pmse += pmse.item()
-                t_amse += amse.item()
+                val_rec += rec.item()
+                val_kl +=kl.item()
+                val_pmse += pmse.item()
+                val_amse += amse.item()
+            
+            # total Epoch losses 
+            
+            val_rec, val_kl, val_pmse, t_amse = val_rec/len(test_loader), val_kl/len(test_loader),\
+            val_pmse/len(test_loader), val_amse/len(test_loader)
+            
+            epoch_train_rec, epoch__train_kl, epoch_train_pmse, epoch_amse = epoch_train_rec/len(train_loader), epoch_train_kl/len(train_loader),\
+            epoch_train_pmse/len(train_loader),epoch_train_amse/len(train_loader)
 
-            t_rec, t_kl, t_pmse, t_amse = t_rec/len(test_loader), t_kl/len(test_loader),\
-            t_pmse/len(test_loader), t_amse/len(test_loader)
-            epoch_rec, epoch_kl, epoch_pmse, epoch_amse = epoch_rec/len(train_loader), epoch_kl/len(train_loader),\
-            epoch_pmse/len(train_loader),epoch_amse/len(train_loader)
+        print(f'[Ep {epoch}/{args.epochs}], batch valid. loss: rec: {val_rec:.2f}, props mse: {val_pmse:.2f},\
+ aff mse: {val_amse:.2f}')
 
-        print(f'[Ep {epoch}/{args.epochs}], batch valid. loss: rec: {t_rec:.2f}, props mse: {t_pmse:.2f},\
- aff mse: {t_amse:.2f}')
-
-        # Tensorboard logging todo
+        # Tensorboard logging 
+        writer.add_scalar('EpochRec/valid', val_rec , epoch)
+        writer.add_scalar('EpochRec/train', epoch_train_rec , epoch)
+        writer.add_scalar('EpochKL/valid', val_kl , epoch)
+        writer.add_scalar('EpochKL/train', epoch_train_kl , epoch)
+        
+        if len(properties)>0:
+            writer.add_scalar('EpochPropLoss/valid', val_pmse , epoch)
+            writer.add_scalar('EpochPropLoss/train', epoch_train_pmse , epoch)
+            
+        if len(targets)>0:
+            writer.add_scalar('EpochAffLoss/valid', val_amse , epoch)
+            writer.add_scalar('EpochAffLoss/train', epoch_train_amse , epoch)
 

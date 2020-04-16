@@ -29,6 +29,7 @@ from dgl.nn.pytorch.glob import SumPooling
 from dgl.nn.pytorch.conv import GATConv, RelGraphConv
 
 from utils import *
+from beam_search import BeamSearchNode
 import pickle
 
 class MultiGRU(nn.Module):
@@ -49,7 +50,7 @@ class MultiGRU(nn.Module):
 
     def forward(self, x, h):
         """ Forward pass to 3-layer GRU. Output =  output, hidden state of layer 3 """
-        x = x.view(x.shape[0],-1) # batch_size * 128
+        x = x.view(x.shape[0],-1) # batch_size * 
         h_out = Variable(torch.zeros(h.size()))
         x= h_out[0] = self.gru_1(x, h[0])
         x= h_out[1] = self.gru_2(x, h[1])
@@ -98,8 +99,8 @@ class RGCN(nn.Module):
         return out
     
 class Model(nn.Module):
-    def __init__(self, features_dim, gcn_hdim, gcn_outdim , num_rels,
-                 l_size, voc_size,
+    def __init__(self, features_dim, num_rels,
+                 l_size, voc_size, max_len, 
                  N_properties, N_targets,
                  device,
                  binary_labels = False):
@@ -107,12 +108,12 @@ class Model(nn.Module):
         
         # params:
         self.features_dim = features_dim
-        self.gcn_hdim = gcn_hdim
-        self.gcn_outdim = gcn_outdim
+        self.gcn_hdim = 64
+        self.gcn_outdim = 64
         self.num_rels = num_rels
         self.l_size = l_size
         self.voc_size = voc_size 
-        self.max_len = 151
+        self.max_len = max_len
         
         self.N_properties=N_properties
         self.N_targets = N_targets
@@ -138,7 +139,7 @@ class Model(nn.Module):
                 nn.ReLU(),
                 nn.Linear(16,self.N_properties))
             
-        # Affinities predictor (If binary, sigmoid applied directly in fwd function)
+        # Affinities predictor (regression)
         self.aff_net = nn.Sequential(
                 nn.Linear(self.l_size,32),
                 nn.ReLU(),
@@ -147,7 +148,7 @@ class Model(nn.Module):
                 nn.Linear(16,self.N_targets))
         
     def load(self, trained_path, aff_net=False):
-        # Loads trained model weights 
+        # Loads trained model weights, with or without the affinity predictor
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
         
         if(aff_net):
@@ -159,11 +160,9 @@ class Model(nn.Module):
         
         return device
         
-    def set_smiles_chars(self,char_file="map_files/zinc_chars.json"):
+    def set_alphabet(self,index_to_char):
         # Adds dict to convert indices to smiles chars 
-        self.char_list = json.load(open(char_file))
-        self.char_to_index= dict((c, i) for i, c in enumerate(self.char_list))
-        self.index_to_char= dict((i, c) for i, c in enumerate(self.char_list))
+        self.index_to_char= index_to_char
         
     # ======================== Model pass functions ==========================
     
@@ -196,9 +195,11 @@ class Model(nn.Module):
         return z
     
     def props(self,z):
+        # Returns predicted properties
         return self.MLP(z)
     
     def affs(self,z):
+        # returns predicted affinities 
         a = self.aff_net(z)
         if(self.binary_labels):
             return torch.sigmoid(a)
@@ -496,13 +497,4 @@ def pairwiseLoss(z_i,z_j,pair_label):
     prod = torch.sigmoid(torch.bmm(z_i.unsqueeze(1),z_j.unsqueeze(2)).squeeze())
     CE = F.binary_cross_entropy(prod, pair_label)
     #print(prod, pair_label)
-    return CE
-
-def RecLoss(out, indices):
-    """ 
-    Only crossentropy for SMILES reconstruction 
-    out : (N, n_chars, l), where l = sequence length
-    indices : (N, l)
-    """
-    CE = F.cross_entropy(out, indices, reduction="sum")
     return CE

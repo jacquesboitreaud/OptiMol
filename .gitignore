@@ -2,3 +2,4 @@ __pycache__
 *.csv
 data_curation
 eval/plots
+old

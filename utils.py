@@ -77,28 +77,15 @@ def Variable(tensor):
         return torch.autograd.Variable(tensor)
 
 
-class BeamSearchNode():
-    def __init__(self, h, rnn_in, score, sequence):
-        self.h = h
-        self.rnn_in = rnn_in
-        self.score = score
-        self.sequence = sequence
-        self.max_len = 60
-
-    def __lt__(self, other):  # For x < y
-        # Pour casser les cas d'égalité du score au hasard, on s'en fout un peu.
-        # Eventuellement affiner en regardant les caractères de la séquence (pénaliser les cycles ?)
-        return True
-
-
 # ============== Smiles handling utils ===============================
 
-def log_smiles(true_idces, probas, idx_to_char):
+def log_reconstruction(true_idces, probas, idx_to_char, string_type='smiles'):
     """
     Input : 
         true_idces : shape (N, seq_len)
         probas : shape (N, voc_size, seq_len)
         idx_to_char : dict with idx to char mapping 
+        string-type : smiles or selfies 
         
         Argmax on probas array (dim 1) to find most likely character indices 
     """
@@ -112,11 +99,20 @@ def log_smiles(true_idces, probas, idx_to_char):
         in_smiles.append(''.join([idx_to_char[idx] for idx in true_idces[i]]))
     d = {'input smiles': in_smiles,
          'output smiles': out_smiles}
-    df = pd.DataFrame.from_dict(d)
-    valid = [Chem.MolFromSmiles(o.rstrip('\n')) for o in out_smiles]
-    valid = [int(m != None) for m in valid]
-    frac_valid = np.mean(valid)
-    return df, frac_valid
+    
+    if string_type =='smiles':
+        df = pd.DataFrame.from_dict(d)
+        valid = [Chem.MolFromSmiles(o.rstrip('\n')) for o in out_smiles]
+        valid = [int(m != None) for m in valid]
+        frac_valid = np.mean(valid)
+        return df, frac_valid
+    else:
+        for i in range(3): #printing only 3 samples 
+            print('True sample selfies : ')
+            print(in_smiles[i])
+            print('Reconstruction : ')
+            print(out_smiles[i])
+        return 0,0
 
 
 def log_smiles_from_indices(true_idces, out_idces, idx_to_char):
