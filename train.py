@@ -36,7 +36,7 @@ if __name__ == "__main__":
     script_dir = os.path.dirname(os.path.realpath(__file__))
     sys.path.append(os.path.join(script_dir, 'dataloaders'))
     sys.path.append(os.path.join(script_dir, 'data_processing'))
-    from model import Model, Loss
+    from model import Model, Loss, multiLoss
     from dataloaders.molDataset import molDataset, Loader
     
 
@@ -62,7 +62,7 @@ if __name__ == "__main__":
 
     parser.add_argument('--processes', type=int, default=8) # num workers 
     
-    parser.add_argument('--batch_size', type=int, default=10)
+    parser.add_argument('--batch_size', type=int, default=64)
     parser.add_argument('--epochs', type=int, default=20) # nbr training epochs
     parser.add_argument('--anneal_rate', type=float, default=0.9) # Learning rate annealing
     parser.add_argument('--anneal_iter', type=int, default=40000) # update learning rate every _ step
@@ -70,7 +70,7 @@ if __name__ == "__main__":
     
     parser.add_argument('--print_iter', type=int, default=1000) # print loss metrics every _ step
     parser.add_argument('--print_smiles_iter', type=int, default=1000) # print reconstructed smiles every _ step
-    parser.add_argument('--save_iter', type=int, default=1000) # save model weights every _ step
+    parser.add_argument('--save_iter', type=int, default=10000) # save model weights every _ step
 
      # =======
 
@@ -82,8 +82,10 @@ if __name__ == "__main__":
     parallel=False # parallelize over multiple gpus if available
     
     # Multitasking : properties and affinities should be in input dataset 
-    properties = [] # no properties 
-    #properties = ['QED','logP','molWt']
+    
+    #properties = [] # no properties 
+    properties = ['QED','logP','molWt']
+    
     targets = [] # no affinities
     #targets = ['aa2ar','drd3'] # Change target names according to dataset
 
@@ -173,7 +175,8 @@ if __name__ == "__main__":
             if( (not use_affs) and (not use_props)):
                 rec, kl, pmse, amse= Loss(out_smi, smiles, mu, logv)
             else:
-                raise NotImplementedError
+                rec, kl, pmse, amse = multiLoss(out_smi, smiles, mu, logv, p_target, out_p,
+         y_a=None, a_pred=None, train_on_aff = False )
 
             # COMPOSE TOTAL LOSS TO BACKWARD
             if(total_steps<args.warmup): # Only reconstruction (warmup)
@@ -241,7 +244,8 @@ if __name__ == "__main__":
                 if( (not use_affs) and (not use_props)):
                     rec, kl, pmse, amse= Loss(out_smi, smiles, mu, logv)
                 else:
-                    raise NotImplementedError
+                    rec, kl, pmse, amse = multiLoss(out_smi, smiles, mu, logv, p_target, out_p,
+         y_a=None, a_pred=None, train_on_aff = False )
                     
                 val_rec += rec.item()
                 val_kl +=kl.item()
