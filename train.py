@@ -87,7 +87,7 @@ if __name__ == "__main__":
     properties = ['QED','logP','molWt']
     
     targets = [] # no affinities
-    #targets = ['aa2ar','drd3'] # Change target names according to dataset
+    #targets = ['drd3'] # Change target names according to dataset
 
 
     use_props = bool(len(properties)>0)
