@@ -63,7 +63,7 @@ if __name__ == "__main__":
     disable_rdkit_logging() # function from utils to disable rdkit logs
 
     #Loading model 
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    device = 'cpu'
 
     params = pickle.load(open('saved_model_w/model_params.pickle','rb'))
     model = Model(**params).to(device)
