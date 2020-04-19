@@ -33,13 +33,18 @@ from torch.utils.tensorboard import SummaryWriter
 
 from utils import *
 
+from selfies import decoder
+
 if __name__ == "__main__":
     script_dir = os.path.dirname(os.path.realpath(__file__))
     sys.path.append(os.path.join(script_dir, 'dataloaders'))
     sys.path.append(os.path.join(script_dir, 'data_processing'))
+    
+    sys.path.append(os.path.join(script_dir, '..', 'vina_docking')) # make sur to clone 'vina_docking' repo. 
+    
     from model import Model, Loss, multiLoss
     from dataloaders.molDataset import molDataset, Loader
-    
+    from dock_AL_batch import dock_batch # docking function 
 
     parser = argparse.ArgumentParser()
 
@@ -96,9 +101,6 @@ if __name__ == "__main__":
         print('> tensorboard logging in ./runs')
     disable_rdkit_logging() # function from utils to disable rdkit logs
         
-    
-    load_model = args.load_model
-    load_path= 'saved_model_w/g2s'
 
     #Load train set and test set
     loaders = Loader(maps_path='map_files/',
@@ -185,13 +187,13 @@ if __name__ == "__main__":
             smiles = [selfies.decoder(s) for s in smiles]
             
             # Request scores
-            scores = vina_docking(smiles)
+            scores = dock_batch(smiles)
             
             # Save scores to known values 
             
             
             # Compute affinity prediction loss on these values 
-            regression_loss = 
+            regression_loss = 0
             
             
             
