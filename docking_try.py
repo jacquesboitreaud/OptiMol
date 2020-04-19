@@ -92,7 +92,6 @@ if __name__ == "__main__":
         # Exploration: random 
         argmax = np.random.randint(0, high = 10)
         top_samples[i,:] =  samp[argmax, :]
-        top_preds[i] = pred_a[argmax] 
             
     smiles = model.decode(top_samples)
     smiles = model.probas_to_smiles(smiles)
@@ -103,13 +102,13 @@ if __name__ == "__main__":
     
     for i in range(100):
         print('smiles: ', smiles[i])
-        print('true: ', scores[i], 'pred: ', top_preds[i])
+        print('true score: ', scores[i] )
     
     # Save scores to known values 
     
     # Compute affinity prediction loss on these values 
-    regression_loss = F.mse_loss(top_preds, torch.tensor(scores), reduction="sum")
-    print('MSE loss: ', regression_loss.item())
+    #regression_loss = F.mse_loss(top_preds, torch.tensor(scores), reduction="sum")
+    #print('MSE loss: ', regression_loss.item())
 
 
 
