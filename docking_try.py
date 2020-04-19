@@ -48,7 +48,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     
-    parser.add_argument('--model', type=str, default='saved_model_w/baseline.pth') # Path to pretrained VAE 
+    parser.add_argument('--model', type=str, default='saved_model_w/g2s_iter_40000.pth') # Path to pretrained VAE 
 
     parser.add_argument('--decode', type=str, default='selfies') # 'smiles' or 'selfies'
 
@@ -98,6 +98,7 @@ if __name__ == "__main__":
     scores = dock_batch(smiles)
     
     for i in range(100):
+        print('smiles: ', smiles[i])
         print('true: ', scores[i], 'pred: ', top_preds[i])
     
     # Save scores to known values 
