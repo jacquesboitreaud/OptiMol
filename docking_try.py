@@ -85,8 +85,11 @@ if __name__ == "__main__":
         # ============================================================
         
         # Acquisition function 
-        # Here take the highest predicted aff in batch 
-        _, argmax = torch.max(pred_a, dim=0)
+        # Exploitation: take the highest predicted aff in batch 
+        #_, argmax = torch.max(pred_a, dim=0)
+        
+        # Exploration: random 
+        argmax = np.random.randint(0, high = 100)
         top_samples[i,:] =  samp[argmax, :]
         top_preds[i] = pred_a[argmax] 
             
