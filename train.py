@@ -43,7 +43,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--train', help="path to training dataframe", type=str, default='data/moses_train.csv')
-    parser.add_argument("--cutoff", help="Max number of molecules to use. Set to -1 for all", type=int, default=1000)
+    parser.add_argument("--cutoff", help="Max number of molecules to use. Set to -1 for all", type=int, default=-1)
     parser.add_argument('--save_path', type=str, default = './saved_model_w/g2s')
     parser.add_argument('--load_model', type=bool, default=False)
     parser.add_argument('--load_iter', type=int, default=0) # resume training at optimize step n°
@@ -69,8 +69,8 @@ if __name__ == "__main__":
     parser.add_argument('--kl_anneal_iter', type=int, default=2000) # update beta every _ step
     
     parser.add_argument('--print_iter', type=int, default=1000) # print loss metrics every _ step
-    parser.add_argument('--print_smiles_iter', type=int, default=1000) # print reconstructed smiles every _ step
-    parser.add_argument('--save_iter', type=int, default=10000) # save model weights every _ step
+    parser.add_argument('--print_smiles_iter', type=int, default=10000) # print reconstructed smiles every _ step
+    parser.add_argument('--save_iter', type=int, default=40000) # save model weights every _ step
 
      # =======
 
