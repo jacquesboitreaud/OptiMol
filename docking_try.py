@@ -65,10 +65,11 @@ if __name__ == "__main__":
     #Loading model 
 
     params = pickle.load(open('saved_model_w/model_params.pickle','rb'))
-    model = Model(**params).to(model.device)
+    model = Model(**params)
     model.load_state_dict(torch.load(args.model))
     print('> Loaded pretrained VAE')
     device = model.device
+    model.to(device)
 
     print(model)
     
