@@ -61,11 +61,6 @@ if __name__ == "__main__":
     args=parser.parse_args()
     
     disable_rdkit_logging() # function from utils to disable rdkit logs
-    
-    # Just check docking works 
-    smiles = ['Brc1ccc2[nH]cc(CCN(CC=C)CC=C)c2c1','C(CC1=Cc2ccccc2C1)N3CCc4ccccc4C3']
-    sc = dock_batch(smiles)
-    print(sc)
 
     #Loading model 
 
