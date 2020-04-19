@@ -43,7 +43,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--train', help="path to training dataframe", type=str, default='data/moses_train.csv')
-    parser.add_argument("--cutoff", help="Max number of molecules to use. Set to -1 for all", type=int, default=1000)
+    parser.add_argument("--cutoff", help="Max number of molecules to use. Set to -1 for all", type=int, default=-1)
     parser.add_argument('--save_path', type=str, default = './saved_model_w/g2s')
     parser.add_argument('--load_model', type=bool, default=False)
     parser.add_argument('--load_iter', type=int, default=0) # resume training at optimize step n°
@@ -63,7 +63,7 @@ if __name__ == "__main__":
     parser.add_argument('--processes', type=int, default=8) # num workers 
     
     parser.add_argument('--batch_size', type=int, default=64)
-    parser.add_argument('--epochs', type=int, default=50) # nbr training epochs
+    parser.add_argument('--epochs', type=int, default=20) # nbr training epochs
     parser.add_argument('--anneal_rate', type=float, default=0.9) # Learning rate annealing
     parser.add_argument('--anneal_iter', type=int, default=40000) # update learning rate every _ step
     parser.add_argument('--kl_anneal_iter', type=int, default=2000) # update beta every _ step
@@ -86,8 +86,7 @@ if __name__ == "__main__":
     #properties = [] # no properties 
     properties = ['QED','logP','molWt']
     
-    targets = [] # no affinities
-    #targets = ['drd3'] # Change target names according to dataset
+    targets = ['drd3'] # Change target names according to dataset
 
 
     use_props = bool(len(properties)>0)
@@ -131,7 +130,7 @@ if __name__ == "__main__":
 
     model = Model(**params).to(device)
     if(load_model):
-        model.load_state_dict(torch.load(f'{load_path}.pth'))
+        model.load(load_path, aff_net = False)
 
     if (parallel and torch.cuda.device_count() > 1): 
         print("Start training using ", torch.cuda.device_count(), "GPUs!")
@@ -176,7 +175,7 @@ if __name__ == "__main__":
                 rec, kl, pmse, amse= Loss(out_smi, smiles, mu, logv)
             else:
                 rec, kl, pmse, amse = multiLoss(out_smi, smiles, mu, logv, p_target, out_p,
-         y_a=None, a_pred=None, train_on_aff = False )
+         y_a=a_target, a_pred=out_a, train_on_aff = True)
 
             # COMPOSE TOTAL LOSS TO BACKWARD
             if(total_steps<args.warmup): # Only reconstruction (warmup)
@@ -245,7 +244,7 @@ if __name__ == "__main__":
                     rec, kl, pmse, amse= Loss(out_smi, smiles, mu, logv)
                 else:
                     rec, kl, pmse, amse = multiLoss(out_smi, smiles, mu, logv, p_target, out_p,
-         y_a=None, a_pred=None, train_on_aff = False )
+         y_a=a_target, a_pred=out_a, train_on_aff = True )
                     
                 val_rec += rec.item()
                 val_kl +=kl.item()

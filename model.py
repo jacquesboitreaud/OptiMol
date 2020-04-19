@@ -67,11 +67,12 @@ class MultiGRU(nn.Module):
 
 class RGCN(nn.Module):
     """ RGCN encoder with num_hidden_layers + 2 RGCN layers, and sum pooling. """
-    def __init__(self, features_dim, h_dim, out_dim , num_rels, num_bases=-1, num_hidden_layers=2):
+    def __init__(self, features_dim, h_dim, num_rels, num_layers, num_bases=-1):
         super(RGCN, self).__init__()
         
-        self.features_dim, self.h_dim, self.out_dim = features_dim, h_dim, out_dim
-        self.num_hidden_layers = num_hidden_layers
+        self.features_dim, self.h_dim = features_dim, h_dim
+        self.num_layers= num_layers
+        
         self.num_rels = num_rels
         self.num_bases = num_bases
         # create rgcn layers
@@ -84,18 +85,23 @@ class RGCN(nn.Module):
         i2h = RelGraphConv(self.features_dim, self.h_dim, self.num_rels, activation=nn.ReLU())
         self.layers.append(i2h)
         # hidden to hidden
-        for _ in range(self.num_hidden_layers):
+        for _ in range(self.num_layers-2):
             h2h = RelGraphConv(self.h_dim, self.h_dim, self.num_rels, activation=nn.ReLU())
             self.layers.append(h2h)
         # hidden to output
-        h2o = RelGraphConv(self.h_dim, self.out_dim, self.num_rels, activation=nn.ReLU())
+        h2o = RelGraphConv(self.h_dim, self.h_dim, self.num_rels, activation=nn.ReLU())
         self.layers.append(h2o)
         
     def forward(self, g):
-        #print('edge data size ', g.edata['one_hot'].size())
-        for layer in self.layers:
+        sequence = []
+        for i,layer in enumerate(self.layers):
+            # Node update 
              g.ndata['h']=layer(g,g.ndata['h'],g.edata['one_hot'])
-        out=self.pool(g,g.ndata['h'].view(len(g.nodes),-1,self.out_dim))
+             # Jumping knowledge connexion 
+             sequence.append(g.ndata['h'])
+        # Concatenation :
+        g.ndata['h'] = torch.cat(sequence, dim = 1) # Num_nodes * (h_dim*num_layers)
+        out=self.pool(g,g.ndata['h'].view(len(g.nodes),-1,self.h_dim*self.num_layers) )
         return out
     
 class Model(nn.Module):
@@ -110,10 +116,10 @@ class Model(nn.Module):
         
         # Encoding
         self.features_dim = features_dim
-        self.gcn_hdim = 64
-        self.gcn_outdim = 64
+        self.gcn_hdim = 32
+        self.gcn_layers = 3 # input, hidden , final.
         self.num_rels = num_rels
-        
+                
         # Bottleneck
         self.l_size = l_size
         
@@ -128,11 +134,11 @@ class Model(nn.Module):
         self.device = device
         
         # layers:
-        self.encoder=RGCN(self.features_dim, self.gcn_hdim, self.gcn_outdim, self.num_rels, 
-                          num_bases=-1, num_hidden_layers=2).to(self.device)
+        self.encoder=RGCN(self.features_dim, self.gcn_hdim, self.num_rels, self.gcn_layers,
+                          num_bases=-1).to(self.device)
         
-        self.encoder_mean = nn.Linear(self.gcn_outdim , self.l_size)
-        self.encoder_logv = nn.Linear(self.gcn_outdim , self.l_size)
+        self.encoder_mean = nn.Linear(self.gcn_hdim*self.gcn_layers , self.l_size)
+        self.encoder_logv = nn.Linear(self.gcn_hdim*self.gcn_layers , self.l_size)
         
         self.rnn_in= nn.Linear(self.l_size,self.voc_size)
         self.decoder = MultiGRU(voc_size=self.voc_size, latent_size= self.l_size, h_size=400)
@@ -151,7 +157,7 @@ class Model(nn.Module):
                 nn.ReLU(),
                 nn.Linear(32,16),
                 nn.ReLU(),
-                nn.Linear(16,self.N_targets))
+                nn.Linear(16,min(1,self.N_targets)))
         
     def load(self, trained_path, aff_net=False):
         # Loads trained model weights, with or without the affinity predictor

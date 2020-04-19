@@ -4,14 +4,15 @@ Created on Wed Nov  6 18:44:04 2019
 
 @author: jacqu
 
-Graph2Smiles VAE training (RGCN encoder, GRU decoder, teacher forced decoding). 
+Loads pretrained multitask VAE and iterates sampling and docking to improve the affinity predictor in latent space. 
+(TODO)
 
-To resume training form a given 
-- iteration saved
-- learning rate
-- beta 
-
-pass corresponding args + load_model = True
+Args : 
+    
+    --model : path to pretrained VAE weights. 
+    
+Questions : 
+    end-to-end or freeze the VAE and just learn the predictor network ? 
 
 
 """
@@ -43,10 +44,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--train', help="path to training dataframe", type=str, default='data/moses_train.csv')
-    parser.add_argument("--cutoff", help="Max number of molecules to use. Set to -1 for all", type=int, default=1000)
+    parser.add_argument("--cutoff", help="Max number of molecules to use. Set to -1 for all", type=int, default=-1)
     parser.add_argument('--save_path', type=str, default = './saved_model_w/g2s')
-    parser.add_argument('--load_model', type=bool, default=False)
-    parser.add_argument('--load_iter', type=int, default=0) # resume training at optimize step n°
+    
+    parser.add_argument('--model', type=str, default='saved_model_w/baseline.pth') # Path to pretrained VAE 
 
     parser.add_argument('--decode', type=str, default='selfies') # 'smiles' or 'selfies'
     parser.add_argument('--build_alphabet', action='store_true', default = True) 
@@ -63,7 +64,7 @@ if __name__ == "__main__":
     parser.add_argument('--processes', type=int, default=8) # num workers 
     
     parser.add_argument('--batch_size', type=int, default=64)
-    parser.add_argument('--epochs', type=int, default=50) # nbr training epochs
+    parser.add_argument('--epochs', type=int, default=20) # nbr training epochs
     parser.add_argument('--anneal_rate', type=float, default=0.9) # Learning rate annealing
     parser.add_argument('--anneal_iter', type=int, default=40000) # update learning rate every _ step
     parser.add_argument('--kl_anneal_iter', type=int, default=2000) # update beta every _ step
@@ -82,12 +83,8 @@ if __name__ == "__main__":
     parallel=False # parallelize over multiple gpus if available
     
     # Multitasking : properties and affinities should be in input dataset 
-    
-    #properties = [] # no properties 
     properties = ['QED','logP','molWt']
-    
-    targets = [] # no affinities
-    #targets = ['drd3'] # Change target names according to dataset
+    targets = ['drd3'] # Change target names according to dataset
 
 
     use_props = bool(len(properties)>0)
@@ -130,11 +127,11 @@ if __name__ == "__main__":
     pickle.dump(params, open('saved_model_w/model_params.pickle','wb'))
 
     model = Model(**params).to(device)
-    if(load_model):
-        model.load_state_dict(torch.load(f'{load_path}.pth'))
+    model.load_state_dict(torch.load(args.model))
+    print('> Loaded pretrained VAE')
 
     if (parallel and torch.cuda.device_count() > 1): 
-        print("Start training using ", torch.cuda.device_count(), "GPUs!")
+        print("> Start training using ", torch.cuda.device_count(), "GPUs!")
         model = nn.DataParallel(model)
 
     print(model)
@@ -147,10 +144,7 @@ if __name__ == "__main__":
 
     #Train & test
     model.train()
-    if(args.load_model):
-        total_steps = args.load_iter
-    else:
-        total_steps=0
+    total_steps=0
     beta = args.beta
 
     for epoch in range(1, args.epochs+1):
@@ -170,13 +164,44 @@ if __name__ == "__main__":
 
             # Forward pass
             mu, logv, _, out_smi, out_p, out_a = model(graph,smiles)
+            
+            # ============================================================
+            # Active learning iteration
+            # ============================================================
+            
+            # Acquisition function 
+            # Here take the highest predicted aff in batch 
+            _, argmax = torch.max(out_a, dim=0)
+            
+            mu_max, logv_max = mu[argmax,:], logv[argmax,:]
+            
+            samp = torch.zeros(100,args.latent_size)
+            for i in range(100):
+                # Sample a batch of 100 around mu_max 
+                samp[i,:] = model.sample(mu_max, logv_max)
+                
+            smiles = model.decode(samp)
+            smiles = model.probas_to_smiles(smiles)
+            smiles = [selfies.decoder(s) for s in smiles]
+            
+            # Request scores
+            scores = vina_docking(smiles)
+            
+            # Save scores to known values 
+            
+            
+            # Compute affinity prediction loss on these values 
+            regression_loss = 
+            
+            
+            
 
             #Compute loss terms : change according to supervision
             if( (not use_affs) and (not use_props)):
                 rec, kl, pmse, amse= Loss(out_smi, smiles, mu, logv)
             else:
                 rec, kl, pmse, amse = multiLoss(out_smi, smiles, mu, logv, p_target, out_p,
-         y_a=None, a_pred=None, train_on_aff = False )
+         y_a=a_target, a_pred=out_a, train_on_aff = True)
 
             # COMPOSE TOTAL LOSS TO BACKWARD
             if(total_steps<args.warmup): # Only reconstruction (warmup)
@@ -211,9 +236,7 @@ if __name__ == "__main__":
             if(total_steps % args.print_smiles_iter == 0):
                 reconstruction_dataframe, frac_valid = log_reconstruction(smiles, out_smi.detach(),
                                                       loaders.dataset.index_to_char, string_type = args.decode)
-                # Only when using smiles 
-                #print(reconstruction_dataframe)
-                # print('fraction of valid smiles in batch: ', frac_valid)
+
 
             if total_steps % args.save_iter == 0:
                 torch.save( model.state_dict(), f"{args.save_path}_iter_{total_steps}.pth")
@@ -245,7 +268,7 @@ if __name__ == "__main__":
                     rec, kl, pmse, amse= Loss(out_smi, smiles, mu, logv)
                 else:
                     rec, kl, pmse, amse = multiLoss(out_smi, smiles, mu, logv, p_target, out_p,
-         y_a=None, a_pred=None, train_on_aff = False )
+         y_a=a_target, a_pred=out_a, train_on_aff = True )
                     
                 val_rec += rec.item()
                 val_kl +=kl.item()

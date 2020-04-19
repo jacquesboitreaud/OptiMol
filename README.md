@@ -31,9 +31,13 @@ python data/get_selfies.py -i [path_to_my_csv_dataset]
 
 Chemical properties (QED, logP, molWt) can be computed for a csv dataset by running 
 ```
-python data/properties.py -i [path_to_csv_file]
+python data/add_properties.py -i [path_to_csv_file]
 ```
-
+Docking scores for DRD3 (DUDE target, Autodock Vina used) for 130k moses train molecules and 10k moses test molecules are stored in data/drd3_scores.zip. 
+First unzip to data/drd3_scores.pickle, then add as a new column to dataframes by running 
+```
+python data/add_scores.py
+```
 
 
 ### Model training 
