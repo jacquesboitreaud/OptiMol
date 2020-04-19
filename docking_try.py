@@ -74,6 +74,7 @@ if __name__ == "__main__":
     
     top_samples = torch.zeros(100, 64) # n_mols * latent size 
     top_preds = torch.zeros(100)
+    
 
     for i in range(100):
         
@@ -89,7 +90,7 @@ if __name__ == "__main__":
         #_, argmax = torch.max(pred_a, dim=0)
         
         # Exploration: random 
-        argmax = np.random.randint(0, high = 100)
+        argmax = np.random.randint(0, high = 10)
         top_samples[i,:] =  samp[argmax, :]
         top_preds[i] = pred_a[argmax] 
             
