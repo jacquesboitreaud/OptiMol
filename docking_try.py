@@ -63,12 +63,12 @@ if __name__ == "__main__":
     disable_rdkit_logging() # function from utils to disable rdkit logs
 
     #Loading model 
-    device = 'cpu'
 
     params = pickle.load(open('saved_model_w/model_params.pickle','rb'))
-    model = Model(**params).to(device)
+    model = Model(**params).to(model.device)
     model.load_state_dict(torch.load(args.model))
     print('> Loaded pretrained VAE')
+    device = model.device
 
     print(model)
     
@@ -79,7 +79,7 @@ if __name__ == "__main__":
     for i in range(100):
         
         samp = model.sample_z_prior(n_mols = 10)
-        pred_a = model.aff_net(samp)
+        #pred_a = model.aff_net(samp)
         
         # ============================================================
         # Active learning iteration
@@ -93,9 +93,10 @@ if __name__ == "__main__":
         argmax = np.random.randint(0, high = 10)
         top_samples[i,:] =  samp[argmax, :]
             
+    top_samples = top_samples.to(device)
     smiles = model.decode(top_samples)
     smiles = model.probas_to_smiles(smiles)
-    smiles = [selfies.decoder(s) for s in smiles]
+    smiles = [decoder(s) for s in smiles]
     
     # Request scores
     scores = dock_batch(smiles)
