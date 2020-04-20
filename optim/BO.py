@@ -119,10 +119,12 @@ if __name__ == "__main__":
             smiles =[ decoder(s) for s in smiles]
         
         if BO_BATCH_SIZE > 1 :
-            new_scores = dock_batch(smiles).unsqueeze(-1)  # add output dimension
+            new_scores, _ = dock_batch(smiles)
+            new_scores = torch.tensor(new_scores).unsqueeze(-1)  # add output dimension
             return smiles, new_z, new_scores
         else:
-            new_score = score(smiles).unsqueeze(-1)
+            new_score, _ = score(smiles)
+            new_score = torch.tensor(new_score).unsqueeze(-1)
             return smiles, new_z, new_score
     
     
