@@ -53,6 +53,8 @@ if __name__ == "__main__":
     parser.add_argument('-m', '--model', help="saved model weights fname. Located in saved_model_w subdir",
                         default='saved_model_w/baseline.pth')
     parser.add_argument('-v', '--vocab', default='selfies') # vocab used by model 
+    
+    parser.add_argument('-d', '--device', default='cpu') # 'cpu or 'cuda'. 
     args = parser.parse_args()
 
     # ==============
@@ -72,7 +74,10 @@ if __name__ == "__main__":
     
     d = 64
     dtype = torch.float
-    device = 'cuda'
+    device = args.device
+    # make sure model settings are coherent 
+    model.device = device 
+    model.to(device)
     bounds = torch.tensor([[-4.0] * d, [4.0] * d], device=device, dtype=dtype)
     BO_BATCH_SIZE = 3
     N_STEPS = args.n_steps
