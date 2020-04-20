@@ -311,7 +311,7 @@ class Loader():
                  targets,
                  csv_path=None,
                  maps_path ='../map_files/',
-                 vocab='smiles',
+                 vocab='selfies',
                  build_alphabet = False,
                  n_mols=None,
                  batch_size=64,

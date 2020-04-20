@@ -9,8 +9,7 @@ Gradient descent optimization of objective target function in latent space.
 Starts from 1 seed compound or random point in latent space (sampled from prior N(0,1))
 
 TODO : 
-    - add tanimoto similarity to seed compound ? 
-    - add early stopping when QED reaches desired value 
+    - add tanimoto similarity to seed compound
 """
 
 import os
@@ -21,7 +20,9 @@ import numpy as np
 from numpy.linalg import norm
 
 from rdkit import Chem
+from rdkit import DataStructs
 from rdkit.Chem import Draw, QED, Crippen, Descriptors
+from rdkit.Chem import MACCSkeys
 import matplotlib.pyplot as plt
 
 
@@ -40,6 +41,7 @@ if(__name__=='__main__'):
     N_steps=100
     lr=0.1
     size = (120, 120) # plotting 
+    early_stopping_QED = 0.940
     
     def eps(props, aff):
         # props = [QED, logP, molWt]
@@ -68,6 +70,8 @@ if(__name__=='__main__'):
         # Begin optimization with seed compound : a DUD decoy   
         s_seed='O=C(NC1=CCCC1=O)NC1=CCN(c2ncnc3ccccc23)CC1'
         m0= Chem.MolFromSmiles(s_seed)
+        fp0 = MACCSkeys.GenMACCSKeys(m0) # fingerprint (MACCS)
+        
         Draw.MolToMPL(m0, size=size)
         plt.show(block=False)
         plt.pause(0.1)
@@ -118,9 +122,16 @@ if(__name__=='__main__'):
                 prev_s=smi
                 logP= Chem.Crippen.MolLogP(m)
                 qed = Chem.QED.default(m)
+                
                 print(f'predicted logP: {model.props(z)[0,1].item():.2f}, true: {logP:.2f}')
-                print(f'predicted QED: {model.props(z)[0,0].item():.2f}, true: {qed:.2f}')
+                print(f'predicted QED: {model.props(z)[0,0].item():.4f}, true: {qed:.4f}')
                 #print(f'predicted aff: {model.affs(z)[0,0].item():.2f}')
+                if(qed >= early_stopping_QED):
+                    if(seed):
+                        fp = MACCSkeys.GenMACCSKeys(m)
+                        tanimoto = DataStructs.FingerprintSimilarity(fp0,fp, metric=DataStructs.TanimotoSimilarity)
+                        print('Tanimoto similarity to seed compound: ', tanimoto)
+                    break
             else:
                 print(f'predicted logP / QED : {model.props(z)[0,1].item():.2f} / {model.props(z)[0,0].item():.2f}, invalid smiles')
         z.requires_grad =True
