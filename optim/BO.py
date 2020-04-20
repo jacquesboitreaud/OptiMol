@@ -53,7 +53,6 @@ if __name__ == "__main__":
     parser.add_argument('-m', '--model', help="saved model weights fname. Located in saved_model_w subdir",
                         default='saved_model_w/baseline.pth')
     parser.add_argument('-v', '--vocab', default='selfies') # vocab used by model 
-    parser.add_argument('-o', '--output_file', type=str, default='data/gen.txt')
     args = parser.parse_args()
 
     # ==============
