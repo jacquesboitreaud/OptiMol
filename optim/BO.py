@@ -54,7 +54,7 @@ if __name__ == "__main__":
                         default='saved_model_w/baseline.pth')
     parser.add_argument('-v', '--vocab', default='selfies') # vocab used by model 
     
-    parser.add_argument('-d', '--device', default='cpu') # 'cpu or 'cuda'. 
+    parser.add_argument('-d', '--device', default='cuda') # 'cpu or 'cuda'. 
     args = parser.parse_args()
 
     # ==============
