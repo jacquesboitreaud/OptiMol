@@ -88,8 +88,8 @@ if __name__ == "__main__":
     df = pd.read_csv(os.path.join(repo_dir,'data','drd3_1k_samples.csv'))
     scores_init = df.scores
     loader.graph_only=False
-    train_z = torch.tensor(model.embed( loader, df)) # z has shape (N_molecules, latent_size)
-    train_obj = torch.tensor(scores_init).view(-1,1)
+    train_z = torch.tensor(model.embed( loader, df)).to(device) # z has shape (N_molecules, latent_size)
+    train_obj = torch.tensor(scores_init).view(-1,1).to(device)
     best_value = max(scores_init)
     best_observed.append(best_value)
     
