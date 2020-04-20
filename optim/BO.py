@@ -134,7 +134,7 @@ if __name__ == "__main__":
     for iteration in range(N_STEPS):    
     
         # fit the model
-        model = get_fitted_model(
+        GP_model = get_fitted_model(
             normalize(train_z, bounds=bounds), 
             standardize(train_obj), 
             state_dict=state_dict,
@@ -142,7 +142,7 @@ if __name__ == "__main__":
         
         # define the qNEI acquisition module using a QMC sampler
         qmc_sampler = SobolQMCNormalSampler(num_samples=MC_SAMPLES, seed=seed)
-        qEI = qExpectedImprovement(model=model, sampler=qmc_sampler, best_f=standardize(train_obj).max())
+        qEI = qExpectedImprovement(model=GP_model, sampler=qmc_sampler, best_f=standardize(train_obj).max())
     
         # optimize and get new observation
         new_smiles, new_z, new_score = optimize_acqf_and_get_observation(qEI, device)
@@ -159,6 +159,6 @@ if __name__ == "__main__":
         best_value = train_obj.max().item()
         best_observed.append(best_value)
         
-        state_dict = model.state_dict()
+        state_dict = GP_model.state_dict()
         
         print(".", end='')
