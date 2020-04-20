@@ -159,6 +159,9 @@ if __name__ == "__main__":
         print(new_score)
     
         # update training points
+        new_z.to(device)
+        new_score.to(device)
+        
         train_z = torch.cat((train_z, new_z), dim=0)
         train_obj = torch.cat((train_obj, new_score), dim=0)
     
