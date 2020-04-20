@@ -44,8 +44,8 @@ if __name__ == "__main__":
     from model import Model
     from utils import *
     from BO_utils import get_fitted_model
-    from scoring_function import score
-    from batch_scoring_function import dock_batch
+    from score_function import score
+    from score_function_batch import dock_batch
 
     parser = argparse.ArgumentParser()
 
@@ -67,7 +67,7 @@ if __name__ == "__main__":
     # Load model (on gpu if available)
     params = pickle.load(open(os.path.join(repo_dir,'saved_model_w/model_params.pickle'), 'rb'))  # model hparams
     model = Model(**params)
-    model.load(args.model)
+    model.load(os.path.join(repo_dir,args.model))
     model.eval()
     
     d = 64
@@ -87,6 +87,7 @@ if __name__ == "__main__":
     # Generate initial data 
     df = pd.read_csv(os.path.join(repo_dir,'data','drd3_1k_samples.csv'))
     scores_init = df.scores
+    loader.graph_only=False
     train_x = model.embed( loader, df) # z has shape (N_molecules, latent_size)
     train_obj = torch.tensor(scores_init).view(-1,1)
     best_value = max(scores_init)
