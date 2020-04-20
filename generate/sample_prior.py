@@ -5,6 +5,7 @@ Created on Thu Jan 23 16:24:31 2020
 @author: jacqu
 
 Sampling molecules in latent space // random samples from diagonal normal dist 
+Run from repo root. 
 
 """
 import os
@@ -29,7 +30,7 @@ import torch.nn.functional as F
 from selfies import decoder
 
 if __name__ == "__main__":
-
+    
     from dataloaders.molDataset import molDataset
     from model import Model
     from utils import *
@@ -78,11 +79,13 @@ if __name__ == "__main__":
                 smiles =[ decoder(s) for s in smiles]
                 
             compounds += smiles
-
+    
+    Ntot = len(compounds)
     unique = list(np.unique(compounds))
+    N = len(unique)
 
     with open(args.output_file, 'w') as f:
         for s in unique:
             f.write(s)
             f.write('\n')
-    print(f'wrote output batch to {args.output_file}')
+    print(f'wrote {N} unique compounds / {Ntot} to {args.output_file}')

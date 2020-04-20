@@ -62,7 +62,8 @@ class molDataset(Dataset):
                  targets,
                  n_mols=-1,
                  debug=False):
-
+        
+        self.graph_only=False
         # 0/ two options: empty loader or csv path given 
         if (csv_path is None):
             print("Empty dataset initialized. Use pass_dataset or pass_dataset_path to add molecules.")
@@ -153,9 +154,10 @@ class molDataset(Dataset):
 
     def pass_smiles_list(self, smiles):
         # pass smiles list to the model; a dataframe with unique column 'can' will be created 
-        self.df = pd.DataFrame.from_dict({'can': smiles})
+        self.df = pd.DataFrame.from_dict({'smiles': smiles})
         self.n = self.df.shape[0]
-        print('New dataset contains only can smiles // no props or affinities')
+        self.graph_only=True
+        print('New dataset contains only smiles // no props or affinities')
 
     def __len__(self):
         return self.n
@@ -228,12 +230,7 @@ class molDataset(Dataset):
         row = self.df.iloc[idx,:]
         
         smiles = row.smiles # needed anyway to build graph 
-        string_representation = smiles
-        if self.language == 'selfies':
-            selfies = row.selfies
-            string_representation = selfies
         
-
         # 1 - Graph building
         graph = smiles_to_nx(smiles)
 
@@ -274,10 +271,16 @@ class molDataset(Dataset):
         N=g_dgl.number_of_nodes()
 
         g_dgl.ndata['h'] = torch.cat([g_dgl.ndata[f].view(N,-1) for f in node_features], dim=1)
+        
+        if(self.graph_only): # give only the graph (to encode in latent space)
+            return g_dgl, 0,0,0
 
         # 2 - Smiles / selfies to integer indices array
+        string_representation = smiles
         
-        if self.language == 'selfies' : # need to tokenize selfies properly 
+        if self.language == 'selfies':
+            selfies = row.selfies
+            string_representation = selfies
             a = self.selfies_to_hot(string_representation)
             
         else:

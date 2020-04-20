@@ -4,7 +4,7 @@ Created on Wed Nov  6 18:09:30 2019
 
 @author: jacqu
 
-Utils functions for working with PDB files using biopython
+Utils functions for pytorch model, Rdkit and smiles format. 
 """
 
 import numpy as np
@@ -14,11 +14,14 @@ import pandas as pd
 
 import rdkit
 from rdkit import Chem
+from rdkit.Chem import QED
 import os 
 
 
 def _make_dir(directory):
     os.makedirs(directory)
+    
+# ============== Rdkit utils =====================================
     
 def disable_rdkit_logging():
     """
@@ -29,6 +32,16 @@ def disable_rdkit_logging():
     logger = rkl.logger()
     logger.setLevel(rkl.ERROR)
     rkrb.DisableLog('rdApp.error')
+    
+def QED_oracle(smiles):
+    # takes a list of smiles and returns a list of corresponding QEDs
+    t = torch.zeros(len(smiles))
+    for i,s in enumerate(smiles):
+        m = Chem.MolFromSmiles(s)
+        if(m!=None):
+            t[i] = QED.qed(m)
+    return t 
+        
 
 
 # ================= Pytorch utils ================================

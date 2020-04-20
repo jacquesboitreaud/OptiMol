@@ -7,35 +7,36 @@ Created on Fri Jul  5 14:45:02 2019
 Gradient descent optimization of objective target function in latent space.
 
 Starts from 1 seed compound or random point in latent space (sampled from prior N(0,1))
+
+TODO : 
+    - add tanimoto similarity to seed compound ? 
+    - add early stopping when QED reaches desired value 
 """
 
 import os
 import sys
-if __name__ == "__main__":
-    script_dir = os.path.dirname(os.path.realpath(__file__))
-    sys.path.append(os.path.join(script_dir, '..'))
-
+import pickle 
 import torch
 import numpy as np
 from numpy.linalg import norm
-import pandas as pd
 
 from rdkit import Chem
-from rdkit.Chem import QED, Crippen, Descriptors
-
-import sys
+from rdkit.Chem import Draw, QED, Crippen, Descriptors
 import matplotlib.pyplot as plt
-import seaborn as sns
 
-from model import Model
+
 
 if(__name__=='__main__'):
+    script_dir = os.path.dirname(os.path.realpath(__file__))
+    sys.path.append(os.path.join(script_dir, '..'))
     from data_processing.rdkit_to_nx import smiles_to_nx
     from dataloaders.molDataset import molDataset
     from utils import *
+    from model import Model
     
     # Set to true if providing a seed compound to start optimization. Otherwise, random start in the latent space
-    seed= True
+    model_path = 'saved_model_w/g2s_iter_440000.pth'
+    seed= False
     N_steps=100
     lr=0.1
     size = (120, 120) # plotting 
@@ -45,12 +46,24 @@ if(__name__=='__main__'):
         # aff = [drd3_aff] is negative !!!!
         QED, logP, molWt = props
         #return  (QED-1)**2 + aff[0]
-        return  -10*QED + aff[0]
+        return  -10*QED
     
     molecules =[]
-    data = molDataset(maps_path='../map_files/',
-                      csv_path=None)
+    data = molDataset(csv_path = None, 
+                      maps_path='../map_files/',
+                      vocab = 'selfies', 
+                      build_alphabet = False, 
+                      props = ['QED', 'logP', 'molWt'],
+                      targets = [])
     
+    # Load model 
+    # Load model (on gpu if available)
+    params = pickle.load(open(os.path.join(script_dir,'..','saved_model_w/model_params.pickle'), 'rb'))  # model hparams
+    model = Model(**params)
+    model.load(os.path.join(script_dir, '..', model_path))
+    model.eval()
+    
+    # ================== Starting from a seed compound ======================
     if(seed):
         # Begin optimization with seed compound : a DUD decoy   
         s_seed='O=C(NC1=CCCC1=O)NC1=CCN(c2ncnc3ccccc23)CC1'
@@ -68,6 +81,7 @@ if(__name__=='__main__'):
         z = model.encode(graph, mean_only=True)
         z=z.unsqueeze(dim=0)
     else:
+        # ======================= Starting from random point ===============
         print("Sampling random latent vector")
         z = model.sample_z_prior(1)
         z.requires_grad=True
@@ -84,6 +98,8 @@ if(__name__=='__main__'):
             
             out=model.decode(z)
             smi = model.probas_to_smiles(out)[0]
+            if data.language == 'selfies':
+                smi = selfies.decoder(smi)
             
             #out=model.decode_beam(z)
             #smi = model.beam_out_to_smiles(out)[0]
@@ -94,7 +110,7 @@ if(__name__=='__main__'):
             if(i==0):
                 prev_s=smi
             
-            if(m!=None and smi!=prev_s):
+            if(m!=None and i%10==0): # print every 10 steps 
                 Draw.MolToMPL(m, size=size)
                 plt.show(block=False)
                 plt.pause(0.1)
@@ -104,7 +120,7 @@ if(__name__=='__main__'):
                 qed = Chem.QED.default(m)
                 print(f'predicted logP: {model.props(z)[0,1].item():.2f}, true: {logP:.2f}')
                 print(f'predicted QED: {model.props(z)[0,0].item():.2f}, true: {qed:.2f}')
-                print(f'predicted aff: {model.affs(z)[0,0].item():.2f}')
+                #print(f'predicted aff: {model.affs(z)[0,0].item():.2f}')
             else:
                 print(f'predicted logP / QED : {model.props(z)[0,1].item():.2f} / {model.props(z)[0,0].item():.2f}, invalid smiles')
         z.requires_grad =True

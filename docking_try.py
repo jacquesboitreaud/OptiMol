@@ -48,7 +48,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     
-    parser.add_argument('--model', type=str, default='saved_model_w/g2s_iter_40000.pth') # Path to pretrained VAE 
+    parser.add_argument('--model', type=str, default='saved_model_w/g2s_iter_440000.pth') # Path to pretrained VAE 
 
     parser.add_argument('--decode', type=str, default='selfies') # 'smiles' or 'selfies'
 
@@ -80,7 +80,7 @@ if __name__ == "__main__":
     for i in range(100):
         
         samp = model.sample_z_prior(n_mols = 10)
-        #pred_a = model.aff_net(samp)
+        model_pred = model.props(samp)
         
         # ============================================================
         # Active learning iteration
@@ -90,21 +90,25 @@ if __name__ == "__main__":
         # Exploitation: take the highest predicted aff in batch 
         #_, argmax = torch.max(pred_a, dim=0)
         
+        # Toy task : QED (oracle is fast...)
+        pred, argmax = torch.max(model_pred[:,0], dim=0)
+        top_preds[i] = pred
+        
         # Exploration: random 
-        argmax = np.random.randint(0, high = 10)
-        top_samples[i,:] =  samp[argmax, :]
-            
+        #argmax = np.random.randint(0, high = 10)
+        
+    top_samples[i,:] =  samp[argmax, :]
     top_samples = top_samples.to(device)
     smiles = model.decode(top_samples)
     smiles = model.probas_to_smiles(smiles)
     smiles = [decoder(s) for s in smiles]
     
     # Request scores
-    scores = dock_batch(smiles)
+    scores = QED_oracle(smiles)
     
     for i in range(100):
         print('smiles: ', smiles[i])
-        print('true score: ', scores[i] )
+        print('pred_score:', top_preds[i].item(), 'true score: ', scores[i].item() )
     
     # Save scores to known values 
     
