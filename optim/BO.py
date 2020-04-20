@@ -72,7 +72,7 @@ if __name__ == "__main__":
     
     d = 64
     dtype = torch.float
-    device = 'cpu'
+    device = 'cuda'
     bounds = torch.tensor([[-4.0] * d, [4.0] * d], device=device, dtype=dtype)
     BO_BATCH_SIZE = 3
     N_STEPS = args.n_steps
@@ -88,7 +88,7 @@ if __name__ == "__main__":
     df = pd.read_csv(os.path.join(repo_dir,'data','drd3_1k_samples.csv'))
     scores_init = df.scores
     loader.graph_only=False
-    train_x = torch.tensor(model.embed( loader, df)) # z has shape (N_molecules, latent_size)
+    train_z = torch.tensor(model.embed( loader, df)) # z has shape (N_molecules, latent_size)
     train_obj = torch.tensor(scores_init).view(-1,1)
     best_value = max(scores_init)
     best_observed.append(best_value)
@@ -135,7 +135,7 @@ if __name__ == "__main__":
     
         # fit the model
         model = get_fitted_model(
-            normalize(train_x, bounds=bounds), 
+            normalize(train_z, bounds=bounds), 
             standardize(train_obj), 
             state_dict=state_dict,
         )
@@ -145,15 +145,15 @@ if __name__ == "__main__":
         qEI = qExpectedImprovement(model=model, sampler=qmc_sampler, best_f=standardize(train_obj).max())
     
         # optimize and get new observation
-        new_smiles, new_z, new_score = optimize_acqf_and_get_observation(qEI)
+        new_smiles, new_z, new_score = optimize_acqf_and_get_observation(qEI, device)
         
         # save acquired scores for next time 
         print(new_smiles)
         print(new_score)
     
         # update training points
-        train_x = torch.cat((train_x, new_z))
-        train_obj = torch.cat((train_obj, new_score))
+        train_z = torch.cat((train_z, new_z), dim=0)
+        train_obj = torch.cat((train_obj, new_score), dim=0)
     
         # update progress
         best_value = train_obj.max().item()
