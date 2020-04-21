@@ -21,6 +21,7 @@ import torch.nn.utils.clip_grad as clip
 import torch.nn.functional as F
 
 from selfies import decoder
+from rdkit import Chem
 
 from botorch.models import SingleTaskGP
 from gpytorch.mlls.exact_marginal_log_likelihood import ExactMarginalLogLikelihood
@@ -55,6 +56,7 @@ if __name__ == "__main__":
     parser.add_argument('-v', '--vocab', default='selfies') # vocab used by model 
     
     parser.add_argument('-d', '--device', default='cuda') # 'cpu or 'cuda'. 
+    parser.add_argument('-o', '--objective', default='qed') # 'qed' or 'aff'
     args = parser.parse_args()
 
     # ==============
@@ -79,7 +81,7 @@ if __name__ == "__main__":
     model.device = device 
     model.to(device)
     bounds = torch.tensor([[-4.0] * d, [4.0] * d], device=device, dtype=dtype)
-    BO_BATCH_SIZE = 3
+    BO_BATCH_SIZE = 10
     N_STEPS = args.n_steps
     MC_SAMPLES = 2000
     
@@ -90,8 +92,12 @@ if __name__ == "__main__":
     state_dict = None
     
     # Generate initial data 
-    df = pd.read_csv(os.path.join(repo_dir,'data','drd3_1k_samples.csv'))
-    scores_init = df.scores
+    df = pd.read_csv(os.path.join(repo_dir,'data','1k_sample.csv'))
+    if args.objective == 'aff':
+        scores_init = df.scores
+    else:
+        scores_init = [Chem.QED.qed(Chem.MolFromSmiles(s)) for s in df.smiles]
+        
     loader.graph_only=False
     train_z = torch.tensor(model.embed( loader, df)).to(device) # z has shape (N_molecules, latent_size)
     train_obj = torch.tensor(scores_init).view(-1,1).to(device)
@@ -124,11 +130,26 @@ if __name__ == "__main__":
             smiles =[ decoder(s) for s in smiles]
         
         if BO_BATCH_SIZE > 1 :
-            new_scores, _ = dock_batch(smiles)
-            new_scores = torch.tensor(new_scores).unsqueeze(-1)  # add output dimension
+            
+            if args.objective == 'aff':
+                new_scores, _ = dock_batch(smiles)
+                new_scores = torch.tensor(new_scores)
+            elif args.objective =='qed':
+                mols = [Chem.MolFromSmiles(s) for s in smiles ]
+                new_scores = torch.zeros(len(smiles), dtype = torch.float)
+                for i,m in enumerate(mols):
+                    if m!=None:
+                        new_scores[i]=Chem.QED.qed(m)
+                
+            new_scores = new_scores.unsqueeze(-1)  # add output dimension
             return smiles, new_z, new_scores
+        
         else:
-            new_score, _ = score(smiles)
+            if args.objective == 'aff':
+                new_score, _ = score(smiles)
+            elif args.objective == 'qed':
+                new_score = Chem.QED.qed(Chem.MolFromSmiles(smiles))
+                
             new_score = torch.tensor(new_score).unsqueeze(-1)
             return smiles, new_z, new_score
     
@@ -160,7 +181,7 @@ if __name__ == "__main__":
     
         # update training points
         new_z.to(device)
-        new_score.to(device)
+        new_score = new_score.to(device)
         
         train_z = torch.cat((train_z, new_z), dim=0)
         train_obj = torch.cat((train_obj, new_score), dim=0)

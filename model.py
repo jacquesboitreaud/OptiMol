@@ -404,7 +404,13 @@ class Model(nn.Module):
         :param n_batch: number of batches
         :return: (n_batch, d_z) of floats, sample of latent z
         """
-        return torch.randn(n_mols, self.l_size, device=self.device)
+        latent_points = []
+        for i in range(n_mols):
+            latent_points.append(torch.normal(torch.zeros(self.l_size),torch.ones(self.l_size)).view(1, self.l_size) )
+            
+        latent = torch.cat(latent_points, dim = 0 )
+        
+        return latent.to(self.device)
     
     # ========================= Packaged functions to use trained model ========================
     

@@ -1,5 +1,6 @@
 __pycache__
 *.csv
 runs
+model_backups
 data_curation
 eval/plots

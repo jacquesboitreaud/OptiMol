@@ -30,6 +30,9 @@ import torch.nn.functional as F
 from selfies import decoder
 
 if __name__ == "__main__":
+    script_dir = os.path.dirname(os.path.realpath(__file__))
+    sys.path.append(os.path.join(script_dir, 'dataloaders'))
+    sys.path.append(os.path.join(script_dir, 'data_processing'))
     
     from dataloaders.molDataset import molDataset
     from model import Model
@@ -37,9 +40,9 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-n', "--n_mols", help="Nbr to generate", type=int, default=100)
+    parser.add_argument('-n', "--n_mols", help="Nbr to generate", type=int, default=50000)
     parser.add_argument('-m', '--model', help="saved model weights fname. Located in saved_model_w subdir",
-                        default='saved_model_w/baseline.pth')
+                        default='saved_model_w/iter_800k.pth')
     parser.add_argument('-v', '--vocab', default='selfies') # vocab used by model 
     
     parser.add_argument('-o', '--output_file', type=str, default='data/gen.txt')
@@ -51,9 +54,9 @@ if __name__ == "__main__":
     # ==============
 
     # Load model (on gpu if available)
-    params = pickle.load(open('saved_model_w/model_params.pickle', 'rb'))  # model hparams
+    params = pickle.load(open(os.path.join(script_dir,'..','saved_model_w/model_params.pickle'), 'rb'))  # model hparams
     model = Model(**params)
-    model.load(args.model)
+    model.load(os.path.join(script_dir, '..', args.model))
 
     model.eval()
 
@@ -83,8 +86,9 @@ if __name__ == "__main__":
     Ntot = len(compounds)
     unique = list(np.unique(compounds))
     N = len(unique)
-
-    with open(args.output_file, 'w') as f:
+    
+    out = os.path.join(script_dir,'..',args.output_file)
+    with open(out, 'w') as f:
         for s in unique:
             f.write(s)
             f.write('\n')
