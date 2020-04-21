@@ -145,11 +145,13 @@ class molDataset(Dataset):
         # Pass a new dataset to the loader, without changing other parameters 
         self.df = pd.read_csv(path)
         self.n = self.df.shape[0]
+        self.graph_only=True
         print('New dataset columns:', self.df.columns)
 
     def pass_dataset(self, df):
         self.df = df
         self.n = df.shape[0]
+        self.graph_only=True
         print('New dataset columns:', self.df.columns)
 
     def pass_smiles_list(self, smiles):
