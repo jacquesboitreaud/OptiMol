@@ -36,14 +36,15 @@ if __name__ == "__main__":
     script_dir = os.path.dirname(os.path.realpath(__file__))
     sys.path.append(os.path.join(script_dir, 'dataloaders'))
     sys.path.append(os.path.join(script_dir, 'data_processing'))
-    from model import Model, Loss, multiLoss
+    
+    from model_noTF import Model, Loss, multiLoss
     from dataloaders.molDataset import molDataset, Loader
     
 
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--train', help="path to training dataframe", type=str, default='data/moses_train.csv')
-    parser.add_argument("--cutoff", help="Max number of molecules to use. Set to -1 for all", type=int, default=-1)
+    parser.add_argument("--cutoff", help="Max number of molecules to use. Set to -1 for all", type=int, default=1000)
     parser.add_argument('--save_path', type=str, default = './saved_model_w/g2s')
     parser.add_argument('--load_model', type=bool, default=False)
     parser.add_argument('--load_iter', type=int, default=0) # resume training at optimize step n°
@@ -54,7 +55,7 @@ if __name__ == "__main__":
     parser.add_argument('--latent_size', type=int, default=64) # size of latent code
 
     parser.add_argument('--lr', type=float, default=1e-3) # Initial learning rate
-    parser.add_argument('--clip_norm', type=float, default=50.0) # Gradient clipping max norm
+    parser.add_argument('--clip_norm', type=float, default=5.0) # Gradient clipping max norm
     parser.add_argument('--beta', type=float, default=0.0) # initial KL annealing weight
     parser.add_argument('--step_beta', type=float, default=0.002) # beta increase per step
     parser.add_argument('--max_beta', type=float, default=1.0) # maximum KL annealing weight
@@ -68,8 +69,8 @@ if __name__ == "__main__":
     parser.add_argument('--anneal_iter', type=int, default=40000) # update learning rate every _ step
     parser.add_argument('--kl_anneal_iter', type=int, default=2000) # update beta every _ step
     
-    parser.add_argument('--print_iter', type=int, default=1000) # print loss metrics every _ step
-    parser.add_argument('--print_smiles_iter', type=int, default=10000) # print reconstructed smiles every _ step
+    parser.add_argument('--print_iter', type=int, default=10) # print loss metrics every _ step
+    parser.add_argument('--print_smiles_iter', type=int, default=0) # print reconstructed smiles every _ step
     parser.add_argument('--save_iter', type=int, default=40000) # save model weights every _ step
 
      # =======
@@ -84,7 +85,7 @@ if __name__ == "__main__":
     # Multitasking : properties and affinities should be in input dataset 
     
     #properties = [] # no properties 
-    properties = ['QED','logP','molWt']
+    properties = []#['QED','logP','molWt']
     
     targets = [] # no affinities
     #targets = ['drd3'] # Change target names according to dataset
@@ -146,7 +147,7 @@ if __name__ == "__main__":
     print ("> learning rate: %.6f" % scheduler.get_lr()[0])
 
     #Train & test
-    model.train()
+    
     if(args.load_model):
         total_steps = args.load_iter
     else:
@@ -155,8 +156,9 @@ if __name__ == "__main__":
 
     for epoch in range(1, args.epochs+1):
         print(f'Starting epoch {epoch}')
+        model.train()
         epoch_train_rec, epoch_train_kl, epoch_train_pmse, epoch_train_amse=0,0,0,0
-
+        
         for batch_idx, (graph, smiles, p_target, a_target) in enumerate(train_loader):
 
             total_steps+=1 # count training steps
@@ -208,7 +210,7 @@ if __name__ == "__main__":
                  if len(targets)>0:
                      writer.add_scalar('BatchAffMse/train', amse.item(), total_steps )   
 
-            if(total_steps % args.print_smiles_iter == 0):
+            if(args.print_smiles_iter >0 and total_steps % args.print_smiles_iter == 0):
                 reconstruction_dataframe, frac_valid = log_reconstruction(smiles, out_smi.detach(),
                                                       loaders.dataset.index_to_char, string_type = args.decode)
                 # Only when using smiles 

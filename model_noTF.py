@@ -10,6 +10,8 @@ RGCN encoder, GRU decoder to SELFIES
 RGCN layer at 
 https://docs.dgl.ai/tutorials/models/1_gnn/4_rgcn.html#sphx-glr-tutorials-models-1-gnn-4-rgcn-py
 
+Decoder without teacher forcing -- Autoregressive RNN 
+
 
 """
 import numpy as np
@@ -32,39 +34,43 @@ from utils import *
 from beam_search import BeamSearchNode
 import pickle
 
-class MultiGRU(nn.Module):
-    """ 
-    three layer GRU cell including an embedding layer
-    and an output linear layer back to the size of the vocabulary
-    """
-    def __init__(self, voc_size, latent_size, h_size, device):
-        super(MultiGRU, self).__init__()
+class GRU_Decoder(nn.Module):
+    
+    def __init__(self, latent_dimension, gru_stack_size, gru_neurons_num, n_chars ):
+        """
+        Through Decoder
+        """
+        super(GRU_Decoder, self).__init__()
+        self.gru_stack_size = gru_stack_size
+        self.gru_neurons_num = gru_neurons_num
+        self.n_chars = n_chars
+
+        # Simple Decoder
+        self.decode_RNN  = nn.GRU(
+                input_size  = latent_dimension, 
+                hidden_size = gru_neurons_num,
+                num_layers  = gru_stack_size,
+                batch_first = False)                
         
-        self.h_size=h_size
-        self.device = device
-        self.dense_init=nn.Linear(latent_size,3*self.h_size) # to initialise hidden state
-        
-        self.gru_1 = nn.GRUCell(voc_size, self.h_size)
-        self.gru_2 = nn.GRUCell(self.h_size, self.h_size)
-        self.gru_3 = nn.GRUCell(self.h_size, self.h_size)
-        self.linear = nn.Linear(self.h_size, voc_size)
+        self.decode_FC = nn.Sequential(
+            nn.Linear(gru_neurons_num, self.n_chars),
+        )
+    
 
-    def forward(self, x, h):
-        """ Forward pass to 3-layer GRU. Output =  output, hidden state of layer 3 """
-        x = x.view(x.shape[0],-1) # batch_size * 
-        h_out = torch.zeros(h.size()).to(self.device)
-        x= h_out[0] = self.gru_1(x, h[0])
-        x= h_out[1] = self.gru_2(x, h[1])
-        x= h_out[2] = self.gru_3(x, h[2])
-        x = self.linear(x)
-        return x, h_out
+    def init_hidden(self, batch_size = 1):
+        weight = next(self.parameters())
+        return weight.new_zeros(self.gru_stack_size, batch_size, self.gru_neurons_num)
+                 
+                       
+    def forward(self, z, hidden):
+        """
+        A forward pass throught the entire model.
+        """
+        # Decode
+        l1, hidden = self.decode_RNN(z, hidden)    
+        decoded = self.decode_FC(l1)  # fully connected layer
 
-    def init_h(self, z):
-        """ Initializes hidden state for 3 layers GRU with latent vector z """
-        batch_size, latent_shape = z.size()
-        hidden=self.dense_init(z).view(3,batch_size, self.h_size)
-        return hidden
-
+        return decoded, hidden
 
 class RGCN(nn.Module):
     """ RGCN encoder with num_hidden_layers + 2 RGCN layers, and sum pooling. """
@@ -142,7 +148,8 @@ class Model(nn.Module):
         self.encoder_logv = nn.Linear(self.gcn_hdim*self.gcn_layers , self.l_size)
         
         self.rnn_in= nn.Linear(self.l_size,self.voc_size)
-        self.decoder = MultiGRU(voc_size=self.voc_size, latent_size= self.l_size, h_size=400, device = self.device)
+        self.decoder = GRU_Decoder(latent_dimension= self.l_size, gru_stack_size=3, 
+                                   gru_neurons_num=400, n_chars = self.voc_size )
         
         # MOLECULAR PROPERTY REGRESSOR
         self.MLP=nn.Sequential(
@@ -180,7 +187,9 @@ class Model(nn.Module):
         e_out = self.encoder(g)
         mu, logv = self.encoder_mean(e_out), self.encoder_logv(e_out)
         z= self.sample(mu, logv, mean_only=False).squeeze() # stochastic sampling 
-        out = self.decode(z, smiles, teacher_forced=True) # teacher forced decoding 
+        
+        out = self.decode(z)
+        
         properties = self.MLP(z)
         affinities = self.aff_net(z)
         
@@ -210,7 +219,7 @@ class Model(nn.Module):
         return self.aff_net(z)
 
         
-    def decode(self, z, x_true=None,teacher_forced=False):
+    def decode(self, z ):
         """
             Unrolls decoder RNN to generate a batch of sequences, using teacher forcing
             Args:
@@ -223,27 +232,20 @@ class Model(nn.Module):
         batch_size=z.shape[0]
         #ls= z.shape[1]
         #print('batch size is', batch_size, 'latent size is ', ls)
-        seq_length=self.max_len
-        # Create first input to RNN : start token is full of zeros
-        start_token = self.rnn_in(z).view(batch_size,1,self.voc_size)
-        rnn_in = start_token.to(self.device)
-        # Init hidden with z sampled in latent space 
-        h = self.decoder.init_h(z)
+        z= z.reshape(1, batch_size, z.shape[0])
         
-        gen_seq = torch.zeros(batch_size, self.voc_size,seq_length).to(self.device)
+        hidden = self.decoder.init_hidden(batch_size = batch_size)
+                                                                       
+        # decoding from RNN N times, where N is the length of the largest molecule (all molecules are padded)
+        decoded_one_hot = torch.zeros(batch_size, self.max_len, self.voc_size).to(self.device) 
         
-        for step in range(seq_length):
-            out, h = self.decoder(rnn_in, h) 
-            gen_seq[:,:,step]=out
-            
-            if(teacher_forced):
-                indices = x_true[:,step]
-            else:
-                v, indices = torch.max(gen_seq[:,:,step],dim=1) # get char indices with max probability
-            # Input to next step: either autoregressive or Teacher forced
-            rnn_in =F.one_hot(indices,self.voc_size).float()
-                
-        return gen_seq # probas 
+        for seq_index in range(self.max_len):
+            decoded_one_hot_line, hidden  = self.decoder(z , hidden)
+            decoded_one_hot[:, seq_index, :] = decoded_one_hot_line[0]
+        
+        decoded_one_hot = decoded_one_hot.reshape(batch_size , self.voc_size, self.max_len) # for CE loss : N, C, d1...
+
+        return decoded_one_hot
     
     def probas_to_smiles(self, gen_seq):
         # Takes tensor of shape (N, voc_size, seq_len), returns list of corresponding smiles

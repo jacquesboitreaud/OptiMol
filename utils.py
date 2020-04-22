@@ -77,19 +77,6 @@ def send_graph_to_device(g, device):
     return g
 
 
-def Variable(tensor):
-    """Wrapper for torch.autograd.Variable that also accepts
-       numpy arrays directly and automatically assigns it to
-       the GPU. Be aware in case some operations are better
-       left to the CPU."""
-    if isinstance(tensor, np.ndarray):
-        tensor = torch.from_numpy(tensor)
-    if (torch.cuda.is_available()):
-        return torch.autograd.Variable(tensor).cuda()
-    else:
-        return torch.autograd.Variable(tensor)
-
-
 # ============== Smiles handling utils ===============================
 
 def log_reconstruction(true_idces, probas, idx_to_char, string_type='smiles'):

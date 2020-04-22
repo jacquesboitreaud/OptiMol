@@ -16,7 +16,7 @@ if __name__=='__main__':
     
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-i', "-- generated_samples", help="Nbr to generate", type=str, default='data/gen.txt')
+    parser.add_argument('-i', "--generated_samples", help="Nbr to generate", type=str, default='data/gen.txt')
 
     args = parser.parse_args()
     # =======================================
