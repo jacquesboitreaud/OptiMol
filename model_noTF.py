@@ -232,7 +232,7 @@ class Model(nn.Module):
         batch_size=z.shape[0]
         #ls= z.shape[1]
         #print('batch size is', batch_size, 'latent size is ', ls)
-        z= z.reshape(1, batch_size, z.shape[0])
+        z= z.reshape(1, batch_size, z.shape[1])
         
         hidden = self.decoder.init_hidden(batch_size = batch_size)
                                                                        
