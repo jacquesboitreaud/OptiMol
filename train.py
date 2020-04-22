@@ -45,14 +45,14 @@ if __name__ == "__main__":
 
     parser.add_argument('--train', help="path to training dataframe", type=str, default='data/moses_train.csv')
     parser.add_argument("--cutoff", help="Max number of molecules to use. Set to -1 for all", type=int, default=1000)
-    parser.add_argument('--save_path', type=str, default = './saved_model_w/g2s')
+    parser.add_argument('--save_path', type=str, default = './saved_model_w/autoreg_model')
     parser.add_argument('--load_model', type=bool, default=False)
     parser.add_argument('--load_iter', type=int, default=0) # resume training at optimize step n°
 
     parser.add_argument('--decode', type=str, default='selfies') # 'smiles' or 'selfies'
     parser.add_argument('--build_alphabet', action='store_true', default = True) 
     
-    parser.add_argument('--latent_size', type=int, default=64) # size of latent code
+    parser.add_argument('--latent_size', type=int, default=128) # size of latent code
 
     parser.add_argument('--lr', type=float, default=1e-3) # Initial learning rate
     parser.add_argument('--clip_norm', type=float, default=5.0) # Gradient clipping max norm

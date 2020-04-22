@@ -117,8 +117,8 @@ class Model(nn.Module):
         
         # Encoding
         self.features_dim = features_dim
-        self.gcn_hdim = 32
-        self.gcn_layers = 3 # input, hidden , final.
+        self.gcn_hdim = 48
+        self.gcn_layers = 4 # input, hidden , final.
         self.num_rels = num_rels
                 
         # Bottleneck
