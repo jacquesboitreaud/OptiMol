@@ -483,7 +483,7 @@ def multiLoss(out, indices, mu, logvar, y_p, p_pred,
     #aff_loss = F.cross_entropy(a_pred, y_a, reduction="sum") # binary binding labels
     
     if(train_on_aff):
-        aff_loss=0
+        aff_loss=torch.tensor(0)
         for i in range(y_a.shape[0]):
             if(y_a[i]<0):
                 if(y_a[i]<-9 or y_a[i]>-7):
