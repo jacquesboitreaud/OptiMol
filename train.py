@@ -44,7 +44,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--train', help="path to training dataframe", type=str, default='data/moses_train.csv')
-    parser.add_argument("--cutoff", help="Max number of molecules to use. Set to -1 for all", type=int, default=1000)
+    parser.add_argument("--cutoff", help="Max number of molecules to use. Set to -1 for all", type=int, default=-1)
     parser.add_argument('--save_path', type=str, default = './saved_model_w/aff_model')
     parser.add_argument('--load_model', type=bool, default=False)
     parser.add_argument('--load_iter', type=int, default=0) # resume training at optimize step n°
@@ -85,7 +85,7 @@ if __name__ == "__main__":
     # Multitasking : properties and affinities should be in input dataset 
     
     #properties = [] # no properties 
-    properties = []#['QED','logP','molWt']
+    properties = ['QED','logP','molWt']
     
     targets = ['scores'] # title of csv columns with affinities 
 
