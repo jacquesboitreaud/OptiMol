@@ -177,7 +177,7 @@ if __name__ == "__main__":
                 rec, kl, pmse, amse= Loss(out_smi, smiles, mu, logv)
             else:
                 rec, kl, pmse, amse = multiLoss(out_smi, smiles, mu, logv, p_target, out_p,
-         y_a=None, a_pred=None, train_on_aff = use_affs )
+         y_a=a_target, a_pred=out_a, train_on_aff = use_affs )
 
             # COMPOSE TOTAL LOSS TO BACKWARD
             if(total_steps<args.warmup): # Only reconstruction (warmup)
@@ -246,7 +246,7 @@ if __name__ == "__main__":
                     rec, kl, pmse, amse= Loss(out_smi, smiles, mu, logv)
                 else:
                     rec, kl, pmse, amse = multiLoss(out_smi, smiles, mu, logv, p_target, out_p,
-         y_a=None, a_pred=None, train_on_aff = use_affs )
+         y_a=a_target, a_pred=out_a, train_on_aff = use_affs )
                     
                 val_rec += rec.item()
                 val_kl +=kl.item()
