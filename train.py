@@ -37,7 +37,7 @@ if __name__ == "__main__":
     sys.path.append(os.path.join(script_dir, 'dataloaders'))
     sys.path.append(os.path.join(script_dir, 'data_processing'))
     
-    from model_noTF import Model, Loss, multiLoss
+    from model import Model, Loss, multiLoss
     from dataloaders.molDataset import molDataset, Loader
     
 
@@ -45,7 +45,7 @@ if __name__ == "__main__":
 
     parser.add_argument('--train', help="path to training dataframe", type=str, default='data/moses_train.csv')
     parser.add_argument("--cutoff", help="Max number of molecules to use. Set to -1 for all", type=int, default=1000)
-    parser.add_argument('--save_path', type=str, default = './saved_model_w/autoreg_model')
+    parser.add_argument('--save_path', type=str, default = './saved_model_w/aff_model')
     parser.add_argument('--load_model', type=bool, default=False)
     parser.add_argument('--load_iter', type=int, default=0) # resume training at optimize step n°
 
@@ -55,7 +55,7 @@ if __name__ == "__main__":
     parser.add_argument('--latent_size', type=int, default=128) # size of latent code
 
     parser.add_argument('--lr', type=float, default=1e-3) # Initial learning rate
-    parser.add_argument('--clip_norm', type=float, default=5.0) # Gradient clipping max norm
+    parser.add_argument('--clip_norm', type=float, default=50.0) # Gradient clipping max norm
     parser.add_argument('--beta', type=float, default=0.0) # initial KL annealing weight
     parser.add_argument('--step_beta', type=float, default=0.002) # beta increase per step
     parser.add_argument('--max_beta', type=float, default=1.0) # maximum KL annealing weight
@@ -63,13 +63,13 @@ if __name__ == "__main__":
 
     parser.add_argument('--processes', type=int, default=8) # num workers 
     
-    parser.add_argument('--batch_size', type=int, default=64)
+    parser.add_argument('--batch_size', type=int, default=128)
     parser.add_argument('--epochs', type=int, default=50) # nbr training epochs
     parser.add_argument('--anneal_rate', type=float, default=0.9) # Learning rate annealing
     parser.add_argument('--anneal_iter', type=int, default=40000) # update learning rate every _ step
     parser.add_argument('--kl_anneal_iter', type=int, default=2000) # update beta every _ step
     
-    parser.add_argument('--print_iter', type=int, default=10) # print loss metrics every _ step
+    parser.add_argument('--print_iter', type=int, default=1000) # print loss metrics every _ step
     parser.add_argument('--print_smiles_iter', type=int, default=0) # print reconstructed smiles every _ step
     parser.add_argument('--save_iter', type=int, default=40000) # save model weights every _ step
 
@@ -87,8 +87,7 @@ if __name__ == "__main__":
     #properties = [] # no properties 
     properties = []#['QED','logP','molWt']
     
-    targets = [] # no affinities
-    #targets = ['drd3'] # Change target names according to dataset
+    targets = ['scores'] # title of csv columns with affinities 
 
 
     use_props = bool(len(properties)>0)
@@ -178,7 +177,7 @@ if __name__ == "__main__":
                 rec, kl, pmse, amse= Loss(out_smi, smiles, mu, logv)
             else:
                 rec, kl, pmse, amse = multiLoss(out_smi, smiles, mu, logv, p_target, out_p,
-         y_a=None, a_pred=None, train_on_aff = False )
+         y_a=None, a_pred=None, train_on_aff = use_affs )
 
             # COMPOSE TOTAL LOSS TO BACKWARD
             if(total_steps<args.warmup): # Only reconstruction (warmup)
@@ -247,7 +246,7 @@ if __name__ == "__main__":
                     rec, kl, pmse, amse= Loss(out_smi, smiles, mu, logv)
                 else:
                     rec, kl, pmse, amse = multiLoss(out_smi, smiles, mu, logv, p_target, out_p,
-         y_a=None, a_pred=None, train_on_aff = False )
+         y_a=None, a_pred=None, train_on_aff = use_affs )
                     
                 val_rec += rec.item()
                 val_kl +=kl.item()

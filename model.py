@@ -142,7 +142,7 @@ class Model(nn.Module):
         self.encoder_logv = nn.Linear(self.gcn_hdim*self.gcn_layers , self.l_size)
         
         self.rnn_in= nn.Linear(self.l_size,self.voc_size)
-        self.decoder = MultiGRU(voc_size=self.voc_size, latent_size= self.l_size, h_size=400, device = self.device)
+        self.decoder = MultiGRU(voc_size=self.voc_size, latent_size= self.l_size, h_size=512, device = self.device)
         
         # MOLECULAR PROPERTY REGRESSOR
         self.MLP=nn.Sequential(
@@ -481,14 +481,15 @@ def multiLoss(out, indices, mu, logvar, y_p, p_pred,
     #affinities: 
     #if(train_on_aff and binary_aff):
     #aff_loss = F.cross_entropy(a_pred, y_a, reduction="sum") # binary binding labels
+    
     if(train_on_aff):
         aff_loss=0
         for i in range(y_a.shape[0]):
             if(y_a[i]<0):
                 if(y_a[i]<-9 or y_a[i]>-7):
-                    aff_loss+= 3*F.mse_loss(a_pred[i],y_a[i],reduction='sum')
+                    aff_loss+= 20*F.mse_loss(a_pred[i],y_a[i],reduction='sum')
                 else:
-                    aff_loss+= F.mse_loss(a_pred[i],y_a[i],reduction='sum')        
+                    aff_loss+= 2*F.mse_loss(a_pred[i],y_a[i],reduction='sum')        
     else: 
         aff_loss = torch.tensor(0) # No affinity prediction 
     

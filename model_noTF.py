@@ -125,6 +125,7 @@ class Model(nn.Module):
         self.features_dim = features_dim
         self.gcn_hdim = 32
         self.gcn_layers = 3 # input, hidden , final.
+        self.GRU_hdim = 512
         self.num_rels = num_rels
                 
         # Bottleneck
@@ -149,7 +150,7 @@ class Model(nn.Module):
         
         self.rnn_in= nn.Linear(self.l_size,self.voc_size)
         self.decoder = GRU_Decoder(latent_dimension= self.l_size, gru_stack_size=3, 
-                                   gru_neurons_num=400, n_chars = self.voc_size )
+                                   gru_neurons_num=self.GRU_hdim, n_chars = self.voc_size )
         
         # MOLECULAR PROPERTY REGRESSOR
         self.MLP=nn.Sequential(
