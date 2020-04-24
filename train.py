@@ -44,7 +44,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--train', help="path to training dataframe", type=str, default='data/moses_train.csv')
-    parser.add_argument("--cutoff", help="Max number of molecules to use. Set to -1 for all", type=int, default=-1)
+    parser.add_argument("--cutoff", help="Max number of molecules to use. Set to -1 for all", type=int, default=1000)
     parser.add_argument('--save_path', type=str, default = './saved_model_w/aff_model')
     parser.add_argument('--load_model', type=bool, default=False)
     parser.add_argument('--load_iter', type=int, default=0) # resume training at optimize step n°
@@ -59,17 +59,17 @@ if __name__ == "__main__":
     parser.add_argument('--beta', type=float, default=0.0) # initial KL annealing weight
     parser.add_argument('--step_beta', type=float, default=0.002) # beta increase per step
     parser.add_argument('--max_beta', type=float, default=1.0) # maximum KL annealing weight
-    parser.add_argument('--warmup', type=int, default=40000) # number of steps with only reconstruction loss (beta=0)
+    parser.add_argument('--warmup', type=int, default=4) # number of steps with only reconstruction loss (beta=0)
 
     parser.add_argument('--processes', type=int, default=8) # num workers 
     
-    parser.add_argument('--batch_size', type=int, default=128)
+    parser.add_argument('--batch_size', type=int, default=12)
     parser.add_argument('--epochs', type=int, default=50) # nbr training epochs
     parser.add_argument('--anneal_rate', type=float, default=0.9) # Learning rate annealing
     parser.add_argument('--anneal_iter', type=int, default=40000) # update learning rate every _ step
     parser.add_argument('--kl_anneal_iter', type=int, default=2000) # update beta every _ step
     
-    parser.add_argument('--print_iter', type=int, default=1000) # print loss metrics every _ step
+    parser.add_argument('--print_iter', type=int, default=10000) # print loss metrics every _ step
     parser.add_argument('--print_smiles_iter', type=int, default=0) # print reconstructed smiles every _ step
     parser.add_argument('--save_iter', type=int, default=40000) # save model weights every _ step
 
@@ -87,7 +87,11 @@ if __name__ == "__main__":
     #properties = [] # no properties 
     properties = ['QED','logP','molWt']
     
-    targets = ['scores'] # title of csv columns with affinities 
+    targets = ['drd3'] # title of csv columns with affinities 
+    bin_affs = True # 3 classes : 0,1,2
+    w = torch.tensor([0.,1.,1.]) # class weights 
+    if(bin_affs):
+        targets = [t+'_binned' for t in targets] # use binned scores columns
 
 
     use_props = bool(len(properties)>0)
@@ -112,12 +116,13 @@ if __name__ == "__main__":
                      num_workers=args.processes,
                      batch_size=args.batch_size,
                      props = properties,
-                     targets=targets)
+                     targets=targets )
 
     train_loader, _, test_loader = loaders.get_data()
 
     #Model & hparams
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    w= w.to(device)
     params ={'features_dim':loaders.dataset.emb_size, #node embedding dimension
              'num_rels':loaders.num_edge_types,
              'l_size':args.latent_size,
@@ -125,6 +130,7 @@ if __name__ == "__main__":
              'max_len': loaders.dataset.max_len,
              'N_properties':len(properties),
              'N_targets':len(targets),
+             'binned_scores':bin_affs,
              'device':device, 
              'index_to_char': loaders.dataset.index_to_char }
     pickle.dump(params, open('saved_model_w/model_params.pickle','wb'))
@@ -152,6 +158,7 @@ if __name__ == "__main__":
     else:
         total_steps=0
     beta = args.beta
+    
 
     for epoch in range(1, args.epochs+1):
         print(f'Starting epoch {epoch}')
@@ -167,7 +174,7 @@ if __name__ == "__main__":
             if use_props:
                 p_target=p_target.to(device).view(-1,model.N_properties)
             if use_affs:
-                a_target=a_target.to(device).view(-1,model.N_targets)
+                a_target=a_target.to(device)
 
             # Forward pass
             mu, logv, _, out_smi, out_p, out_a = model(graph,smiles)
@@ -177,7 +184,7 @@ if __name__ == "__main__":
                 rec, kl, pmse, amse= Loss(out_smi, smiles, mu, logv)
             else:
                 rec, kl, pmse, amse = multiLoss(out_smi, smiles, mu, logv, p_target, out_p,
-         y_a=a_target, a_pred=out_a, train_on_aff = use_affs )
+         y_a=a_target, a_pred=out_a, train_on_aff = use_affs, bin_aff = bin_affs, w = w )
 
             # COMPOSE TOTAL LOSS TO BACKWARD
             if(total_steps<args.warmup): # Only reconstruction (warmup)
@@ -234,10 +241,10 @@ if __name__ == "__main__":
                 smiles=smiles.to(device)
                 graph=send_graph_to_device(graph,device)
                 
-                if(use_affs):
-                    a_target = a_target.to(device).view(-1,model.N_targets)
                 if(use_props):
                     p_target=p_target.to(device).view(-1,model.N_properties)
+                if(use_affs):
+                    a_target = a_target.to(device)
 
                 mu, logv, z, out_smi, out_p, out_a = model(graph,smiles)
 
@@ -246,7 +253,7 @@ if __name__ == "__main__":
                     rec, kl, pmse, amse= Loss(out_smi, smiles, mu, logv)
                 else:
                     rec, kl, pmse, amse = multiLoss(out_smi, smiles, mu, logv, p_target, out_p,
-         y_a=a_target, a_pred=out_a, train_on_aff = use_affs )
+         y_a=a_target, a_pred=out_a, train_on_aff = use_affs, bin_aff = bin_affs, w=w )
                     
                 val_rec += rec.item()
                 val_kl +=kl.item()

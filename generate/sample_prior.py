@@ -40,7 +40,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-n', "--n_mols", help="Nbr to generate", type=int, default=1000)
+    parser.add_argument('-n', "--n_mols", help="Nbr to generate", type=int, default=20000)
     parser.add_argument('-m', '--model', help="saved model weights fname. Located in saved_model_w subdir",
                         default='saved_model_w/autoreg_model_iter_360000.pth')
     parser.add_argument('-v', '--vocab', default='selfies') # vocab used by model 

@@ -84,6 +84,7 @@ class molDataset(Dataset):
         # 1/ ============== Properties & Targets handling: ================
 
         self.targets = targets
+        self.binned_scores = bool('binned' in targets[0]) # whether we use binned affs or true values;
         self.props = props
 
         # =========== 2/ Graphs handling ====================
@@ -296,12 +297,12 @@ class molDataset(Dataset):
         if len(self.props)>0:
             props = np.array(row[self.props], dtype=np.float32)
 
-        if len(self.targets)>0:
-            try:
-                targets = np.array(row[self.targets], dtype=np.float32)
-            except:
-                targets = np.zeros(len(self.targets), dtype=np.float32)
-            targets = np.nan_to_num(targets)
+        if len(self.targets)>0 and self.binned_scores:
+                targets = np.array(row[self.targets], dtype=np.int64) # for torch.long class labels
+        elif len(self.targets)>0 :
+            targets = np.array(row[self.targets], dtype=np.float32) # for torch.float values 
+
+        targets = np.nan_to_num(targets) # if nan somewhere, change to 0.
             
 
         return g_dgl, a, props, targets

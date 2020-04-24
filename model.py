@@ -108,7 +108,7 @@ class RGCN(nn.Module):
 class Model(nn.Module):
     def __init__(self, features_dim, num_rels,
                  l_size, voc_size, max_len, 
-                 N_properties, N_targets,
+                 N_properties, N_targets, binned_scores,
                  device,
                  index_to_char):
         super(Model, self).__init__()
@@ -131,6 +131,7 @@ class Model(nn.Module):
         
         self.N_properties=N_properties
         self.N_targets = N_targets
+        self.binned_scores = binned_scores
         
         self.device = device
         
@@ -153,12 +154,21 @@ class Model(nn.Module):
                 nn.Linear(16,self.N_properties))
             
         # Affinities predictor (regression)
-        self.aff_net = nn.Sequential(
-                nn.Linear(self.l_size,32),
-                nn.ReLU(),
-                nn.Linear(32,16),
-                nn.ReLU(),
-                nn.Linear(16,min(1,self.N_targets)))
+        if not self.binned_scores : 
+            self.aff_net = nn.Sequential(
+                    nn.Linear(self.l_size,32),
+                    nn.ReLU(),
+                    nn.Linear(32,16),
+                    nn.ReLU(),
+                    nn.Linear(16,self.N_targets))
+        else: 
+            self.aff_net = nn.Sequential(
+                    nn.Linear(self.l_size,32),
+                    nn.ReLU(),
+                    nn.Linear(32,16),
+                    nn.ReLU(),
+                    nn.Linear(16,3), 
+                    nn.LogSoftmax(dim=1)) # 3 bins 
         
     def load(self, trained_path, aff_net=False):
         # Loads trained model weights, with or without the affinity predictor
@@ -467,7 +477,7 @@ def Loss(out, indices, mu, logvar):
 
     
 def multiLoss(out, indices, mu, logvar, y_p, p_pred,
-         y_a, a_pred, train_on_aff ):
+         y_a, a_pred, train_on_aff, bin_aff, w=None ):
     """ 
     Loss function for VAE + multitask, with weights on properties and affinities 
     """
@@ -479,21 +489,20 @@ def multiLoss(out, indices, mu, logvar, y_p, p_pred,
     10*F.mse_loss(p_pred[:,1], y_p[:,1], reduction="sum") + 0.1* F.mse_loss(p_pred[:,2], y_p[:,2], reduction="sum")
     
     #affinities: 
-    #if(train_on_aff and binary_aff):
-    #aff_loss = F.cross_entropy(a_pred, y_a, reduction="sum") # binary binding labels
     
-    if(train_on_aff):
+    if(train_on_aff and bin_aff ):
+        y_a=y_a.squeeze()
+        aff_loss = F.nll_loss(a_pred, target = y_a, weight = w) # class zero does not contribute to loss
+
+    elif train_on_aff:
         aff_loss=torch.tensor(0)
         for i in range(y_a.shape[0]):
             if(y_a[i]<0):
-                if(y_a[i]<-9 or y_a[i]>-7):
-                    aff_loss+= 20*F.mse_loss(a_pred[i],y_a[i],reduction='sum')
-                else:
-                    aff_loss+= 2*F.mse_loss(a_pred[i],y_a[i],reduction='sum')        
+                    aff_loss+= F.mse_loss(a_pred[i],y_a[i])      
     else: 
         aff_loss = torch.tensor(0) # No affinity prediction 
     
-    return CE, KLD, mse, aff_loss # returns 4 values, weight aff loss
+    return CE, KLD, mse, 1e3*aff_loss # returns 4 values, weight aff loss
 
 def tripletLoss(z_i, z_j, z_l, margin=2):
     """ For disentangling by separating known actives in latent space """
