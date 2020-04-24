@@ -22,6 +22,7 @@ import torch
 import dgl
 
 from rdkit.Chem import Draw
+from selfies import decoder
 
 import numpy as np
 import pandas as pd
@@ -46,13 +47,13 @@ from sklearn.decomposition import PCA
 if __name__ == "__main__":
     from dataloaders.molDataset import molDataset, Loader
     from data_processing.rdkit_to_nx import smiles_to_nx
-    from model import Model, Loss, RecLoss
+    from model import Model, Loss, multiLoss
     
     from eval.eval_utils import *
     from utils import *
     
     # Eval config 
-    model_path= f'../saved_model_w/g2s_multitask_affinity.pth'
+    model_path= f'../saved_model_w/checkpoint_800k.pth'
     
     recompute_pca = False
     reload_model = True
@@ -60,31 +61,30 @@ if __name__ == "__main__":
     # Should be same as for training
     properties = ['QED','logP','molWt']
     targets = ['drd3']
+    N = 1000
     
     # Select only DUDE subset to plot in PCA space 
     plot_target = 'drd3'
 
     #Load eval set: USE MOSES TEST SET !!!!!!!!!!!!!!!!!
-    loaders = Loader(csv_path='../data/moses_affs_test.csv',
+    loaders = Loader(csv_path='../data/moses_test.csv',
                      maps_path= '../map_files/',
-                     n_mols=100,
+                     n_mols=N ,
+                     vocab = 'selfies',
                      num_workers=0, 
                      batch_size=100, 
                      props = properties,
                      targets=targets,
-                     test_only=True,
-                     shuffle = True, 
-                     select_target = None)
+                     test_only=True)
     rem, ram, rchim, rcham = loaders.get_reverse_maps()
     
     _, _, test_loader = loaders.get_data()
     
     # Validation pass
     if(reload_model):
-        params = pickle.load(open('../saved_model_w/params.pickle','rb'))
+        params = pickle.load(open('../saved_model_w/model_params.pickle','rb'))
         model = Model(**params)
-        device = model.load(model_path, aff_net=True)
-        model.set_smiles_chars('../map_files/zinc_chars.json')
+        device = model.load(model_path, aff_net=False)
         model.eval()
     else:
         try:
@@ -97,8 +97,8 @@ if __name__ == "__main__":
             model.eval()
     
     # Smiles 
-    out_all = np.zeros((loaders.dataset.n,151))
-    smi_all = np.zeros((loaders.dataset.n,151))
+    out_all = np.zeros((loaders.dataset.n,loaders.dataset.max_len))
+    smi_all = np.zeros((loaders.dataset.n,loaders.dataset.max_len))
     
     # Latent embeddings
     z_all = np.zeros((loaders.dataset.n,model.l_size))
@@ -141,15 +141,17 @@ if __name__ == "__main__":
             z=z.cpu().numpy()
             z_all[batch_idx*batch_size:(batch_idx+1)*batch_size]=z
             
-            affs = pred_a.cpu().numpy()
-            a_all[batch_idx*batch_size:(batch_idx+1)*batch_size]=affs
-            
-            a_target_all[batch_idx*batch_size:(batch_idx+1)*batch_size]=a_target.numpy()
-            
             props = pred_p.cpu().numpy()
             p_all[batch_idx*batch_size:(batch_idx+1)*batch_size]=props
             
             p_target_all[batch_idx*batch_size:(batch_idx+1)*batch_size]=p_target.numpy()
+            
+            """
+            affs = pred_a.cpu().numpy()
+            a_all[batch_idx*batch_size:(batch_idx+1)*batch_size]=affs
+            
+            a_target_all[batch_idx*batch_size:(batch_idx+1)*batch_size]=a_target.numpy()
+            """
             
         # ===================================================================
         # Latent space KDE 
@@ -167,6 +169,7 @@ if __name__ == "__main__":
                                                       loaders.dataset.index_to_char)
         print("Fraction of molecules decoded into a valid smiles: ", frac_valid)
         print("Fraction of perfectly reconstructed mols ", frac_id)
+        smiles = [decoder(s) for s in reconstruction_dataframe['output smiles']]
         
         # ===================================================================
         # Prediction error plots 
@@ -193,7 +196,7 @@ if __name__ == "__main__":
         sns.scatterplot(reconstruction_dataframe['molWt'],reconstruction_dataframe['molWt_pred'])
         sns.lineplot([0,700],[0,700],color='r')
         
-        
+        """
         # Affinities prediction plots
         plt.figure()
         sns.scatterplot(reconstruction_dataframe[targets[0]],reconstruction_dataframe[f'{targets[0]}_pred'])
@@ -201,6 +204,7 @@ if __name__ == "__main__":
         
         MAE = np.mean(np.abs(reconstruction_dataframe[targets[0]]-reconstruction_dataframe[f'{targets[0]}_pred']))
         print(f'MAE = {MAE} kcal/mol')
+        """
         
         # ===================================================================
         # PCA plot 

@@ -44,9 +44,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--train', help="path to training dataframe", type=str, default='data/moses_train.csv')
-    parser.add_argument("--cutoff", help="Max number of molecules to use. Set to -1 for all", type=int, default=1000)
+    parser.add_argument("--cutoff", help="Max number of molecules to use. Set to -1 for all", type=int, default=-1)
     parser.add_argument('--save_path', type=str, default = './saved_model_w/aff_model')
-    parser.add_argument('--load_model', type=bool, default=False)
+    parser.add_argument('--load_model', type=bool, default=True)
     parser.add_argument('--load_iter', type=int, default=0) # resume training at optimize step n°
 
     parser.add_argument('--decode', type=str, default='selfies') # 'smiles' or 'selfies'
@@ -54,16 +54,16 @@ if __name__ == "__main__":
     
     parser.add_argument('--latent_size', type=int, default=128) # size of latent code
 
-    parser.add_argument('--lr', type=float, default=1e-3) # Initial learning rate
+    parser.add_argument('--lr', type=float, default=1e-4) # Initial learning rate
     parser.add_argument('--clip_norm', type=float, default=50.0) # Gradient clipping max norm
     parser.add_argument('--beta', type=float, default=0.0) # initial KL annealing weight
     parser.add_argument('--step_beta', type=float, default=0.002) # beta increase per step
     parser.add_argument('--max_beta', type=float, default=1.0) # maximum KL annealing weight
-    parser.add_argument('--warmup', type=int, default=4) # number of steps with only reconstruction loss (beta=0)
+    parser.add_argument('--warmup', type=int, default=40000) # number of steps with only reconstruction loss (beta=0)
 
     parser.add_argument('--processes', type=int, default=8) # num workers 
     
-    parser.add_argument('--batch_size', type=int, default=12)
+    parser.add_argument('--batch_size', type=int, default=128)
     parser.add_argument('--epochs', type=int, default=50) # nbr training epochs
     parser.add_argument('--anneal_rate', type=float, default=0.9) # Learning rate annealing
     parser.add_argument('--anneal_iter', type=int, default=40000) # update learning rate every _ step
@@ -81,6 +81,9 @@ if __name__ == "__main__":
 
     # config
     parallel=False # parallelize over multiple gpus if available
+    
+    load_model = args.load_model
+    load_path= 'saved_model_w/checkpoint_600k.pth'
     
     # Multitasking : properties and affinities should be in input dataset 
     
@@ -102,10 +105,6 @@ if __name__ == "__main__":
         _make_dir('runs')
         print('> tensorboard logging in ./runs')
     disable_rdkit_logging() # function from utils to disable rdkit logs
-        
-    
-    load_model = args.load_model
-    load_path= 'saved_model_w/g2s'
 
     #Load train set and test set
     loaders = Loader(maps_path='map_files/',
@@ -137,7 +136,7 @@ if __name__ == "__main__":
 
     model = Model(**params).to(device)
     if(load_model):
-        model.load_state_dict(torch.load(f'{load_path}.pth'))
+        model.load(load_path, aff_net = False)
 
     if (parallel and torch.cuda.device_count() > 1): 
         print("Start training using ", torch.cuda.device_count(), "GPUs!")
