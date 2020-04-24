@@ -54,7 +54,7 @@ if __name__ == "__main__":
     
     parser.add_argument('--latent_size', type=int, default=128) # size of latent code
 
-    parser.add_argument('--lr', type=float, default=1e-4) # Initial learning rate
+    parser.add_argument('--lr', type=float, default=1e-3) # Initial learning rate
     parser.add_argument('--clip_norm', type=float, default=50.0) # Gradient clipping max norm
     parser.add_argument('--beta', type=float, default=0.0) # initial KL annealing weight
     parser.add_argument('--step_beta', type=float, default=0.002) # beta increase per step
@@ -63,7 +63,7 @@ if __name__ == "__main__":
 
     parser.add_argument('--processes', type=int, default=8) # num workers 
     
-    parser.add_argument('--batch_size', type=int, default=128)
+    parser.add_argument('--batch_size', type=int, default=64)
     parser.add_argument('--epochs', type=int, default=50) # nbr training epochs
     parser.add_argument('--anneal_rate', type=float, default=0.9) # Learning rate annealing
     parser.add_argument('--anneal_iter', type=int, default=40000) # update learning rate every _ step
