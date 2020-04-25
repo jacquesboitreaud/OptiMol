@@ -125,6 +125,7 @@ class Model(nn.Module):
         self.l_size = l_size
         
         # Decoding
+        self.gru_hdim = 450
         self.voc_size = voc_size 
         self.max_len = max_len
         self.index_to_char= index_to_char
@@ -143,7 +144,8 @@ class Model(nn.Module):
         self.encoder_logv = nn.Linear(self.gcn_hdim*self.gcn_layers , self.l_size)
         
         self.rnn_in= nn.Linear(self.l_size,self.voc_size)
-        self.decoder = MultiGRU(voc_size=self.voc_size, latent_size= self.l_size, h_size=512, device = self.device)
+        self.decoder = MultiGRU(voc_size=self.voc_size, latent_size= self.l_size, h_size=self.gru_hdim, 
+                                device = self.device)
         
         # MOLECULAR PROPERTY REGRESSOR
         self.MLP=nn.Sequential(
