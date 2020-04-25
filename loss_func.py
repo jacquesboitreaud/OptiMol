@@ -51,13 +51,13 @@ def affsClassifLoss(a_target, a_pred, classes_weights):
     return aff_loss
     
     
-def affsRegLoss(a_target, a_pred, weight, ignore = [-9,-7]):
+def affsRegLoss(a_target, a_pred, weight, ignore = [-9.,-7.]):
     """
     Regression MSE loss for affinity values outside the 'ignore' interval. 
     """
     mse = nn.MSELoss()
     
-    aff_loss=torch.tensor(0.0)
+    aff_loss=torch.tensor(0.0).to('cuda')
     for i in range(a_target.shape[0]):
         if a_target[i]<0 : # Affinity score available 
             if a_target[i] < ignore[0] or a_target[i] > ignore[1] :

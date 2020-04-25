@@ -47,7 +47,7 @@ if __name__ == "__main__":
     parser.add_argument('--train', help="path to training dataframe", type=str, default='data/moses_train.csv')
     parser.add_argument("--cutoff", help="Max number of molecules to use. Set to -1 for all", type=int, default=-1)
     parser.add_argument('--save_path', type=str, default = './saved_model_w/aff_model')
-    parser.add_argument('--load_model', type=bool, default=False)
+    parser.add_argument('--load_model', type=bool, default=True)
     parser.add_argument('--load_iter', type=int, default=0) # resume training at optimize step n°
 
     parser.add_argument('--decode', type=str, default='selfies') # 'smiles' or 'selfies'
@@ -60,19 +60,19 @@ if __name__ == "__main__":
     parser.add_argument('--beta', type=float, default=0.0) # initial KL annealing weight
     parser.add_argument('--step_beta', type=float, default=0.002) # beta increase per step
     parser.add_argument('--max_beta', type=float, default=1.0) # maximum KL annealing weight
-    parser.add_argument('--warmup', type=int, default=40000) # number of steps with only reconstruction loss (beta=0)
+    parser.add_argument('--warmup', type=int, default=0) # number of steps with only reconstruction loss (beta=0)
 
     parser.add_argument('--processes', type=int, default=8) # num workers 
     
-    parser.add_argument('--batch_size', type=int, default=128)
+    parser.add_argument('--batch_size', type=int, default=64)
     parser.add_argument('--epochs', type=int, default=50) # nbr training epochs
     parser.add_argument('--anneal_rate', type=float, default=0.9) # Learning rate annealing
     parser.add_argument('--anneal_iter', type=int, default=40000) # update learning rate every _ step
     parser.add_argument('--kl_anneal_iter', type=int, default=2000) # update beta every _ step
     
-    parser.add_argument('--print_iter', type=int, default=5000) # print loss metrics every _ step
+    parser.add_argument('--print_iter', type=int, default=1000) # print loss metrics every _ step
     parser.add_argument('--print_smiles_iter', type=int, default=0) # print reconstructed smiles every _ step
-    parser.add_argument('--save_iter', type=int, default=40000) # save model weights every _ step
+    parser.add_argument('--save_iter', type=int, default=1000) # save model weights every _ step
     
     # Multitask and properties 
     parser.add_argument('--bin_affs', type=bool, default=False) # Binned discretized affs or true values 
@@ -87,7 +87,7 @@ if __name__ == "__main__":
     parallel=False # parallelize over multiple gpus if available
     
     load_model = args.load_model
-    load_path= 'saved_model_w/checkpoint_600k.pth'
+    load_path= 'saved_model_w/aff_model.pth'
     
     # Multitasking : properties and affinities should be in input dataset 
     
@@ -234,7 +234,7 @@ if __name__ == "__main__":
                 # print('fraction of valid smiles in batch: ', frac_valid)
 
             if total_steps % args.save_iter == 0:
-                torch.save( model.state_dict(), f"{args.save_path}_iter_{total_steps}.pth")
+                torch.save( model.state_dict(), f"{args.save_path}.pth")
             
             # keep track of epoch loss
             epoch_train_rec+=rec.item()
