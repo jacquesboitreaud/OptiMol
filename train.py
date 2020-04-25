@@ -125,7 +125,9 @@ if __name__ == "__main__":
     train_loader, _, test_loader = loaders.get_data()
 
     #Model & hparams
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    #device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    device = torch.device("cuda:1") # only for mbgpu
+    
     params ={'features_dim':loaders.dataset.emb_size, #node embedding dimension
              'num_rels':loaders.num_edge_types,
              'l_size':args.latent_size,
