@@ -37,14 +37,15 @@ if __name__ == "__main__":
     sys.path.append(os.path.join(script_dir, 'dataloaders'))
     sys.path.append(os.path.join(script_dir, 'data_processing'))
     
-    from model import Model, VAELoss, weightedPropsLoss, affsRegLoss, affsClassifLoss
+    from model_autoreg import Model
+    from loss_func import VAELoss, weightedPropsLoss, affsRegLoss, affsClassifLoss
     from dataloaders.molDataset import molDataset, Loader
     
 
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--train', help="path to training dataframe", type=str, default='data/moses_train.csv')
-    parser.add_argument("--cutoff", help="Max number of molecules to use. Set to -1 for all", type=int, default=1000)
+    parser.add_argument("--cutoff", help="Max number of molecules to use. Set to -1 for all", type=int, default=-1)
     parser.add_argument('--save_path', type=str, default = './saved_model_w/aff_model')
     parser.add_argument('--load_model', type=bool, default=False)
     parser.add_argument('--load_iter', type=int, default=0) # resume training at optimize step n°
@@ -63,13 +64,13 @@ if __name__ == "__main__":
 
     parser.add_argument('--processes', type=int, default=8) # num workers 
     
-    parser.add_argument('--batch_size', type=int, default=64)
+    parser.add_argument('--batch_size', type=int, default=128)
     parser.add_argument('--epochs', type=int, default=50) # nbr training epochs
     parser.add_argument('--anneal_rate', type=float, default=0.9) # Learning rate annealing
     parser.add_argument('--anneal_iter', type=int, default=40000) # update learning rate every _ step
     parser.add_argument('--kl_anneal_iter', type=int, default=2000) # update beta every _ step
     
-    parser.add_argument('--print_iter', type=int, default=10) # print loss metrics every _ step
+    parser.add_argument('--print_iter', type=int, default=5000) # print loss metrics every _ step
     parser.add_argument('--print_smiles_iter', type=int, default=0) # print reconstructed smiles every _ step
     parser.add_argument('--save_iter', type=int, default=40000) # save model weights every _ step
     

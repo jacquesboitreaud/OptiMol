@@ -381,7 +381,7 @@ class Loader():
         print(f"Test subset contains {len(test_set)} samples")
 
         if (not self.test_only):
-            train_loader = DataLoader(dataset=train_set, shuffle=False, batch_size=self.batch_size,
+            train_loader = DataLoader(dataset=train_set, shuffle=True, batch_size=self.batch_size,
                                       num_workers=self.num_workers, collate_fn=collate_block, drop_last=True)
 
 

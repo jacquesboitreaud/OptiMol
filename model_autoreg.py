@@ -7,10 +7,7 @@ Created on Mon Apr 22 11:44:23 2019
 Graph to sequence molecular VAE
 RGCN encoder, GRU decoder to SELFIES 
 
-RGCN layer at 
-https://docs.dgl.ai/tutorials/models/1_gnn/4_rgcn.html#sphx-glr-tutorials-models-1-gnn-4-rgcn-py
-
-Decoder without teacher forcing -- Autoregressive RNN 
+No teacher forcing : autoregressive RNN decoder 
 
 
 """
@@ -114,7 +111,7 @@ class RGCN(nn.Module):
 class Model(nn.Module):
     def __init__(self, features_dim, num_rels,
                  l_size, voc_size, max_len, 
-                 N_properties, N_targets,
+                 N_properties, N_targets, binned_scores,
                  device,
                  index_to_char):
         super(Model, self).__init__()
@@ -138,6 +135,9 @@ class Model(nn.Module):
         
         self.N_properties=N_properties
         self.N_targets = N_targets
+        if(binned_scores):
+            print('Use model from model.py for binned affinities multitasking. Not implemented here')
+            raise NotImplementedError
         
         self.device = device
         
@@ -455,59 +455,3 @@ class Model(nn.Module):
         model_dict.update(pretrained_dict) 
         # 3. load the new state dict
         self.load_state_dict(model_dict)
-        
-# ======================= Loss functions ====================================
-        
-def Loss(out, indices, mu, logvar):
-    """ 
-    plain VAE loss. 
-    """
-    CE = F.cross_entropy(out, indices, reduction="sum")
-    KL = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
-    
-    # returns zeros for multitask loss terms
-    return CE, KL, torch.tensor(0), torch.tensor(0)
-
-    
-def multiLoss(out, indices, mu, logvar, y_p, p_pred,
-         y_a, a_pred, train_on_aff ):
-    """ 
-    Loss function for VAE + multitask, with weights on properties and affinities 
-    """
-    CE = F.cross_entropy(out, indices, reduction="sum")
-    KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
-    
-    # Weighted mse loss (100*qed + 10 logp + 0.1 molweight)
-    mse= 100*F.mse_loss(p_pred[:,0], y_p[:,0], reduction="sum") +\
-    10*F.mse_loss(p_pred[:,1], y_p[:,1], reduction="sum") + 0.1* F.mse_loss(p_pred[:,2], y_p[:,2], reduction="sum")
-    
-    #affinities: 
-    #if(train_on_aff and binary_aff):
-    #aff_loss = F.cross_entropy(a_pred, y_a, reduction="sum") # binary binding labels
-    if(train_on_aff):
-        aff_loss=0
-        for i in range(y_a.shape[0]):
-            if(y_a[i]<0):
-                if(y_a[i]<-9 or y_a[i]>-7):
-                    aff_loss+= 3*F.mse_loss(a_pred[i],y_a[i],reduction='sum')
-                else:
-                    aff_loss+= F.mse_loss(a_pred[i],y_a[i],reduction='sum')        
-    else: 
-        aff_loss = torch.tensor(0) # No affinity prediction 
-    
-    return CE, KLD, mse, aff_loss # returns 4 values, weight aff loss
-
-def tripletLoss(z_i, z_j, z_l, margin=2):
-    """ For disentangling by separating known actives in latent space """
-    dij = torch.norm(z_i-z_j, p=2, dim=1) # z vectors are (N*l_size), compute norm along latent size, for each batch item.
-    dil = torch.norm(z_i-z_l, p=2, dim=1)
-    loss = torch.max(torch.cuda.FloatTensor(z_i.shape[0]).fill_(0), dij -dil + margin)
-    # Embeddings distance loss 
-    return torch.sum(loss)
-
-def pairwiseLoss(z_i,z_j,pair_label):
-    """ Learning objective: dot product of embeddings ~ 1_(i and j bind same target) """
-    prod = torch.sigmoid(torch.bmm(z_i.unsqueeze(1),z_j.unsqueeze(2)).squeeze())
-    CE = F.binary_cross_entropy(prod, pair_label)
-    #print(prod, pair_label)
-    return CE
