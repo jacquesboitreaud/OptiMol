@@ -176,7 +176,7 @@ if __name__ == "__main__":
             smiles=smiles.to(device)
             graph=send_graph_to_device(graph,device)
             if use_props:
-                p_target=p_target.to(device).view(-1,model.N_properties)
+                p_target=p_target.to(device).view(-1,len(properties))
             if use_affs:
                 a_target=a_target.to(device)
 
@@ -252,7 +252,7 @@ if __name__ == "__main__":
                 graph=send_graph_to_device(graph,device)
                 
                 if(use_props):
-                    p_target=p_target.to(device).view(-1,model.N_properties)
+                    p_target=p_target.to(device).view(-1,len(properties))
                 if(use_affs):
                     a_target = a_target.to(device)
 
