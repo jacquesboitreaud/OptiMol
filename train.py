@@ -84,7 +84,7 @@ if __name__ == "__main__":
     args=parser.parse_args()
 
     # config
-    parallel=True # parallelize over multiple gpus if available
+    parallel=False # parallelize over multiple gpus if available
     
     load_model = args.load_model
     load_path= 'saved_model_w/checkpoint_600k.pth'
