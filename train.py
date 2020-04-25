@@ -37,14 +37,14 @@ if __name__ == "__main__":
     sys.path.append(os.path.join(script_dir, 'dataloaders'))
     sys.path.append(os.path.join(script_dir, 'data_processing'))
     
-    from model import Model, Loss, multiLoss
+    from model import Model, VAELoss, weightedPropsLoss, affsRegLoss, affsClassifLoss
     from dataloaders.molDataset import molDataset, Loader
     
 
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--train', help="path to training dataframe", type=str, default='data/moses_train.csv')
-    parser.add_argument("--cutoff", help="Max number of molecules to use. Set to -1 for all", type=int, default=-1)
+    parser.add_argument("--cutoff", help="Max number of molecules to use. Set to -1 for all", type=int, default=1000)
     parser.add_argument('--save_path', type=str, default = './saved_model_w/aff_model')
     parser.add_argument('--load_model', type=bool, default=False)
     parser.add_argument('--load_iter', type=int, default=0) # resume training at optimize step n°
@@ -69,15 +69,18 @@ if __name__ == "__main__":
     parser.add_argument('--anneal_iter', type=int, default=40000) # update learning rate every _ step
     parser.add_argument('--kl_anneal_iter', type=int, default=2000) # update beta every _ step
     
-    parser.add_argument('--print_iter', type=int, default=10000) # print loss metrics every _ step
+    parser.add_argument('--print_iter', type=int, default=10) # print loss metrics every _ step
     parser.add_argument('--print_smiles_iter', type=int, default=0) # print reconstructed smiles every _ step
     parser.add_argument('--save_iter', type=int, default=40000) # save model weights every _ step
+    
+    # Multitask and properties 
+    parser.add_argument('--bin_affs', type=bool, default=False) # Binned discretized affs or true values 
+    
+    
 
      # =======
 
     args=parser.parse_args()
-
-
 
     # config
     parallel=False # parallelize over multiple gpus if available
@@ -89,13 +92,14 @@ if __name__ == "__main__":
     
     #properties = [] # no properties 
     properties = ['QED','logP','molWt']
+    props_weights = [1e3, 1e2, 1]
     
     targets = ['drd3'] # title of csv columns with affinities 
-    bin_affs = True # 3 classes : 0,1,2
-    w = torch.tensor([0.,1.,1.]) # class weights 
-    if(bin_affs):
+    a_weight= 1e2 # Weight for affinity regression loss 
+    
+    if(args.bin_affs):
         targets = [t+'_binned' for t in targets] # use binned scores columns
-
+        classes_weights = torch.tensor([0.,1.,1.]) # class weights 
 
     use_props = bool(len(properties)>0)
     use_affs = bool(len(targets)>0)
@@ -121,7 +125,6 @@ if __name__ == "__main__":
 
     #Model & hparams
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    w= w.to(device)
     params ={'features_dim':loaders.dataset.emb_size, #node embedding dimension
              'num_rels':loaders.num_edge_types,
              'l_size':args.latent_size,
@@ -129,7 +132,7 @@ if __name__ == "__main__":
              'max_len': loaders.dataset.max_len,
              'N_properties':len(properties),
              'N_targets':len(targets),
-             'binned_scores':bin_affs,
+             'binned_scores':args.bin_affs,
              'device':device, 
              'index_to_char': loaders.dataset.index_to_char }
     pickle.dump(params, open('saved_model_w/model_params.pickle','wb'))
@@ -178,12 +181,18 @@ if __name__ == "__main__":
             # Forward pass
             mu, logv, _, out_smi, out_p, out_a = model(graph,smiles)
 
-            #Compute loss terms : change according to supervision
-            if( (not use_affs) and (not use_props)):
-                rec, kl, pmse, amse= Loss(out_smi, smiles, mu, logv)
+            #Compute loss terms : change according to multitask setting 
+            if( (not use_affs) and (not use_props)): # VAE only 
+                rec, kl = VAELoss(out_smi, smiles, mu, logv)
+                pmse, amse = 0,0 
             else:
-                rec, kl, pmse, amse = multiLoss(out_smi, smiles, mu, logv, p_target, out_p,
-         y_a=a_target, a_pred=out_a, train_on_aff = use_affs, bin_aff = bin_affs, w = w )
+                rec, kl = VAELoss(out_smi, smiles, mu, logv) 
+                pmse = weightedPropsLoss(p_target, out_p, props_weights)
+                
+                if args.bin_affs : 
+                    amse = affsClassifLoss(a_target, out_a, classes_weights)
+                else:
+                    amse = affsRegLoss(a_target, out_a, a_weight)
 
             # COMPOSE TOTAL LOSS TO BACKWARD
             if(total_steps<args.warmup): # Only reconstruction (warmup)
@@ -247,12 +256,18 @@ if __name__ == "__main__":
 
                 mu, logv, z, out_smi, out_p, out_a = model(graph,smiles)
 
-                #Compute loss : change according to supervision
-                if( (not use_affs) and (not use_props)):
-                    rec, kl, pmse, amse= Loss(out_smi, smiles, mu, logv)
+                #Compute loss : change according to multitask
+                if( (not use_affs) and (not use_props)): # VAE only 
+                    rec, kl = VAELoss(out_smi, smiles, mu, logv)
+                    pmse, amse = 0,0 
                 else:
-                    rec, kl, pmse, amse = multiLoss(out_smi, smiles, mu, logv, p_target, out_p,
-         y_a=a_target, a_pred=out_a, train_on_aff = use_affs, bin_aff = bin_affs, w=w )
+                    rec, kl = VAELoss(out_smi, smiles, mu, logv) 
+                    pmse = weightedPropsLoss(p_target, out_p, props_weights)
+                    
+                    if args.bin_affs : 
+                        amse = affsClassifLoss(a_target, out_a, classes_weights)
+                    else:
+                        amse = affsRegLoss(a_target, out_a, a_weight)
                     
                 val_rec += rec.item()
                 val_kl +=kl.item()

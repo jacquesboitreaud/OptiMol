@@ -53,14 +53,14 @@ if __name__ == "__main__":
     from utils import *
     
     # Eval config 
-    model_path= f'../saved_model_w/checkpoint_800k.pth'
+    model_path= f'../saved_model_w/aff_model_iter_320000.pth'
     
     recompute_pca = False
     reload_model = True
     
     # Should be same as for training
     properties = ['QED','logP','molWt']
-    targets = ['drd3']
+    targets = ['drd3_binned']
     N = 1000
     
     # Select only DUDE subset to plot in PCA space 
@@ -146,12 +146,13 @@ if __name__ == "__main__":
             
             p_target_all[batch_idx*batch_size:(batch_idx+1)*batch_size]=p_target.numpy()
             
-            """
-            affs = pred_a.cpu().numpy()
+            # Classification of binned affinities
+            _, c = torch.max(pred_a, dim=1)
+            affs = c.cpu().numpy().reshape(-1,1)
             a_all[batch_idx*batch_size:(batch_idx+1)*batch_size]=affs
             
             a_target_all[batch_idx*batch_size:(batch_idx+1)*batch_size]=a_target.numpy()
-            """
+            
             
         # ===================================================================
         # Latent space KDE 
@@ -167,8 +168,9 @@ if __name__ == "__main__":
         # ===================================================================
         reconstruction_dataframe, frac_valid, frac_id = log_smiles_from_indices(smi_all, out_all, 
                                                       loaders.dataset.index_to_char)
-        print("Fraction of molecules decoded into a valid smiles: ", frac_valid)
-        print("Fraction of perfectly reconstructed mols ", frac_id)
+        #only for smiles 
+        #print("Fraction of molecules decoded into a valid smiles: ", frac_valid)
+        #print("Fraction of perfectly reconstructed mols ", frac_id)
         smiles = [decoder(s) for s in reconstruction_dataframe['output smiles']]
         
         # ===================================================================

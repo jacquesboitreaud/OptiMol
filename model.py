@@ -465,7 +465,7 @@ class Model(nn.Module):
         
 # ======================= Loss functions ====================================
         
-def Loss(out, indices, mu, logvar):
+def VAELoss(out, indices, mu, logvar):
     """ 
     plain VAE loss. 
     """
@@ -473,36 +473,48 @@ def Loss(out, indices, mu, logvar):
     KL = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
     
     # returns zeros for multitask loss terms
-    return CE, KL, torch.tensor(0), torch.tensor(0)
+    return CE, KL
 
-    
-def multiLoss(out, indices, mu, logvar, y_p, p_pred,
-         y_a, a_pred, train_on_aff, bin_aff, w=None ):
-    """ 
-    Loss function for VAE + multitask, with weights on properties and affinities 
+def weightedPropsLoss(p_target, p_pred, weights):
     """
-    CE = F.cross_entropy(out, indices, reduction="sum")
-    KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
+    Weighted loss for chemical properties. N_properties = p_target.shape[1]. 
+    weights should be a FloatTensor of shape N_properties, indicates weight of each prop. 
+    Adjust props weights according to absolute values of properties (molWt ~ 10**2 QED for example)
+    """
+    mse = torch.nn.MSELoss(reduction='mean')
     
-    # Weighted mse loss (100*qed + 10 logp + 0.1 molweight)
-    mse= 100*F.mse_loss(p_pred[:,0], y_p[:,0], reduction="sum") +\
-    10*F.mse_loss(p_pred[:,1], y_p[:,1], reduction="sum") + 0.1* F.mse_loss(p_pred[:,2], y_p[:,2], reduction="sum")
+    loss = weights[0]* mse(p_pred[:,0], p_target[:,0])
     
-    #affinities: 
+    for i in range(1, p_target.shape[1]):
+        loss+= weights[i]* mse(p_pred[:,i], p_target[:,i])
     
-    if(train_on_aff and bin_aff ):
-        y_a=y_a.squeeze()
-        aff_loss = F.nll_loss(a_pred, target = y_a, weight = w) # class zero does not contribute to loss
+    return loss
+    
+    
+def affsClassifLoss(a_target, a_pred, classes_weights):
+    """ 
+    NLL classification loss applied to logSoftmax of affinity bin prediction. Bins weighted with classes_weights. 
+    """
+    a_target=a_target.squeeze()
+    aff_loss = F.nll_loss(a_pred, target = a_target, weight = classes_weights) # class zero does not contribute to loss
+    
+    return aff_loss
+    
+    
+def affsRegLoss(a_target, a_pred, weight, ignore = [-9,-7]):
+    """
+    Regression MSE loss for affinity values outside the 'ignore' interval. 
+    """
+    mse = torch.nn.MSELoss()
+    
+    aff_loss=torch.tensor(0.0)
+    for i in range(a_target.shape[0]):
+        if a_target[i]<0 : # Affinity score available 
+            if a_target[i] < ignore[0] or a_target[i] > ignore[1] :
+                aff_loss+= mse(a_pred[i],a_target[i])
+    
+    return aff_loss * weight
 
-    elif train_on_aff:
-        aff_loss=torch.tensor(0)
-        for i in range(y_a.shape[0]):
-            if(y_a[i]<0):
-                    aff_loss+= F.mse_loss(a_pred[i],y_a[i])      
-    else: 
-        aff_loss = torch.tensor(0) # No affinity prediction 
-    
-    return CE, KLD, mse, 1e4*aff_loss # returns 4 values, weight aff loss
 
 def tripletLoss(z_i, z_j, z_l, margin=2):
     """ For disentangling by separating known actives in latent space """
