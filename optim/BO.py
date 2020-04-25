@@ -42,7 +42,7 @@ if __name__ == "__main__":
     sys.path.append(os.path.join(repo_dir,'..', 'vina_docking')) # path to vina_docking repo with scoring func 
     
     from dataloaders.molDataset import Loader
-    from model import Model
+    from model_baseline import Model
     from utils import *
     from BO_utils import get_fitted_model
     from score_function import score

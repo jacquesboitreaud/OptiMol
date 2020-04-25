@@ -35,14 +35,14 @@ if __name__ == "__main__":
     sys.path.append(os.path.join(script_dir, 'data_processing'))
     
     from dataloaders.molDataset import molDataset
-    from model import Model
+    from model_baseline import Model
     from utils import *
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-n', "--n_mols", help="Nbr to generate", type=int, default=2000)
+    parser.add_argument('-n', "--n_mols", help="Nbr to generate", type=int, default=1000)
     parser.add_argument('-m', '--model', help="saved model weights fname. Located in saved_model_w subdir",
-                        default='saved_model_w/aff_model_iter_320000.pth')
+                        default='saved_model_w/baseline.pth')
     parser.add_argument('-v', '--vocab', default='selfies') # vocab used by model 
     
     parser.add_argument('-o', '--output_file', type=str, default='data/gen_a.txt')
@@ -53,8 +53,15 @@ if __name__ == "__main__":
 
     # ==============
 
-    # Load model (on gpu if available)
+    # Load model params & model
     params = pickle.load(open(os.path.join(script_dir,'..','saved_model_w/model_params.pickle'), 'rb'))  # model hparams
+    
+    # Set default selfies alphabet
+    vocab = pickle.load(open(os.path.join(script_dir, '..','map_files','moses_alphabets.pickle'), 'rb'))
+    alphabet = vocab['selfies_alphabet']
+    i2char = {i:c for i,c in enumerate(alphabet)}
+    params['index_to_char']= i2char
+    
     model = Model(**params)
     model.load(os.path.join(script_dir, '..', args.model))
 

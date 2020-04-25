@@ -84,7 +84,10 @@ class molDataset(Dataset):
         # 1/ ============== Properties & Targets handling: ================
 
         self.targets = targets
-        self.binned_scores = bool('binned' in targets[0]) # whether we use binned affs or true values;
+        if(len(targets)>0):
+            self.binned_scores = bool('binned' in targets[0]) # whether we use binned affs or true values;
+        else:
+            self.binned_scores = False
         self.props = props
 
         # =========== 2/ Graphs handling ====================
