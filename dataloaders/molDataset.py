@@ -24,6 +24,7 @@ import pickle
 import json
 import networkx as nx
 import selfies
+from ordered_set import OrderedSet
 
 from torch.utils.data import Dataset, DataLoader, Subset
 from data_processing.rdkit_to_nx import smiles_to_nx
@@ -108,7 +109,7 @@ class molDataset(Dataset):
         self.language = vocab # smiles or selfies 
         
         if( build_alphabet): # Parsing dataset to build custom alphabets 
-            
+            print('!! Building custom alphabet for dataset. Set build_alphabet=True to use default moses alphabet.')
             selfies_a , len_selfies, smiles_a, len_smiles = self._get_selfie_and_smiles_alphabets()
             if(self.language == 'smiles'):
                 self.max_len = len_smiles
@@ -119,7 +120,7 @@ class molDataset(Dataset):
                 self.alphabet = selfies_a
             
         else: # default alphabets and length 
-            
+            print('-> Using default moses alphabet.')
             with open(os.path.join(maps_path, 'moses_alphabets.pickle'), 'rb') as f :
                 alphabets_dict = pickle.load(f)
                 
@@ -183,14 +184,14 @@ class molDataset(Dataset):
         
         selfies_list = np.asanyarray(self.df.selfies)
         
-        smiles_alphabet=list(set(''.join(smiles_list)))
+        smiles_alphabet=list(OrderedSet(''.join(smiles_list)))
         largest_smiles_len=len(max(smiles_list, key=len))
         selfies_len=[]
         
         print(f'--> Building alphabets for {smiles_list.shape[0]} smiles and selfies in dataset...')
         for individual_selfie in selfies_list:
             selfies_len.append(len(individual_selfie)-len(individual_selfie.replace('[',''))) # len of SELFIES
-        selfies_alphabet_pre=list(set(''.join(selfies_list)[1:-1].split('][')))
+        selfies_alphabet_pre=list(OrderedSet(''.join(selfies_list)[1:-1].split('][')))
         selfies_alphabet=[]
         for selfies_element in selfies_alphabet_pre:
             selfies_alphabet.append('['+selfies_element+']')        
