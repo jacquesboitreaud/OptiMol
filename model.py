@@ -187,12 +187,12 @@ class Model(nn.Module):
         
     # ======================== Model pass functions ==========================
     
-    def forward(self, g, smiles):
+    def forward(self, g, smiles, tf):
         #print('edge data size ', g.edata['one_hot'].size())
         e_out = self.encoder(g)
         mu, logv = self.encoder_mean(e_out), self.encoder_logv(e_out)
         z= self.sample(mu, logv, mean_only=False).squeeze() # stochastic sampling 
-        out = self.decode(z, smiles, teacher_forced=True) # teacher forced decoding 
+        out = self.decode(z, smiles, teacher_forced=tf) # teacher forced decoding 
         properties = self.MLP(z)
         affinities = self.aff_net(z)
         
@@ -222,7 +222,7 @@ class Model(nn.Module):
         return self.aff_net(z)
 
         
-    def decode(self, z, x_true=None,teacher_forced=False):
+    def decode(self, z, x_true=None,teacher_forced=0.0):
         """
             Unrolls decoder RNN to generate a batch of sequences, using teacher forcing
             Args:
@@ -242,13 +242,13 @@ class Model(nn.Module):
         # Init hidden with z sampled in latent space 
         h = self.decoder.init_h(z)
         
-        gen_seq = torch.zeros(batch_size, self.voc_size,seq_length).to(self.device)
+        gen_seq = torch.zeros(batch_size, self.voc_size, seq_length).to(self.device)
         
         for step in range(seq_length):
             out, h = self.decoder(rnn_in, h) 
             gen_seq[:,:,step]=out
             
-            if(teacher_forced):
+            if(teacher_forced > 0.0 and np.random.rand()<teacher_forced): # proba of teacher forcing 
                 indices = x_true[:,step]
             else:
                 v, indices = torch.max(gen_seq[:,:,step],dim=1) # get char indices with max probability

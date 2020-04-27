@@ -37,7 +37,7 @@ if __name__ == "__main__":
     sys.path.append(os.path.join(script_dir, 'dataloaders'))
     sys.path.append(os.path.join(script_dir, 'data_processing'))
     
-    from model_autoreg import Model
+    from model import Model
     from loss_func import VAELoss, weightedPropsLoss, affsRegLoss, affsClassifLoss
     from dataloaders.molDataset import molDataset, Loader
     
@@ -46,8 +46,8 @@ if __name__ == "__main__":
 
     parser.add_argument('--train', help="path to training dataframe", type=str, default='data/moses_train.csv')
     parser.add_argument("--cutoff", help="Max number of molecules to use. Set to -1 for all", type=int, default=-1)
-    parser.add_argument('--save_path', type=str, default = './saved_model_w/aff_model')
-    parser.add_argument('--load_model', type=bool, default=True)
+    parser.add_argument('--save_path', type=str, default = './saved_model_w/debug')
+    parser.add_argument('--load_model', type=bool, default=False)
     parser.add_argument('--load_iter', type=int, default=0) # resume training at optimize step n°
 
     parser.add_argument('--decode', type=str, default='selfies') # 'smiles' or 'selfies'
@@ -60,19 +60,19 @@ if __name__ == "__main__":
     parser.add_argument('--beta', type=float, default=0.0) # initial KL annealing weight
     parser.add_argument('--step_beta', type=float, default=0.002) # beta increase per step
     parser.add_argument('--max_beta', type=float, default=1.0) # maximum KL annealing weight
-    parser.add_argument('--warmup', type=int, default=0) # number of steps with only reconstruction loss (beta=0)
+    parser.add_argument('--warmup', type=int, default=40000) # number of steps with only reconstruction loss (beta=0)
 
     parser.add_argument('--processes', type=int, default=8) # num workers 
     
-    parser.add_argument('--batch_size', type=int, default=64)
+    parser.add_argument('--batch_size', type=int, default=100)
     parser.add_argument('--epochs', type=int, default=50) # nbr training epochs
     parser.add_argument('--anneal_rate', type=float, default=0.9) # Learning rate annealing
     parser.add_argument('--anneal_iter', type=int, default=40000) # update learning rate every _ step
     parser.add_argument('--kl_anneal_iter', type=int, default=2000) # update beta every _ step
     
     parser.add_argument('--print_iter', type=int, default=1000) # print loss metrics every _ step
-    parser.add_argument('--print_smiles_iter', type=int, default=0) # print reconstructed smiles every _ step
-    parser.add_argument('--save_iter', type=int, default=1000) # save model weights every _ step
+    parser.add_argument('--print_smiles_iter', type=int, default=1000) # print reconstructed smiles every _ step
+    parser.add_argument('--save_iter', type=int, default=10000) # save model weights every _ step
     
     # Multitask and properties 
     parser.add_argument('--bin_affs', type=bool, default=False) # Binned discretized affs or true values 
@@ -181,7 +181,7 @@ if __name__ == "__main__":
                 a_target=a_target.to(device)
 
             # Forward pass
-            mu, logv, _, out_smi, out_p, out_a = model(graph,smiles)
+            mu, logv, _, out_smi, out_p, out_a = model(graph,smiles, tf=False)
 
             #Compute loss terms : change according to multitask setting 
             if( (not use_affs) and (not use_props)): # VAE only 
@@ -256,7 +256,7 @@ if __name__ == "__main__":
                 if(use_affs):
                     a_target = a_target.to(device)
 
-                mu, logv, z, out_smi, out_p, out_a = model(graph,smiles)
+                mu, logv, z, out_smi, out_p, out_a = model(graph,smiles, tf=False)
 
                 #Compute loss : change according to multitask
                 if( (not use_affs) and (not use_props)): # VAE only 

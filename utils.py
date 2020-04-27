@@ -15,6 +15,7 @@ import pandas as pd
 import rdkit
 from rdkit import Chem
 from rdkit.Chem import QED
+from selfies import decoder
 import os 
 
 
@@ -108,10 +109,7 @@ def log_reconstruction(true_idces, probas, idx_to_char, string_type='smiles'):
         return df, frac_valid
     else:
         for i in range(3): #printing only 3 samples 
-            print('True sample selfies : ')
-            print(in_smiles[i])
-            print('Reconstruction : ')
-            print(out_smiles[i])
+            print(decoder(in_smiles[i]), ' => ' ,decoder(out_smiles[i]) )
         return 0,0
 
 

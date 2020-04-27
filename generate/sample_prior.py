@@ -35,7 +35,7 @@ if __name__ == "__main__":
     sys.path.append(os.path.join(script_dir, 'data_processing'))
     
     from dataloaders.molDataset import molDataset
-    from model import Model
+    from model_autoreg import Model
     from utils import *
 
     parser = argparse.ArgumentParser()

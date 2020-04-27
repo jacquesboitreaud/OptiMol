@@ -47,27 +47,27 @@ from sklearn.decomposition import PCA
 if __name__ == "__main__":
     from dataloaders.molDataset import molDataset, Loader
     from data_processing.rdkit_to_nx import smiles_to_nx
-    from model import Model, Loss, multiLoss
+    from model import Model
     
     from eval.eval_utils import *
     from utils import *
     
     # Eval config 
-    model_path= f'../saved_model_w/aff_model_iter_320000.pth'
+    model_path= f'../saved_model_w/aff_model.pth'
     
     recompute_pca = False
     reload_model = True
     
     # Should be same as for training
     properties = ['QED','logP','molWt']
-    targets = ['drd3_binned']
+    targets = ['drd3']
     N = 1000
     
     # Select only DUDE subset to plot in PCA space 
     plot_target = 'drd3'
 
     #Load eval set: USE MOSES TEST SET !!!!!!!!!!!!!!!!!
-    loaders = Loader(csv_path='../data/moses_test.csv',
+    loaders = Loader(csv_path='../data/moses_train.csv',
                      maps_path= '../map_files/',
                      n_mols=N ,
                      vocab = 'selfies',
@@ -147,8 +147,7 @@ if __name__ == "__main__":
             p_target_all[batch_idx*batch_size:(batch_idx+1)*batch_size]=p_target.numpy()
             
             # Classification of binned affinities
-            _, c = torch.max(pred_a, dim=1)
-            affs = c.cpu().numpy().reshape(-1,1)
+            affs = pred_a.cpu().numpy()
             a_all[batch_idx*batch_size:(batch_idx+1)*batch_size]=affs
             
             a_target_all[batch_idx*batch_size:(batch_idx+1)*batch_size]=a_target.numpy()
@@ -198,7 +197,7 @@ if __name__ == "__main__":
         sns.scatterplot(reconstruction_dataframe['molWt'],reconstruction_dataframe['molWt_pred'])
         sns.lineplot([0,700],[0,700],color='r')
         
-        """
+        
         # Affinities prediction plots
         plt.figure()
         sns.scatterplot(reconstruction_dataframe[targets[0]],reconstruction_dataframe[f'{targets[0]}_pred'])
@@ -206,7 +205,7 @@ if __name__ == "__main__":
         
         MAE = np.mean(np.abs(reconstruction_dataframe[targets[0]]-reconstruction_dataframe[f'{targets[0]}_pred']))
         print(f'MAE = {MAE} kcal/mol')
-        """
+        
         
         # ===================================================================
         # PCA plot 
