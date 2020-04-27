@@ -53,13 +53,13 @@ if __name__ == "__main__":
     parser.add_argument('--decode', type=str, default='selfies') # 'smiles' or 'selfies'
     parser.add_argument('--build_alphabet', action='store_true', default = True) 
     
-    parser.add_argument('--latent_size', type=int, default=128) # size of latent code
+    parser.add_argument('--latent_size', type=int, default=96) # size of latent code
 
     parser.add_argument('--lr', type=float, default=1e-3) # Initial learning rate
     parser.add_argument('--clip_norm', type=float, default=50.0) # Gradient clipping max norm
     parser.add_argument('--beta', type=float, default=0.0) # initial KL annealing weight
     parser.add_argument('--step_beta', type=float, default=0.002) # beta increase per step
-    parser.add_argument('--max_beta', type=float, default=1.0) # maximum KL annealing weight
+    parser.add_argument('--max_beta', type=float, default=0.1) # maximum KL annealing weight
     parser.add_argument('--warmup', type=int, default=40000) # number of steps with only reconstruction loss (beta=0)
 
     parser.add_argument('--processes', type=int, default=8) # num workers 
@@ -88,6 +88,14 @@ if __name__ == "__main__":
     
     load_model = args.load_model
     load_path= 'saved_model_w/aff_model.pth'
+    
+    # teacher forcing schedule 
+    tf_init = 1.0
+    tf_step = 0.002
+    tf_end = 0.0
+    tf_anneal_iter = 1000
+    tf_warmup = 100000
+    
     
     # Multitasking : properties and affinities should be in input dataset 
     
@@ -162,7 +170,7 @@ if __name__ == "__main__":
     else:
         total_steps=0
     beta = args.beta
-    
+    tf_proba = tf_init
 
     for epoch in range(1, args.epochs+1):
         print(f'Starting epoch {epoch}')
@@ -181,7 +189,7 @@ if __name__ == "__main__":
                 a_target=a_target.to(device)
 
             # Forward pass
-            mu, logv, _, out_smi, out_p, out_a = model(graph,smiles, tf=False)
+            mu, logv, _, out_smi, out_p, out_a = model(graph,smiles, tf= tf_proba)
 
             #Compute loss terms : change according to multitask setting 
             if( (not use_affs) and (not use_props)): # VAE only 
@@ -214,11 +222,14 @@ if __name__ == "__main__":
                  print ("learning rate: %.6f" % scheduler.get_lr()[0])
 
             if total_steps % args.kl_anneal_iter == 0 and total_steps >= args.warmup:
-                beta = min(1, beta + args.step_beta)
+                beta = min(args.max_beta, beta + args.step_beta)
+                
+            if total_steps % tf_anneal_iter == 0 and total_steps >= tf_warmup:
+                tf = min(tf_end, tf_proba + tf_step)
 
             #logs and monitoring
             if total_steps % args.print_iter == 0:
-                 print(f'Opt step {total_steps}, rec: {rec.item():.2f}, props mse: {pmse.item():.2f}, aff mse: {amse.item():.2f}')
+                 print(f'Opt step {total_steps}, rec: {rec.item():.2f}, kl: {beta*kl.item():.2f}, props mse: {pmse.item():.2f}, aff mse: {amse.item():.2f}')
                  writer.add_scalar('BatchRec/train', rec.item(), total_steps )
                  writer.add_scalar('BatchKL/train', kl.item(), total_steps )
                  if len(properties)>0:
@@ -256,7 +267,7 @@ if __name__ == "__main__":
                 if(use_affs):
                     a_target = a_target.to(device)
 
-                mu, logv, z, out_smi, out_p, out_a = model(graph,smiles, tf=False)
+                mu, logv, z, out_smi, out_p, out_a = model(graph,smiles, tf=tf_proba)
 
                 #Compute loss : change according to multitask
                 if( (not use_affs) and (not use_props)): # VAE only 
@@ -284,7 +295,7 @@ if __name__ == "__main__":
             epoch_train_rec, epoch__train_kl, epoch_train_pmse, epoch_amse = epoch_train_rec/len(train_loader), epoch_train_kl/len(train_loader),\
             epoch_train_pmse/len(train_loader),epoch_train_amse/len(train_loader)
 
-        print(f'[Ep {epoch}/{args.epochs}], batch valid. loss: rec: {val_rec:.2f}, props mse: {val_pmse:.2f},\
+        print(f'[Ep {epoch}/{args.epochs}], batch valid. loss: rec: {val_rec:.2f}, kl: {beta*kl.item():.2f}, props mse: {val_pmse:.2f},\
  aff mse: {val_amse:.2f}')
 
         # Tensorboard logging 
