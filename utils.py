@@ -16,14 +16,62 @@ import rdkit
 from rdkit import Chem
 from rdkit.Chem import QED
 from selfies import decoder
-import os 
+import os
+import json
 
 
-def _make_dir(directory):
-    os.makedirs(directory)
-    
+#  ============== Dumping utils  ==============
+
+
+class Dumper():
+    """
+    Small class to deal with model loading/dumping
+    """
+
+    def __init__(self, dumping_path=None):
+        self.dumping_path = dumping_path
+
+    def dump(self, dict_to_dump, dumping_path=None):
+        """
+        Takes a dict and dumps it
+        :param dict_to_dump: a python dict
+        :param dumping_path: If None, defaults to self.dumping_path
+        :return:
+        """
+        if dumping_path is None:
+            dumping_path = self.dumping_path
+        if dumping_path is None:
+            raise ValueError('Where should I dump ? No dump_path provided')
+
+        j = json.dumps(dict_to_dump, indent=4)
+        with open(dumping_path, 'w') as f:
+            print(j, file=f)
+
+    def load(self, file_to_read):
+        with open(file_to_read, 'r') as f:
+            json_dict = json.load(f)
+        return json_dict
+
+    def merge_dicts(self):
+        pass
+
+
+if __name__ == '__main__':
+    d = {
+        "name": "interpolator",
+        "children": [1, 2, 3]
+    }
+
+    dumper = Dumper('test_dump')
+    dumper.dump(d)
+    json_dict = dumper.load('test_dump')
+    print(json_dict)
+    a = json_dict['children']
+    print(a, type(a))
+
+
 # ============== Rdkit utils =====================================
-    
+
 def disable_rdkit_logging():
     """
     Disables RDKit logging.
@@ -33,16 +81,16 @@ def disable_rdkit_logging():
     logger = rkl.logger()
     logger.setLevel(rkl.ERROR)
     rkrb.DisableLog('rdApp.error')
-    
+
+
 def QED_oracle(smiles):
     # takes a list of smiles and returns a list of corresponding QEDs
     t = torch.zeros(len(smiles))
-    for i,s in enumerate(smiles):
+    for i, s in enumerate(smiles):
         m = Chem.MolFromSmiles(s)
-        if(m!=None):
+        if (m != None):
             t[i] = QED.qed(m)
-    return t 
-        
+    return t
 
 
 # ================= Pytorch utils ================================
@@ -100,17 +148,17 @@ def log_reconstruction(true_idces, probas, idx_to_char, string_type='smiles'):
         in_smiles.append(''.join([idx_to_char[idx] for idx in true_idces[i]]))
     d = {'input smiles': in_smiles,
          'output smiles': out_smiles}
-    
-    if string_type =='smiles':
+
+    if string_type == 'smiles':
         df = pd.DataFrame.from_dict(d)
         valid = [Chem.MolFromSmiles(o.rstrip('\n')) for o in out_smiles]
         valid = [int(m != None) for m in valid]
         frac_valid = np.mean(valid)
         return df, frac_valid
     else:
-        for i in range(3): #printing only 3 samples 
-            print(decoder(in_smiles[i]), ' => ' ,decoder(out_smiles[i]) )
-        return 0,0
+        for i in range(3):  # printing only 3 samples
+            print(decoder(in_smiles[i]), ' => ', decoder(out_smiles[i]))
+        return 0, 0
 
 
 def log_smiles_from_indices(true_idces, out_idces, idx_to_char):
@@ -159,4 +207,3 @@ def log_smiles_from_indices(true_idces, out_idces, idx_to_char):
 def i2s(idces, idx_to_char):
     # list of indices to sequence of characters (=smiles)
     return ''.join([idx_to_char[idx] for idx in idces])
-
