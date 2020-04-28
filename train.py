@@ -43,14 +43,15 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
 
+    parser.add_argument('--name', type=str, default='default')
     parser.add_argument('--train', help="path to training dataframe", type=str, default='data/moses_train.csv')
     parser.add_argument("--cutoff", help="Max number of molecules to use. Set to -1 for all", type=int, default=-1)
-    parser.add_argument('--save_path', type=str, default='./saved_model_w/debug')
+    parser.add_argument('--save_path', type=str, default='./saved_models/debug')
     parser.add_argument('--load_model', type=bool, default=False)
     parser.add_argument('--load_iter', type=int, default=0)  # resume training at optimize step n°
 
     parser.add_argument('--decode', type=str, default='selfies')  # 'smiles' or 'selfies'
-    parser.add_argument('--build_alphabet', action='store_true', default=False)  # use default alphabet
+    parser.add_argument('--build_alphabet', action='store_true', default=False)  # use params.json alphabet
 
     parser.add_argument('--latent_size', type=int, default=96)  # size of latent code
 
@@ -61,7 +62,7 @@ if __name__ == "__main__":
     parser.add_argument('--max_beta', type=float, default=0.1)  # maximum KL annealing weight
     parser.add_argument('--warmup', type=int, default=40000)  # number of steps with only reconstruction loss (beta=0)
 
-    parser.add_argument('--processes', type=int, default=8)  # num workers
+    parser.add_argument('--processes', type=int, default=20)  # num workers
 
     parser.add_argument('--batch_size', type=int, default=100)
     parser.add_argument('--epochs', type=int, default=50)  # nbr training epochs
@@ -80,11 +81,12 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    logdir, modeldir = setup(args.name, permissive=True)
+
+    dumper = Dumper(dumping_path=os.path.join(modeldir, 'params.json'), argparse=args)
+
     # config
     parallel = False  # parallelize over multiple gpus if available
-
-    load_model = args.load_model
-    load_path = 'saved_model_w/aff_model.pth'
 
     # teacher forcing schedule 
     tf_init = 1.0
@@ -109,10 +111,10 @@ if __name__ == "__main__":
     use_props = bool(len(properties) > 0)
     use_affs = bool(len(targets) > 0)
 
-    writer = SummaryWriter()
-    if not os.path.exists('runs'):
-        os.mkdir('runs')
-        print('> tensorboard logging in ./runs')
+    writer = SummaryWriter(logdir)
+    # if not os.path.exists('runs'):
+    #     os.mkdir('runs')
+    #     print('> tensorboard logging in ./runs')
     disable_rdkit_logging()  # function from utils to disable rdkit logs
 
     # Load train set and test set
@@ -140,11 +142,19 @@ if __name__ == "__main__":
               'N_targets': len(targets),
               'binned_scores': args.bin_affs,
               'device': device,
-              'index_to_char': loaders.dataset.index_to_char}
-    pickle.dump(params, open('saved_model_w/model_params.pickle', 'wb'))
+              'index_to_char': loaders.dataset.index_to_char,
+              'props': properties,
+              'targets': targets}
+    # pickle.dump(params, open('saved_models/model_params.pickle', 'wb'))
+    dumper.dic.update(params)
+    dumper.dump()
 
     model = Model(**params).to(device)
-    if (load_model):
+
+    load_model = args.load_model
+    load_path = 'results/saved_models/inference_default/params.json'
+    if load_model:
+        print("Careful, I'm loading default in train.py, line 157")
         model.load(load_path, aff_net=False)
 
     if (parallel and torch.cuda.device_count() > 1):
@@ -243,7 +253,7 @@ if __name__ == "__main__":
                 # print('fraction of valid smiles in batch: ', frac_valid)
 
             if total_steps % args.save_iter == 0:
-                torch.save(model.state_dict(), f"{args.save_path}.pth")
+                torch.save(model.state_dict(), os.path.join(modeldir, "weights.pth"))
 
             # keep track of epoch loss
             epoch_train_rec += rec.item()
@@ -287,18 +297,19 @@ if __name__ == "__main__":
 
             # total Epoch losses
 
-            val_rec, val_kl, val_pmse, t_amse = val_rec / len(test_loader), val_kl / len(test_loader), \
-                                                val_pmse / len(test_loader), val_amse / len(test_loader)
+            val_rec, val_kl, val_pmse, t_amse = val_rec / len(test_loader), \
+                                                val_kl / len(test_loader), \
+                                                val_pmse / len(test_loader), \
+                                                val_amse / len(test_loader)
 
-            epoch_train_rec, epoch__train_kl, epoch_train_pmse, epoch_amse = epoch_train_rec / len(
-                train_loader), epoch_train_kl / len(train_loader), \
-                                                                             epoch_train_pmse / len(
-                                                                                 train_loader), epoch_train_amse / len(
-                train_loader)
+            epoch_train_rec, epoch__train_kl, epoch_train_pmse, epoch_amse = epoch_train_rec / len(train_loader), \
+                                                                             epoch_train_kl / len(train_loader), \
+                                                                             epoch_train_pmse / len(train_loader), \
+                                                                             epoch_train_amse / len(train_loader)
 
-        print(
-            f'[Ep {epoch}/{args.epochs}], batch valid. loss: rec: {val_rec:.2f}, kl: {beta * kl.item():.2f}, props mse: {val_pmse:.2f},\
- aff mse: {val_amse:.2f}')
+        print(f'[Ep {epoch}/{args.epochs}], batch valid. loss: rec: {val_rec:.2f}, '
+              f'kl: {beta * kl.item():.2f}, props mse: {val_pmse:.2f},'
+              f' aff mse: {val_amse:.2f}')
 
         # Tensorboard logging
         writer.add_scalar('EpochRec/valid', val_rec, epoch)

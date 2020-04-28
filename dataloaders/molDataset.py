@@ -109,7 +109,7 @@ class molDataset(Dataset):
         self.language = vocab # smiles or selfies 
         
         if( build_alphabet): # Parsing dataset to build custom alphabets 
-            print('!! Building custom alphabet for dataset. Set build_alphabet=True to use default moses alphabet.')
+            print('!! Building custom alphabet for dataset. Set build_alphabet=True to use params.json moses alphabet.')
             selfies_a , len_selfies, smiles_a, len_smiles = self._get_selfie_and_smiles_alphabets()
             if(self.language == 'smiles'):
                 self.max_len = len_smiles
@@ -119,8 +119,8 @@ class molDataset(Dataset):
                 self.max_len = len_selfies
                 self.alphabet = selfies_a
             
-        else: # default alphabets and length 
-            print('-> Using default moses alphabet.')
+        else: # params.json alphabets and length
+            print('-> Using params.json moses alphabet.')
             with open(os.path.join(maps_path, 'moses_alphabets.pickle'), 'rb') as f :
                 alphabets_dict = pickle.load(f)
                 

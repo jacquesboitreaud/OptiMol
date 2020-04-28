@@ -19,6 +19,8 @@ from selfies import decoder
 import os
 import json
 
+script_dir = os.path.dirname(os.path.realpath(__file__))
+
 
 #  ============== Dumping utils  ==============
 
@@ -26,15 +28,34 @@ import json
 class Dumper():
     """
     Small class to deal with model loading/dumping
+
+    Can be used as a dumping utility or a model logger
+    Then it starts by adding a params.json dict (to have all necessary values) and update it with an ini and then with the
+    argparse
     """
 
-    def __init__(self, dumping_path=None):
-        self.dumping_path = dumping_path
+    def __init__(self, dumping_path=None, ini=None, argparse=None):
+        """
 
-    def dump(self, dict_to_dump, dumping_path=None):
+        :param ini: Optional : path to ini from the root of the project
+        :param argparse: Optional, an argparse object
+        :param dumping_path: Optional, where to dump by params.json
+        """
+        self.dumping_path = dumping_path
+        self.dic = self.load(
+            os.path.join(script_dir, 'results/saved_models/inference_default/params.json'))
+
+        if ini is not None:
+            ini_dic = self.load(os.path.join(script_dir, '..', ini))
+            self.dic.update(ini_dic)
+
+        if argparse is not None:
+            self.dic.update(argparse.__dict__)
+
+    def dump(self, dict_to_dump=None, dumping_path=None):
         """
         Takes a dict and dumps it
-        :param dict_to_dump: a python dict
+        :param dict_to_dump: a python dict. If None takes own
         :param dumping_path: If None, defaults to self.dumping_path
         :return:
         """
@@ -42,6 +63,8 @@ class Dumper():
             dumping_path = self.dumping_path
         if dumping_path is None:
             raise ValueError('Where should I dump ? No dump_path provided')
+        if dict_to_dump is None:
+            dict_to_dump = self.dic
 
         j = json.dumps(dict_to_dump, indent=4)
         with open(dumping_path, 'w') as f:
@@ -52,22 +75,62 @@ class Dumper():
             json_dict = json.load(f)
         return json_dict
 
-    def merge_dicts(self):
-        pass
+
+if __name__ == '__main__':
+    pass
+    # d = {
+    #     "name": "interpolator",
+    #     "children": [1, 2, 3]
+    # }
+    #
+    # import argparse
+    #
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument('--name', type=str, default='Overriding the original dict')
+    # args = parser.parse_args()
+    #
+    # dumper = Dumper(dumping_path='test_dump')
+    # dumper.dump(d)
+    # json_dict = dumper.load('test_dump')
+    # print(json_dict)
+    # a = json_dict['children']
+    # print(a, type(a))
+
+
+# ============== Dir management =====================================
+def soft_mkdir(path):
+    if not os.path.exists(path):
+        os.mkdir(path)
+
+
+def setup(name=None, permissive=True):
+    """
+
+    :param name:
+    :param permissive: if False, will not allow for overwriting
+    :return:
+    """
+    soft_mkdir(os.path.join(script_dir, 'results'))
+    soft_mkdir(os.path.join(script_dir, 'results/logs'))
+    soft_mkdir(os.path.join(script_dir, 'results/saved_models'))
+    if name is not None:
+        logdir = os.path.join(script_dir, 'results/logs', name)
+        modeldir = os.path.join(script_dir, 'results/saved_models', name)
+        if permissive:
+            soft_mkdir(logdir)
+            soft_mkdir(modeldir)
+        else:
+            os.mkdir(logdir)
+            os.mkdir(modeldir)
+    return logdir, modeldir
 
 
 if __name__ == '__main__':
-    d = {
-        "name": "interpolator",
-        "children": [1, 2, 3]
-    }
-
-    dumper = Dumper('test_dump')
-    dumper.dump(d)
-    json_dict = dumper.load('test_dump')
-    print(json_dict)
-    a = json_dict['children']
-    print(a, type(a))
+    pass
+    # setup()
+    # setup('toto')
+    # setup('toto', permissive=True)
+    # setup('toto', permissive=False)
 
 
 # ============== Rdkit utils =====================================

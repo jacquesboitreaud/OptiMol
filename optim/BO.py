@@ -51,8 +51,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument('-n', "--n_steps", help="Nbr of optim steps", type=int, default=50)
-    parser.add_argument('-m', '--model', help="saved model weights fname. Located in saved_model_w subdir",
-                        default='saved_model_w/baseline.pth')
+    parser.add_argument('-m', '--model', help="saved model weights fname. Located in saved_models subdir",
+                        default='saved_models/baseline.pth')
     parser.add_argument('-v', '--vocab', default='selfies') # vocab used by model 
     
     parser.add_argument('-d', '--device', default='cuda') # 'cpu or 'cuda'. 
@@ -69,7 +69,7 @@ if __name__ == "__main__":
                     num_workers = 0)
 
     # Load model (on gpu if available)
-    params = pickle.load(open(os.path.join(repo_dir,'saved_model_w/model_params.pickle'), 'rb'))  # model hparams
+    params = pickle.load(open(os.path.join(repo_dir,'saved_models/model_params.pickle'), 'rb'))  # model hparams
     model = Model(**params)
     model.load(os.path.join(repo_dir,args.model))
     model.eval()

@@ -36,7 +36,7 @@ if(__name__=='__main__'):
     from model import Model
     
     # Set to true if providing a seed compound to start optimization. Otherwise, random start in the latent space
-    model_path = 'saved_model_w/g2s_iter_440000.pth'
+    model_path = 'saved_models/g2s_iter_440000.pth'
     seed= False
     N_steps=100
     lr=0.1
@@ -60,7 +60,7 @@ if(__name__=='__main__'):
     
     # Load model 
     # Load model (on gpu if available)
-    params = pickle.load(open(os.path.join(script_dir,'..','saved_model_w/model_params.pickle'), 'rb'))  # model hparams
+    params = pickle.load(open(os.path.join(script_dir,'..','saved_models/model_params.pickle'), 'rb'))  # model hparams
     model = Model(**params)
     model.load(os.path.join(script_dir, '..', model_path))
     model.eval()
