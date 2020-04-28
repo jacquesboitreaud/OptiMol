@@ -63,18 +63,39 @@ dependencies:
   - zlib=1.2.11
   - zstd=1.3.7
   - pip:
+    - absl-py==0.9.0
+    - cachetools==4.1.0
+    - chardet==3.0.4
     - cycler==0.10.0
     - fcd-torch==1.0.7
     - future==0.18.2
+    - google-auth==1.14.1
+    - google-auth-oauthlib==0.4.1
+    - grpcio==1.28.1
+    - idna==2.9
     - joblib==0.14.1
     - kiwisolver==1.2.0
+    - markdown==3.2.1
     - matplotlib==3.2.1
     - molsets==0.3.1
+    - oauthlib==3.1.0
+    - ordered-set==3.1.1
     - pomegranate==0.12.0
+    - protobuf==3.11.3
+    - pyasn1==0.4.8
+    - pyasn1-modules==0.2.8
     - pyparsing==2.4.7
     - pyyaml==5.3.1
+    - requests==2.23.0
+    - requests-oauthlib==1.3.0
+    - rsa==4.0
+    - scikit-learn==0.22.2.post1
     - seaborn==0.10.1
     - selfies==0.2.4
+    - tensorboard==2.2.1
+    - tensorboard-plugin-wit==1.6.0.post3
     - tqdm==4.45.0
+    - urllib3==1.25.9
+    - werkzeug==1.0.1
 prefix: /Users/vincent/anaconda3/envs/optimol
 
