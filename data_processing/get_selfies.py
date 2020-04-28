@@ -12,7 +12,7 @@ from tqdm import tqdm
 
 try: 
     from selfies import encoder, decoder, selfies_alphabet
-except:
+except ImportError:
     print('Please install selfies package by running "pip install selfies" ')
     
 if __name__ == '__main__':
