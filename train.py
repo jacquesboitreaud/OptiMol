@@ -51,7 +51,7 @@ if __name__ == "__main__":
     parser.add_argument('--load_iter', type=int, default=0) # resume training at optimize step n°
 
     parser.add_argument('--decode', type=str, default='selfies') # 'smiles' or 'selfies'
-    parser.add_argument('--build_alphabet', action='store_true', default = True) 
+    parser.add_argument('--build_alphabet', action='store_true', default = False) # use default alphabet  
     
     parser.add_argument('--latent_size', type=int, default=96) # size of latent code
 

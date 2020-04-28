@@ -10,6 +10,7 @@ Required :
 - selfies (pip install selfies)
 - rdkit
 - tqdm
+ -ordered-sets ( pip install ordered-set )
 
 ### Data loading
 
