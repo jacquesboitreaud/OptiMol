@@ -40,7 +40,7 @@ if __name__ == "__main__":
     parser.add_argument('-i', '--input_path', help="Path to dataframe with seeds", type=str, default='hard_seeds.csv')
     parser.add_argument('-d', "--distance", help="Euclidian distance to seed mean", type=int, default=1)
     parser.add_argument('-n', "--n_mols", help="Nbr to generate", type=int, default=100)
-    parser.add_argument('-m', '--model', help="saved model weights fname. Located in saved_model_w subdir",
+    parser.add_argument('-m', '--model', help="saved model weights fname. Located in saved_models subdir",
                         default='baseline.pth')
     parser.add_argument('-o', '--output_prefix', type=str, default='hard_samp_batch')
     parser.add_argument('-b', '--use_beam', action='store_true', help="use beam search")
@@ -53,9 +53,9 @@ if __name__ == "__main__":
     
     disable_rdkit_logging() # function from utils to disable rdkit logs
 
-    model_path = f'../saved_model_w/{args.model}'
+    model_path = f'../saved_models/{args.model}'
     # Load model (on gpu if available)
-    params = pickle.load(open('../saved_model_w/params.pickle', 'rb'))  # model hparams
+    params = pickle.load(open('../saved_models/params.pickle', 'rb'))  # model hparams
     model = Model(**params)
     model.load(model_path)
     # Provide the model with characters corresponding to indices, for smiles generation 

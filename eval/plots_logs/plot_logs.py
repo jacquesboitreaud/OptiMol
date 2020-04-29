@@ -15,7 +15,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt 
 
 
-logs = np.load('../saved_model_w/baseline_logs.npy',allow_pickle=True)
+logs = np.load('../saved_models/baseline_logs.npy',allow_pickle=True)
 
 print(logs.keys())
 

@@ -45,7 +45,7 @@ from plot_tools import *
 
 # Choose model to load :
 batch_size = 100
-model_path = f'saved_model_w/baseline.pth'
+model_path = f'saved_models/baseline.pth'
 
 # Should be same as for training...
 properties = ['QED', 'logP', 'molWt']
@@ -67,7 +67,7 @@ _, _, test_loader = loaders.get_data()
 # Model & hparams
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-params = pickle.load(open('saved_model_w/params.pickle', 'rb'))
+params = pickle.load(open('saved_models/params.pickle', 'rb'))
 model = Model(**params).to(device)
 model.load_state_dict(torch.load(model_path))
 

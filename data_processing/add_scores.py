@@ -20,7 +20,7 @@ if __name__ == '__main__':
     """
     parser = argparse.ArgumentParser()
     parser.add_argument('-b', '--binning', help="Bin docking scores as 0 (no data or average score, no loss), 1 (bad) or 2 (good)", 
-                        type=bool, default=True)
+                        type=bool, params.json=True)
     
     # ================================
     args=parser.parse_args()

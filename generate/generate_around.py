@@ -38,7 +38,7 @@ if __name__ == "__main__":
                         default='O=C(O)CCCc1ccc(N(CCF)CCCl)cc1')
     parser.add_argument('-d', "--distance", help="Euclidian distance to seed mean", type=int, default=5)
     parser.add_argument('-n', "--n_mols", help="Nbr to generate", type=int, default=100)
-    parser.add_argument('-m', '--model', help="saved model weights fname. Located in saved_model_w subdir",
+    parser.add_argument('-m', '--model', help="saved model weights fname. Located in saved_models subdir",
                         default='baseline.pth')
     parser.add_argument('-o', '--output_file', type=str, default='gen_batch.txt')
     parser.add_argument('-b', '--use_beam', action='store_true', help="use beam search")
@@ -48,9 +48,9 @@ if __name__ == "__main__":
 
     # ==============
 
-    model_path = f'../saved_model_w/{args.model}'
+    model_path = f'../saved_models/{args.model}'
     # Load model (on gpu if available)
-    params = pickle.load(open('../saved_model_w/params.pickle', 'rb'))  # model hparams
+    params = pickle.load(open('../saved_models/params.pickle', 'rb'))  # model hparams
     model = Model(**params)
     model.load(model_path)
     # Provide the model with characters corresponding to indices, for smiles generation 

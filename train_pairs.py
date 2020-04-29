@@ -33,7 +33,7 @@ if __name__ == "__main__":
     
     parser = argparse.ArgumentParser()
     
-    parser.add_argument('--save_path', type=str, default = './saved_model_w/g2s_herg')
+    parser.add_argument('--save_path', type=str, default = './saved_models/g2s_herg')
     parser.add_argument('--load_model', type=bool, default=False)
     parser.add_argument('--load_fname', type=str, default='baseline.pth')
     
@@ -73,8 +73,8 @@ if __name__ == "__main__":
     properties = ['QED','logP','molWt']
     targets = None # If we use multitask affinities prediction 
     
-    model_path= f'saved_model_w/{args.load_fname}'
-    log_path='./saved_model_w/logs_pairs'
+    model_path= f'saved_models/{args.load_fname}'
+    log_path='./saved_models/logs_pairs'
     
     # Dataloading 
 
@@ -111,7 +111,7 @@ if __name__ == "__main__":
              'N_properties':len(properties),
              'N_targets':2,
              'device':device}
-    pickle.dump(params, open('saved_model_w/params.pickle','wb'))
+    pickle.dump(params, open('saved_models/params.pickle','wb'))
 
     model = Model(**params).to(device)
     if(args.load_model):

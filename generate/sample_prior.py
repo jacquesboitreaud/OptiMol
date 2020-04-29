@@ -41,8 +41,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument('-n', "--n_mols", help="Nbr to generate", type=int, default=1000)
-    parser.add_argument('-m', '--model', help="saved model weights fname. Located in saved_model_w subdir",
-                        default='saved_model_w/debug.pth')
+    parser.add_argument('-m', '--model', help="saved model weights fname. Located in saved_models subdir",
+                        default='saved_models/debug.pth')
     parser.add_argument('-v', '--vocab', default='selfies') # vocab used by model 
     
     parser.add_argument('-o', '--output_file', type=str, default='data/gen_a.txt')
@@ -54,7 +54,7 @@ if __name__ == "__main__":
     # ==============
 
     # Load model params & model
-    params = pickle.load(open(os.path.join(script_dir,'..','saved_model_w/model_params.pickle'), 'rb'))  # model hparams
+    params = pickle.load(open(os.path.join(script_dir,'..','saved_models/model_params.pickle'), 'rb'))  # model hparams
     
     model = Model(**params)
     model.load(os.path.join(script_dir, '..', args.model))

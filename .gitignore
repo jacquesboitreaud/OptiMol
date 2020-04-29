@@ -5,3 +5,4 @@ model_backups
 data_curation
 eval/plots
 data/
+results/
