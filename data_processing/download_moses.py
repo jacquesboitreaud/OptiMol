@@ -11,20 +11,25 @@ import moses
 import pandas as pd
 import os
 
-script_dir = os.path.dirname(os.path.realpath(__file__))
 
-print('>>> Loading data from moses')
-train = moses.get_dataset('train')
-test = moses.get_dataset('test')
-test_scaffolds = moses.get_dataset('test_scaffolds')
+def download_moses():
+    script_dir = os.path.dirname(os.path.realpath(__file__))
 
-train = pd.DataFrame(train).rename(columns={0: 'smiles'})
-test = pd.DataFrame(test).rename(columns={0: 'smiles'})
-scaf = pd.DataFrame(test_scaffolds).rename(columns={0: 'smiles'})
+    print('>>> Loading data from moses')
+    train = moses.get_dataset('train')
+    test = moses.get_dataset('test')
+    test_scaffolds = moses.get_dataset('test_scaffolds')
 
-print(scaf.head())
+    train = pd.DataFrame(train).rename(columns={0: 'smiles'})
+    test = pd.DataFrame(test).rename(columns={0: 'smiles'})
+    scaf = pd.DataFrame(test_scaffolds).rename(columns={0: 'smiles'})
 
-print('>>> Saving data to csv files in ./data')
-train.to_csv(os.path.join(script_dir, '../data/moses_train.csv'))
-test.to_csv(os.path.join(script_dir, '../data/moses_test.csv'))
-scaf.to_csv(os.path.join(script_dir, '../data/moses_test_scaffolds.csv'))
+    print(scaf.head())
+
+    print('>>> Saving data to csv files in ./data')
+    train.to_csv(os.path.join(script_dir, '../data/moses_train.csv'))
+    test.to_csv(os.path.join(script_dir, '../data/moses_test.csv'))
+    scaf.to_csv(os.path.join(script_dir, '../data/moses_test_scaffolds.csv'))
+
+
+download_moses()

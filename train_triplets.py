@@ -18,16 +18,21 @@ since model should have been pretrained.
 
 import argparse
 import sys
-import torch
 import numpy as np
 import dgl
 import pickle
+
+import torch
 import torch.utils.data
-from torch import nn, optim
+import torch.nn, torch.optim
 import torch.nn.utils.clip_grad as clip
 import torch.nn.functional as F
-
 import torch.optim.lr_scheduler as lr_scheduler
+
+from model import Model
+from loss_func import Loss, RecLoss, tripletLoss
+from dataloaders.tripletsDataset import Loader
+from utils import *
 
 if __name__ == "__main__":
 
@@ -60,9 +65,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    from model import Model, Loss, RecLoss, tripletLoss
-    from dataloaders.tripletsDataset import Loader
-    from utils import *
+
 
     # config
     n_epochs = args.n_epochs  # epochs to train

@@ -17,16 +17,16 @@ since model should have been pretrained.
 """
 
 import argparse
-import sys
-import torch
-import numpy as np
 import dgl
+import numpy as np
 import pickle
+import sys
+
+import torch
 import torch.utils.data
 from torch import nn, optim
 import torch.nn.utils.clip_grad as clip
 import torch.nn.functional as F
-
 import torch.optim.lr_scheduler as lr_scheduler
 
 if __name__ == "__main__":

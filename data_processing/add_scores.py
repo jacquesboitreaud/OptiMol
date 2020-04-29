@@ -14,17 +14,9 @@ import argparse
 import os
 import numpy as np
 
-if __name__ == '__main__':
-    script_dir = os.path.dirname(os.path.realpath(__file__))
 
-    """
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-b', '--binning', help="Bin docking scores as 0 (no data or average score, no loss), 1 (bad) or 2 (good)", 
-                        type=bool, params.json=True)
-    
-    # ================================
-    args=parser.parse_args()
-    """
+def add_scores():
+    script_dir = os.path.dirname(os.path.realpath(__file__))
 
     with open(os.path.join(script_dir, '../data/drd3_scores.pickle'), 'rb') as f:
         scored_smiles = pickle.load(f)
@@ -63,6 +55,17 @@ if __name__ == '__main__':
     print('Number of non zero raw docking scores :', cpt[-2])
     print('Number of non zero binned scores (excluding uninformative scores): ', cpt[-1])
 
+
+if __name__ == '__main__':
+    """
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-b', '--binning', help="Bin docking scores as 0 (no data or average score, no loss), 1 (bad) or 2 (good)", 
+                        type=bool, params.json=True)
+    
+    # ================================
+    args=parser.parse_args()
+    """
+    add_scores()
     """
     # test set (no docking scores for now)
     df = pd.read_csv(os.path.join(script_dir,'moses_test.csv'), index_col= 0)

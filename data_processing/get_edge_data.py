@@ -10,29 +10,31 @@ Stores dict 'order2index' to pickle file
 """
 import os
 import sys
+
 if __name__ == "__main__":
     script_dir = os.path.dirname(os.path.realpath(__file__))
     sys.path.append(os.path.join(script_dir, '..'))
 
-import pandas as pd
 import argparse
+from multiprocessing import Pool, freeze_support, RLock
 import networkx as nx
 import numpy as np
-from tqdm import tqdm
+import pandas as pd
 import pickle
-from multiprocessing import Pool, freeze_support, RLock
+from tqdm import tqdm
 
 from data_processing.rdkit_to_nx import smiles_to_nx
 
-if __name__=='__main__':
+if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    
-    parser.add_argument('-csv', '--csv', help="path to molecules dataset. Column with smiles labeled 'can'", type=str, default='../data/moses_train.csv')
-    
+
+    parser.add_argument('-csv', '--csv', help="path to molecules dataset. Column with smiles labeled 'can'", type=str,
+                        default='../data/moses_train.csv')
+
     # =======
 
-    args=parser.parse_args()
+    args = parser.parse_args()
 
     data = pd.read_csv(args.csv)
     try:

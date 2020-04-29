@@ -10,35 +10,35 @@ Run from repo root.
 """
 import os
 import sys
+
 if __name__ == "__main__":
     script_dir = os.path.dirname(os.path.realpath(__file__))
     sys.path.append(os.path.join(script_dir, '..'))
 
 import argparse
-import sys
-import torch
 import numpy as np
 import pickle
+
+import torch
 import torch.utils.data
 import torch.nn.functional as F
 from selfies import decoder
 
+from dataloaders.molDataset import molDataset
+from model import Model
+from utils import *
+
 if __name__ == "__main__":
-    script_dir = os.path.dirname(os.path.realpath(__file__))
-    from dataloaders.molDataset import molDataset
-    from model import Model
-    from utils import *
 
     parser = argparse.ArgumentParser()
 
     parser.add_argument('-n', "--n_mols", help="Nbr to generate", type=int, default=1000)
     parser.add_argument('-m', '--model', help="Path to saved model dir, from repo root",
                         default='results/saved_models/inference_default')
-    parser.add_argument('-v', '--vocab', default='selfies') # vocab used by model 
-    
+    parser.add_argument('-v', '--vocab', default='selfies')  # vocab used by model
+
     parser.add_argument('-o', '--output_file', type=str, default='data/gen.txt')
     parser.add_argument('-b', '--use_beam', action='store_true', help="use beam search (slow!)")
-    
 
     args = parser.parse_args()
 
@@ -46,8 +46,8 @@ if __name__ == "__main__":
     # ==============
 
     # Load model params & model
-    params = pickle.load(open(os.path.join(script_dir,args.model, 'model_params.pickle'), 'rb'))  # model hparams
-    
+    params = pickle.load(open(os.path.join(script_dir, args.model, 'model_params.pickle'), 'rb'))  # model hparams
+
     model = Model(**params)
     model.load(os.path.join(script_dir, args.model, 'model.pth'))
     model.to(device)
@@ -57,30 +57,30 @@ if __name__ == "__main__":
 
     with torch.no_grad():
         batch_size = min(args.n_mols, 100)
-        n_batches = int(args.n_mols/batch_size)+1
+        n_batches = int(args.n_mols / batch_size) + 1
         print(f'>>> Sampling {args.n_mols} molecules from prior distribution in latent space')
-        
+
         for b in range(n_batches):
-            
+
             z = model.sample_z_prior(batch_size)
             gen_seq = model.decode(z)
-            
+
             # Sequence of ints to smiles 
             if (not args.use_beam):
                 smiles = model.probas_to_smiles(gen_seq)
             else:
                 smiles = model.beam_out_to_smiles(gen_seq)
-            
-            if(args.vocab=='selfies'):
-                smiles =[ decoder(s) for s in smiles]
-                
+
+            if (args.vocab == 'selfies'):
+                smiles = [decoder(s) for s in smiles]
+
             compounds += smiles
-    
+
     Ntot = len(compounds)
     unique = list(np.unique(compounds))
     N = len(unique)
-    
-    out = os.path.join(script_dir,args.output_file)
+
+    out = os.path.join(script_dir, args.output_file)
     with open(out, 'w') as f:
         for s in unique:
             f.write(s)

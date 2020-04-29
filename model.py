@@ -12,15 +12,16 @@ https://docs.dgl.ai/tutorials/models/1_gnn/4_rgcn.html#sphx-glr-tutorials-models
 
 
 """
+
 import numpy as np
+from queue import PriorityQueue
+import json
+from rdkit import Chem
+import pickle
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
-from queue import PriorityQueue
-import json
-
-from rdkit import Chem
 
 import dgl
 from dgl import mean_nodes
@@ -29,8 +30,6 @@ from dgl.nn.pytorch.glob import SumPooling
 from dgl.nn.pytorch.conv import GATConv, RelGraphConv
 
 from utils import *
-from beam_search import BeamSearchNode
-import pickle
 
 
 class MultiGRU(nn.Module):
@@ -477,6 +476,20 @@ class Model(nn.Module):
         model_dict.update(pretrained_dict)
         # 3. load the new state dict
         self.load_state_dict(model_dict)
+
+
+class BeamSearchNode():
+    def __init__(self, h, rnn_in, score, sequence):
+        self.h = h
+        self.rnn_in = rnn_in
+        self.score = score
+        self.sequence = sequence
+        self.max_len = 60
+
+    def __lt__(self, other):  # For x < y
+        # Pour casser les cas d'égalité du score au hasard, on s'en fout un peu.
+        # Eventuellement affiner en regardant les caractères de la séquence (pénaliser les cycles ?)
+        return True
 
 
 def model_from_json(name='inference_default', load_weights=True):
