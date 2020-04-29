@@ -187,16 +187,11 @@ class Model(nn.Module):
 
     def load(self, trained_path, aff_net=False):
         # Loads trained model weights, with or without the affinity predictor
-        device = 'cuda' if torch.cuda.is_available() else 'cpu'
-
-        if (aff_net):
+        if aff_net:
             self.load_state_dict(torch.load(trained_path))
         else:
             self.load_no_aff_net(trained_path)
-        self.to(device)
-        print(f'Loaded weights from {trained_path} to {device}')
-
-        return device
+        print(f'Loaded weights from {trained_path}')
 
     # ======================== Model pass functions ==========================
 
@@ -212,7 +207,13 @@ class Model(nn.Module):
         return mu, logv, z, out, properties, affinities
 
     def sample(self, mean, logv, mean_only):
-        """ Samples a vector according to the latent vector mean and variance """
+        """
+         Samples a vector according to the latent vector mean and variance
+        :param mean:
+        :param logv:
+        :param mean_only:
+        :return:
+        """
         if not mean_only:
             sigma = torch.exp(.5 * logv)
             return mean + torch.randn_like(mean) * sigma
