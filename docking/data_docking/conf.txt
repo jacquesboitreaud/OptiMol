@@ -1,0 +1,12 @@
+#receptor = drd3.pdbqt
+#ligand = ligand.pdbqt
+
+center_x = 10.192
+center_y = 22.963
+center_z = 23.884
+
+size_x = 36.975
+size_y = 39.940
+size_z = 38.529
+
+num_modes = 3
