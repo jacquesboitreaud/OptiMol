@@ -51,6 +51,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
     # ==============
 
     # Load model params & model
@@ -58,7 +59,7 @@ if __name__ == "__main__":
     
     model = Model(**params)
     model.load(os.path.join(script_dir, '..', args.model))
-
+    model.to(device)
     model.eval()
 
     compounds = []

@@ -54,6 +54,7 @@ if __name__ == "__main__":
 
     # Eval config 
     model_path = f'../saved_models/aff_model.pth'
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     recompute_pca = False
     reload_model = True
@@ -83,7 +84,6 @@ if __name__ == "__main__":
     # Validation pass
     if (reload_model):
         model = model_from_json(name)
-        device = model.device
         # params = pickle.load(open('../saved_models/model_params.pickle','rb'))
         # model = Model(**params)
         # device = model.load(model_path, aff_net=False)
@@ -94,10 +94,9 @@ if __name__ == "__main__":
         except NameError:
             params = pickle.load(open('../saved_models/params.pickle', 'rb'))
             model = Model(**params)
-            device = model.load(model_path)
             model.set_smiles_chars()
             model.eval()
-
+    model.to(device)
     # Smiles 
     out_all = np.zeros((loaders.dataset.n, loaders.dataset.max_len))
     smi_all = np.zeros((loaders.dataset.n, loaders.dataset.max_len))

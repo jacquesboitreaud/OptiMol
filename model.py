@@ -39,17 +39,20 @@ class MultiGRU(nn.Module):
     and an output linear layer back to the size of the vocabulary
     """
 
-    def __init__(self, voc_size, latent_size, h_size, device):
+    def __init__(self, voc_size, latent_size, h_size):
         super(MultiGRU, self).__init__()
 
         self.h_size = h_size
-        self.device = device
         self.dense_init = nn.Linear(latent_size, 3 * self.h_size)  # to initialise hidden state
 
         self.gru_1 = nn.GRUCell(voc_size, self.h_size)
         self.gru_2 = nn.GRUCell(self.h_size, self.h_size)
         self.gru_3 = nn.GRUCell(self.h_size, self.h_size)
         self.linear = nn.Linear(self.h_size, voc_size)
+
+    @property
+    def device(self):
+        return next(self.parameters()).device
 
     def forward(self, x, h):
         """ Forward pass to 3-layer GRU. Output =  output, hidden state of layer 3 """
@@ -119,7 +122,6 @@ class Model(nn.Module):
                  N_properties,
                  N_targets,
                  binned_scores,
-                 device,
                  index_to_char,
                  **kwargs):
         super(Model, self).__init__()
@@ -145,18 +147,14 @@ class Model(nn.Module):
         self.N_targets = N_targets
         self.binned_scores = binned_scores
 
-        self.device = device
-
         # layers:
-        self.encoder = RGCN(self.features_dim, self.gcn_hdim, self.num_rels, self.gcn_layers,
-                            num_bases=-1).to(self.device)
+        self.encoder = RGCN(self.features_dim, self.gcn_hdim, self.num_rels, self.gcn_layers, num_bases=-1)
 
         self.encoder_mean = nn.Linear(self.gcn_hdim * self.gcn_layers, self.l_size)
         self.encoder_logv = nn.Linear(self.gcn_hdim * self.gcn_layers, self.l_size)
 
         self.rnn_in = nn.Linear(self.l_size, self.voc_size)
-        self.decoder = MultiGRU(voc_size=self.voc_size, latent_size=self.l_size, h_size=self.gru_hdim,
-                                device=self.device)
+        self.decoder = MultiGRU(voc_size=self.voc_size, latent_size=self.l_size, h_size=self.gru_hdim)
 
         # MOLECULAR PROPERTY REGRESSOR
         self.MLP = nn.Sequential(
@@ -182,6 +180,10 @@ class Model(nn.Module):
                 nn.ReLU(),
                 nn.Linear(16, 3),
                 nn.LogSoftmax(dim=1))  # 3 bins
+
+    @property
+    def device(self):
+        return next(self.parameters()).device
 
     def load(self, trained_path, aff_net=False):
         # Loads trained model weights, with or without the affinity predictor

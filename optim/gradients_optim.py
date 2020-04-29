@@ -42,7 +42,9 @@ if(__name__=='__main__'):
     lr=0.1
     size = (120, 120) # plotting 
     early_stopping_QED = 0.940
-    
+
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
     def eps(props, aff):
         # props = [QED, logP, molWt]
         # aff = [drd3_aff] is negative !!!!
@@ -63,6 +65,7 @@ if(__name__=='__main__'):
     params = pickle.load(open(os.path.join(script_dir,'..','saved_models/model_params.pickle'), 'rb'))  # model hparams
     model = Model(**params)
     model.load(os.path.join(script_dir, '..', model_path))
+    model.to(device)
     model.eval()
     
     # ================== Starting from a seed compound ======================

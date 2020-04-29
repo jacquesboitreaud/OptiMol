@@ -217,6 +217,7 @@ tripletLoss {:.2f}'.format(epoch, total_steps, rec.item(), pmse.item(), simLoss.
                 print('fraction of valid smiles in training batch: ', frac_valid)
 
             if total_steps % args.save_iter == 0:
+
                 torch.save(model.state_dict(), f"{args.save_path}_iter_{total_steps}.pth")
                 pickle.dump(logs_dict, open(f'{log_path}.npy', 'wb'))
 
