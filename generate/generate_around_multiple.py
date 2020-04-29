@@ -49,8 +49,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # ==============
-    
-    
+
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
     disable_rdkit_logging() # function from utils to disable rdkit logs
 
     model_path = f'../saved_models/{args.model}'
@@ -58,6 +58,7 @@ if __name__ == "__main__":
     params = pickle.load(open('../saved_models/params.pickle', 'rb'))  # model hparams
     model = Model(**params)
     model.load(model_path)
+    model.to(device)
     # Provide the model with characters corresponding to indices, for smiles generation 
     model.set_smiles_chars(char_file="../map_files/zinc_chars.json")
     model.eval()

@@ -83,17 +83,21 @@ if __name__ == "__main__":
     
     # Multitask and properties 
     parser.add_argument('--bin_affs', type=bool, default=False)  # Binned discretized affs or true values
+    parser.add_argument('--parallel', type=bool, default=False)  # parallelize over multiple gpus if available
 
     # =======
 
     args = parser.parse_args()
 
     logdir, modeldir = setup(args.name, permissive=True)
-
     dumper = Dumper(dumping_path=os.path.join(modeldir, 'params.json'), argparse=args)
 
-    # config
-    parallel = False  # parallelize over multiple gpus if available
+    # teacher forcing schedule
+    tf_init = 1.0
+    tf_step = 0.002
+    tf_end = 0.0
+    tf_anneal_iter = 1000
+    tf_warmup = 100000
 
     # Multitasking : properties and affinities should be in input dataset 
 
@@ -104,7 +108,7 @@ if __name__ == "__main__":
     targets = ['drd3']  # title of csv columns with affinities
     a_weight = 1e2  # Weight for affinity regression loss
 
-    if (args.bin_affs):
+    if args.bin_affs:
         targets = [t + '_binned' for t in targets]  # use binned scores columns
         classes_weights = torch.tensor([0., 1., 1.])  # class weights
 
@@ -155,7 +159,7 @@ if __name__ == "__main__":
         weights_path = 'results/saved_models/inference_default/weights.pth'
         model.load_state_dict(torch.load(weights_path))
 
-    if (parallel and torch.cuda.device_count() > 1):
+    if args.parallel and torch.cuda.device_count() > 1:
         print("Start training using ", torch.cuda.device_count(), "GPUs!")
         model = nn.DataParallel(model)
 
@@ -196,7 +200,7 @@ if __name__ == "__main__":
             mu, logv, _, out_smi, out_p, out_a = model(graph, smiles, tf=tf_proba)
 
             # Compute loss terms : change according to multitask setting
-            if ((not use_affs) and (not use_props)):  # VAE only
+            if not use_affs and not use_props:  # VAE only
                 rec, kl = VAELoss(out_smi, smiles, mu, logv)
                 pmse, amse = 0, 0
             else:
@@ -209,14 +213,14 @@ if __name__ == "__main__":
                     amse = affsRegLoss(a_target, out_a, a_weight)
 
             # COMPOSE TOTAL LOSS TO BACKWARD
-            if (total_steps < args.warmup):  # Only reconstruction (warmup)
+            if total_steps < args.warmup:  # Only reconstruction (warmup)
                 t_loss = rec
             else:
                 t_loss = rec + beta * kl + pmse + amse
 
             optimizer.zero_grad()
             t_loss.backward()
-            del (t_loss)
+            del t_loss
             clip.clip_grad_norm_(model.parameters(), args.clip_norm)
             optimizer.step()
 
@@ -242,7 +246,7 @@ if __name__ == "__main__":
                 if len(targets) > 0:
                     writer.add_scalar('BatchAffMse/train', amse.item(), total_steps)
 
-            if (args.print_smiles_iter > 0 and total_steps % args.print_smiles_iter == 0):
+            if args.print_smiles_iter > 0 and total_steps % args.print_smiles_iter == 0:
                 reconstruction_dataframe, frac_valid = log_reconstruction(smiles, out_smi.detach(),
                                                                           loaders.dataset.index_to_char,
                                                                           string_type=args.decode)
@@ -251,7 +255,9 @@ if __name__ == "__main__":
                 # print('fraction of valid smiles in batch: ', frac_valid)
 
             if total_steps % args.save_iter == 0:
+                model.cpu()
                 torch.save(model.state_dict(), os.path.join(modeldir, "weights.pth"))
+                model.to(device)
 
             # keep track of epoch loss
             epoch_train_rec += rec.item()
@@ -276,7 +282,7 @@ if __name__ == "__main__":
                 mu, logv, z, out_smi, out_p, out_a = model(graph, smiles, tf=tf_proba)
 
                 # Compute loss : change according to multitask
-                if ((not use_affs) and (not use_props)):  # VAE only
+                if not use_affs and not use_props:  # VAE only
                     rec, kl = VAELoss(out_smi, smiles, mu, logv)
                     pmse, amse = 0, 0
                 else:

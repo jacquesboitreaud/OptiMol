@@ -60,6 +60,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # ==============
+
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
     
     # Loader for initial sample
     loader = Loader(props=[], 
@@ -71,15 +73,12 @@ if __name__ == "__main__":
     # Load model (on gpu if available)
     params = pickle.load(open(os.path.join(repo_dir,'saved_models/model_params.pickle'), 'rb'))  # model hparams
     model = Model(**params)
+    model.to(device)
     model.load(os.path.join(repo_dir,args.model))
     model.eval()
     
     d = 64
     dtype = torch.float
-    device = args.device
-    # make sure model settings are coherent 
-    model.device = device 
-    model.to(device)
     bounds = torch.tensor([[-4.0] * d, [4.0] * d], device=device, dtype=dtype)
     BO_BATCH_SIZE = 10
     N_STEPS = args.n_steps

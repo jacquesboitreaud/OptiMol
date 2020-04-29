@@ -43,6 +43,7 @@ if __name__ == '__main__':
 
     # =====================
 
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
     args = parser.parse_args()
 
     model_path = args.model
@@ -52,8 +53,8 @@ if __name__ == '__main__':
     # params = pickle.load(open('saved_models/model_params.pickle','rb')) # model hparams
     # model = Model(**params)
     # model.load(model_path)
-    device = model.device
-    # Provide the model with characters corresponding to indices, for smiles generation 
+    # Provide the model with characters corresponding to indices, for smiles generation
+    model.to(device)
     model.eval()
 
     # Load dataframe with mols to embed

@@ -18,19 +18,13 @@ import argparse
 import sys
 import torch
 import numpy as np
-
 import pickle
 import torch.utils.data
-
 import torch.nn.functional as F
-
 from selfies import decoder
 
 if __name__ == "__main__":
     script_dir = os.path.dirname(os.path.realpath(__file__))
-    sys.path.append(os.path.join(script_dir,'..', 'dataloaders'))
-    sys.path.append(os.path.join(script_dir,'..', 'data_processing'))
-    
     from dataloaders.molDataset import molDataset
     from model import Model
     from utils import *
@@ -48,6 +42,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
     # ==============
 
     # Load model params & model
@@ -55,7 +50,7 @@ if __name__ == "__main__":
     
     model = Model(**params)
     model.load(os.path.join(script_dir, args.model, 'model.pth'))
-
+    model.to(device)
     model.eval()
 
     compounds = []
