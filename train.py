@@ -46,7 +46,7 @@ if __name__ == "__main__":
     parser.add_argument('--name', type=str, default='default')
     parser.add_argument('--train', help="path to training dataframe", type=str, default='data/moses_train.csv')
     parser.add_argument("--cutoff", help="Max number of molecules to use. Set to -1 for all", type=int, default=-1)
-    parser.add_argument('--save_path', type=str, default='./saved_models/debug')
+
     parser.add_argument('--load_model', type=bool, default=False)
     parser.add_argument('--load_iter', type=int, default=0)  # resume training at optimize step n°
 
@@ -73,7 +73,14 @@ if __name__ == "__main__":
     parser.add_argument('--print_iter', type=int, default=1000)  # print loss metrics every _ step
     parser.add_argument('--print_smiles_iter', type=int, default=1000)  # print reconstructed smiles every _ step
     parser.add_argument('--save_iter', type=int, default=10000)  # save model weights every _ step
-
+    
+    # teacher forcing rnn schedule
+    parser.add_argument('--tf_init', type=float, default=1.0)  
+    parser.add_argument('--tf_step', type=float, default=0.002) # step decrease
+    parser.add_argument('--tf_end', type=float, default=0)  # final tf frequency
+    parser.add_argument('--tf_anneal_iter', type=int, default=1000)  # nbr of iters between each annealing 
+    parser.add_argument('--tf_warmup', type=int, default=200000)  # nbr of steps at tf_init
+    
     # Multitask and properties 
     parser.add_argument('--bin_affs', type=bool, default=False)  # Binned discretized affs or true values
 
@@ -87,13 +94,6 @@ if __name__ == "__main__":
 
     # config
     parallel = False  # parallelize over multiple gpus if available
-
-    # teacher forcing schedule 
-    tf_init = 1.0
-    tf_step = 0.002
-    tf_end = 0.0
-    tf_anneal_iter = 1000
-    tf_warmup = 100000
 
     # Multitasking : properties and affinities should be in input dataset 
 
@@ -112,9 +112,6 @@ if __name__ == "__main__":
     use_affs = bool(len(targets) > 0)
 
     writer = SummaryWriter(logdir)
-    # if not os.path.exists('runs'):
-    #     os.mkdir('runs')
-    #     print('> tensorboard logging in ./runs')
     disable_rdkit_logging()  # function from utils to disable rdkit logs
 
     # Load train set and test set
@@ -154,8 +151,9 @@ if __name__ == "__main__":
     load_model = args.load_model
     load_path = 'results/saved_models/inference_default/params.json'
     if load_model:
-        print("Careful, I'm loading default in train.py, line 157")
-        model.load(load_path, aff_net=False)
+        print("Careful, I'm loading default in train.py, line 154")
+        weights_path = 'results/saved_models/inference_default/weights.pth'
+        model.load_state_dict(torch.load(weights_path))
 
     if (parallel and torch.cuda.device_count() > 1):
         print("Start training using ", torch.cuda.device_count(), "GPUs!")
@@ -176,7 +174,7 @@ if __name__ == "__main__":
     else:
         total_steps = 0
     beta = args.beta
-    tf_proba = tf_init
+    tf_proba = args.tf_init
 
     for epoch in range(1, args.epochs + 1):
         print(f'Starting epoch {epoch}')
@@ -230,8 +228,8 @@ if __name__ == "__main__":
             if total_steps % args.kl_anneal_iter == 0 and total_steps >= args.warmup:
                 beta = min(args.max_beta, beta + args.step_beta)
 
-            if total_steps % tf_anneal_iter == 0 and total_steps >= tf_warmup:
-                tf = min(tf_end, tf_proba + tf_step)
+            if total_steps % args.tf_anneal_iter == 0 and total_steps >= args.tf_warmup:
+                tf = min(args.tf_end, tf_proba - args.tf_step) # tf decrease 
 
             # logs and monitoring
             if total_steps % args.print_iter == 0:
