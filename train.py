@@ -44,7 +44,7 @@ if __name__ == "__main__":
 
     parser.add_argument('--name', type=str, default='default')
     parser.add_argument('--train', help="path to training dataframe", type=str, default='data/moses_train.csv')
-    parser.add_argument("--cutoff", help="Max number of molecules to use. Set to -1 for all", type=int, default=-1)
+    parser.add_argument("--cutoff", help="Max number of molecules to use. Set to -1 for all", type=int, default=100)
 
     parser.add_argument('--load_model', type=bool, default=False)
     parser.add_argument('--load_iter', type=int, default=0)  # resume training at optimize step n°
@@ -63,7 +63,7 @@ if __name__ == "__main__":
 
     parser.add_argument('--processes', type=int, default=20)  # num workers
 
-    parser.add_argument('--batch_size', type=int, default=100)
+    parser.add_argument('--batch_size', type=int, default=64)
     parser.add_argument('--epochs', type=int, default=50)  # nbr training epochs
     parser.add_argument('--anneal_rate', type=float, default=0.9)  # Learning rate annealing
     parser.add_argument('--anneal_iter', type=int, default=40000)  # update learning rate every _ step

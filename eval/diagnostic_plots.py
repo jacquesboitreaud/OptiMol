@@ -52,10 +52,6 @@ if __name__ == "__main__":
 
     name = 'inference_default'
 
-    # Eval config 
-    model_path = f'../saved_models/aff_model.pth'
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
-
     recompute_pca = False
     reload_model = True
 
@@ -67,8 +63,8 @@ if __name__ == "__main__":
     # Select only DUDE subset to plot in PCA space 
     plot_target = 'drd3'
 
-    # Load eval set: USE MOSES TEST SET !!!!!!!!!!!!!!!!!
-    loaders = Loader(csv_path='../data/moses_train.csv',
+    # Load eval set
+    loaders = Loader(csv_path='../data/moses_train.csv', # change to moses_test or moses_scored_valid.csv
                      maps_path='../map_files/',
                      n_mols=N,
                      vocab='selfies',
@@ -81,22 +77,11 @@ if __name__ == "__main__":
 
     _, _, test_loader = loaders.get_data()
 
-    # Validation pass
-    if (reload_model):
-        model = model_from_json(name)
-        # params = pickle.load(open('../saved_models/model_params.pickle','rb'))
-        # model = Model(**params)
-        # device = model.load(model_path, aff_net=False)
-        model.eval()
-    else:
-        try:
-            model.eval()
-        except NameError:
-            params = pickle.load(open('../saved_models/params.pickle', 'rb'))
-            model = Model(**params)
-            model.set_smiles_chars()
-            model.eval()
-    model.to(device)
+    # Model loading 
+    model = model_from_json(name)
+    device = model.device
+    model.eval()
+
     # Smiles 
     out_all = np.zeros((loaders.dataset.n, loaders.dataset.max_len))
     smi_all = np.zeros((loaders.dataset.n, loaders.dataset.max_len))
