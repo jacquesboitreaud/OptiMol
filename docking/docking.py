@@ -24,8 +24,8 @@ def set_path(computer):
         PYTHONSH = '/home/jboitr/projects/def-jeromew/docking_setup/mgltools_x86_64Linux2_1.5.6/bin/pythonsh'
         VINA = '/home/jboitr/projects/def-jeromew/docking_setup/autodock_vina_1_1_2_linux_x86/bin/vina'
     elif computer == 'pasteur':
-        PYTHONSH = '/home/jboitr/projects/def-jeromew/docking_setup/mgltools_x86_64Linux2_1.5.6/bin/pythonsh'
-        VINA = '/home/jboitr/projects/def-jeromew/docking_setup/autodock_vina_1_1_2_linux_x86/bin/vina'
+        PYTHONSH = '/c7/home/vmallet/install/mgltools_x86_64Linux2_1.5.7/bin/pythonsh'
+        VINA = '/c7/home/vmallet/install/autodock_vina_1_1_2_linux_x86/bin/vina'
     elif computer == 'mac':
         PYTHONSH = '/Users/vincent/bins/mgltools_1.5.7_MacOS-X/bin/pythonsh'
         VINA = '/Users/vincent/bins/vina/bin/vina'
