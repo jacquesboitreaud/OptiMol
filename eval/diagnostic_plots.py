@@ -58,7 +58,7 @@ if __name__ == "__main__":
     # Should be same as for training
     properties = ['QED', 'logP', 'molWt']
     targets = ['drd3']
-    N = 1000
+    N = 10000
 
     # Select only DUDE subset to plot in PCA space 
     plot_target = 'drd3'
@@ -182,6 +182,7 @@ if __name__ == "__main__":
 
         # Affinities prediction plots
         plt.figure()
+        plt.xlim(-12,-5)
         sns.scatterplot(reconstruction_dataframe[targets[0]], reconstruction_dataframe[f'{targets[0]}_pred'])
         sns.lineplot([-12, -5], [-12, -5], color='r')
 

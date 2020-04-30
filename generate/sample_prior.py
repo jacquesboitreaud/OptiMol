@@ -24,17 +24,19 @@ import torch.utils.data
 import torch.nn.functional as F
 from selfies import decoder
 
-from dataloaders.molDataset import molDataset
-from model import Model
-from utils import *
 
 if __name__ == "__main__":
+    
+    from dataloaders.molDataset import molDataset, Loader
+    from data_processing.rdkit_to_nx import smiles_to_nx
+    from model import Model, model_from_json
+    from utils import *
 
     parser = argparse.ArgumentParser()
-
-    parser.add_argument('-n', "--n_mols", help="Nbr to generate", type=int, default=1000)
-    parser.add_argument('-m', '--model', help="Path to saved model dir, from repo root",
-                        default='results/saved_models/inference_default')
+    parser.add_argument('--name', help="Saved model directory, in /results/saved_models",
+                        default='inference_default')
+    
+    parser.add_argument('-N', "--n_mols", help="Nbr to generate", type=int, default=1000)
     parser.add_argument('-v', '--vocab', default='selfies')  # vocab used by model
 
     parser.add_argument('-o', '--output_file', type=str, default='data/gen.txt')
@@ -45,13 +47,9 @@ if __name__ == "__main__":
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     # ==============
 
-    # Load model params & model
-    params = pickle.load(open(os.path.join(script_dir, args.model, 'model_params.pickle'), 'rb'))  # model hparams
-
-    model = Model(**params)
-    model.load(os.path.join(script_dir, args.model, 'model.pth'))
+    # Load model (on gpu if available)
+    model = model_from_json(args.name)
     model.to(device)
-    model.eval()
 
     compounds = []
 
@@ -66,12 +64,12 @@ if __name__ == "__main__":
             gen_seq = model.decode(z)
 
             # Sequence of ints to smiles 
-            if (not args.use_beam):
+            if not args.use_beam :
                 smiles = model.probas_to_smiles(gen_seq)
             else:
                 smiles = model.beam_out_to_smiles(gen_seq)
 
-            if (args.vocab == 'selfies'):
+            if args.vocab == 'selfies' :
                 smiles = [decoder(s) for s in smiles]
 
             compounds += smiles

@@ -276,7 +276,7 @@ class Model(nn.Module):
         indices = indices.cpu().numpy()
         smiles = []
         for i in range(N):
-            smiles.append(''.join([self.index_to_char[idx] for idx in indices[i]]).rstrip())
+            smiles.append(''.join([self.index_to_char[str(idx)] for idx in indices[i]]).rstrip())
         return smiles
 
     def indices_to_smiles(self, indices):
@@ -288,7 +288,7 @@ class Model(nn.Module):
             pass
         smiles = []
         for i in range(N):
-            smiles.append(''.join([self.index_to_char[idx] for idx in indices[i]]).rstrip())
+            smiles.append(''.join([self.index_to_char[str(idx)] for idx in indices[i]]).rstrip())
         return smiles
 
     def beam_out_to_smiles(self, indices):
@@ -298,7 +298,7 @@ class Model(nn.Module):
         for i in range(N):
             k, m = 0, None
             while (k < 2 and m == None):
-                smi = ''.join([self.index_to_char[idx] for idx in indices[i, k]])
+                smi = ''.join([self.index_to_char[str(idx)] for idx in indices[i, k]])
                 smi = smi.rstrip()
                 m = Chem.MolFromSmiles(smi)
                 k += 1

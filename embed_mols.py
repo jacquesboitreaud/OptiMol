@@ -37,7 +37,7 @@ if __name__ == '__main__':
     parser.add_argument('-i', '--input', help="path to csv containing molecules", type=str,
                         default='data/moses_test.csv')
     parser.add_argument('-n', "--cutoff", help="Number of molecules to embed. -1 for all", type=int, default=-1)
-    parser.add_argument('-name', '--name', type=str, default='default_inference')
+    parser.add_argument('-name', '--name', type=str, default='inference_default')
     parser.add_argument('-v', '--vocab', type=str, default='selfies')
     parser.add_argument('-d', '--decode', action='store_true', default=True)
 
@@ -45,8 +45,6 @@ if __name__ == '__main__':
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     args = parser.parse_args()
-
-    model_path = args.model
 
     # Load model (on gpu if available)
     model = model_from_json(args.name)
