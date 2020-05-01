@@ -23,6 +23,7 @@ import torch
 import torch.utils.data
 import torch.nn.functional as F
 from selfies import decoder
+from rdkit import Chem
 
 
 if __name__ == "__main__":
@@ -36,7 +37,7 @@ if __name__ == "__main__":
     parser.add_argument('--name', help="Saved model directory, in /results/saved_models",
                         default='inference_default')
     
-    parser.add_argument('-N', "--n_mols", help="Nbr to generate", type=int, default=1000)
+    parser.add_argument('-N', "--n_mols", help="Nbr to generate", type=int, default=23000)
     parser.add_argument('-v', '--vocab', default='selfies')  # vocab used by model
 
     parser.add_argument('-o', '--output_file', type=str, default='data/gen.txt')
@@ -52,7 +53,8 @@ if __name__ == "__main__":
     model.to(device)
 
     compounds = []
-
+    cpt = 0 
+    
     with torch.no_grad():
         batch_size = min(args.n_mols, 100)
         n_batches = int(args.n_mols / batch_size) + 1
@@ -73,10 +75,15 @@ if __name__ == "__main__":
                 smiles = [decoder(s) for s in smiles]
 
             compounds += smiles
+            m=Chem.MolFromSmiles(smiles)
+            if m!=None :
+                cpt +=1 
 
     Ntot = len(compounds)
     unique = list(np.unique(compounds))
     N = len(unique)
+    
+    print(100*cpt/Ntot, '% valid molecules' )
 
     out = os.path.join(script_dir, args.output_file)
     with open(out, 'w') as f:
