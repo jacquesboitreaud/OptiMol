@@ -62,9 +62,9 @@ class molDataset(Dataset):
                  props,
                  targets,
                  n_mols=-1,
-                 debug=False):
+                 graph_only=False):
         
-        self.graph_only=False
+        self.graph_only=graph_only
         # 0/ two options: empty loader or csv path given 
         if (csv_path is None):
             print("Empty dataset initialized. Use pass_dataset or pass_dataset_path to add molecules.")
@@ -142,9 +142,6 @@ class molDataset(Dataset):
 
         print(f"> Loaded alphabet. Using {self.language}. Max sequence length allowed is {self.max_len}")
 
-        if (debug):
-            # special case for debugging
-            pass
 
     def pass_dataset_path(self, path):
         # Pass a new dataset to the loader, without changing other parameters 
@@ -323,7 +320,7 @@ class Loader():
                  n_mols=None,
                  batch_size=64,
                  num_workers=12,
-                 debug=False,
+                 graph_only=False, # Only load molecular graph (to get latent embeddings)
                  test_only=False):
         """
         Wrapper for test loader, train loader 
@@ -342,7 +339,7 @@ class Loader():
                                   vocab=vocab,
                                   build_alphabet = build_alphabet,
                                   n_mols=n_mols,
-                                  debug=debug)
+                                  graph_only=graph_only)
 
         self.num_edge_types, self.num_atom_types = self.dataset.num_edge_types, self.dataset.num_atom_types
         self.num_charges = self.dataset.num_charges

@@ -4,13 +4,13 @@ Created on Wed Nov  6 18:44:04 2019
 
 @author: jacqu
 
-Evaluate training of Graph2Smiles VAE (RGCN encoder, GRU decoder, beam search decoding). 
-
+Fit PCA to moses_test molecules and plots them in latent space . 
 
 """
 
 import os
 import sys
+import argparse
 
 if __name__ == "__main__":
     script_dir = os.path.dirname(os.path.realpath(__file__))
@@ -18,7 +18,6 @@ if __name__ == "__main__":
 
 import sys
 import torch
-import dgl
 
 from rdkit.Chem import Draw
 
@@ -30,49 +29,45 @@ import matplotlib.pyplot as plt
 import pickle
 import torch.utils.data
 from torch import nn, optim
-import torch.nn.utils.clip_grad as clip
-import torch.nn.functional as F
 
 from joblib import dump, load
 from sklearn.decomposition import PCA
 
-from dataloaders.molDataset import molDataset, Loader
+from dataloaders.molDataset import Loader
 from data_processing.rdkit_to_nx import smiles_to_nx
-from model import Model, Loss, RecLoss
+from model import Model, model_from_json
 from eval.eval_utils import *
 from utils import *
-from plot_tools import *
 
-# Choose model to load :
-batch_size = 100
-model_path = f'saved_models/baseline.pth'
 
-# Should be same as for training...
-properties = ['QED', 'logP', 'molWt']
-targets = ['aa2ar', 'drd3']
+parser = argparse.ArgumentParser()
+parser.add_argument('--name', help="Saved model directory, in /results/saved_models",
+                        default='inference_default')
+args = parser.parse_args()
+
+# ============================
+
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+batch_size = 100 
+# Load model (on gpu if available)
+model = model_from_json(args.name)
+model.to(device)
+
 
 # Load eval set
-loaders = Loader(csv_path='data/moses_train.csv',
-                 n_mols=500000,
+loaders = Loader(csv_path='../data/moses_test.csv',
+                 n_mols=-1,
                  num_workers=0,
                  batch_size=batch_size,
-                 props=properties,
-                 targets=targets,
                  test_only=True,
-                 shuffle=True)
+                 graph_only=True, 
+                 props=[],
+                 targets = [])
 rem, ram, rchim, rcham = loaders.get_reverse_maps()
 
 _, _, test_loader = loaders.get_data()
 
-# Model & hparams
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
-
-params = pickle.load(open('saved_models/params.pickle', 'rb'))
-model = Model(**params).to(device)
-model.load_state_dict(torch.load(model_path))
-
 # Print model summary
-print(model)
 map = ('cpu' if device == 'cpu' else None)
 torch.manual_seed(1)
 
@@ -86,7 +81,7 @@ z_all = np.zeros((loaders.dataset.n, model.l_size))
 with torch.no_grad():
     for batch_idx, (graph, smiles, p_target, a_target) in enumerate(test_loader):
         if (batch_idx % 100 == 0):
-            print(batch_idx)
+            print(f'{batch_idx*batch_size}/{loaders.dataset.n} molecules passed' )
 
         graph = send_graph_to_device(graph, device)
 
@@ -99,5 +94,5 @@ with torch.no_grad():
     # PCA fitting
     # ===================================================================
     fitted_pca = fit_pca(z)
-    dump(fitted_pca, 'eval/fitted_pca.joblib')
-    print('Fitted and saved PCA for next time!')
+    dump(fitted_pca,  os.path.join(script_dir, 'data/fitted_pca.joblib'))
+    print('Fitted and saved PCA to data/fitted_pca.joblib for next time!')
