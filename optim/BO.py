@@ -4,7 +4,12 @@ Created on Thu Jan 23 16:24:31 2020
 
 @author: jacqu
 
-Optimize affinity with bayesian optimization 
+Optimize affinity with bayesian optimization. 
+
+Following tutorial at https://botorch.org/tutorials/vae_mnist
+
+TODO : 
+    adapt for affinity (when args.objective == 'aff' )
 
 """
 import os
@@ -42,27 +47,26 @@ if __name__ == "__main__":
     sys.path.append(os.path.join(repo_dir,'..', 'vina_docking')) # path to vina_docking repo with scoring func 
     
     from dataloaders.molDataset import Loader
-    from model_baseline import Model
+    from model import Model, model_from_json
     from utils import *
     from BO_utils import get_fitted_model
     from score_function import score
     from score_function_batch import dock_batch
 
     parser = argparse.ArgumentParser()
-
+    parser.add_argument( '--name', help="saved model weights fname. Located in saved_models subdir",
+                        default='inference_default')
+    
     parser.add_argument('-n', "--n_steps", help="Nbr of optim steps", type=int, default=50)
-    parser.add_argument('-m', '--model', help="saved model weights fname. Located in saved_models subdir",
-                        default='saved_models/baseline.pth')
+
     parser.add_argument('-v', '--vocab', default='selfies') # vocab used by model 
     
-    parser.add_argument('-d', '--device', default='cuda') # 'cpu or 'cuda'. 
     parser.add_argument('-o', '--objective', default='qed') # 'qed' or 'aff'
     args = parser.parse_args()
 
     # ==============
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    
     # Loader for initial sample
     loader = Loader(props=[], 
                     targets=[], 
@@ -71,19 +75,17 @@ if __name__ == "__main__":
                     num_workers = 0)
 
     # Load model (on gpu if available)
-    params = pickle.load(open(os.path.join(repo_dir,'saved_models/model_params.pickle'), 'rb'))  # model hparams
-    model = Model(**params)
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    model = model_from_json(args.name)
     model.to(device)
-    model.load(os.path.join(repo_dir,args.model))
     model.eval()
     
-    d = 64
+    d = model.l_size
     dtype = torch.float
-    bounds = torch.tensor([[-4.0] * d, [4.0] * d], device=device, dtype=dtype)
+    bounds = torch.tensor([[-3.0] * d, [3.0] * d], device=device, dtype=dtype)
     BO_BATCH_SIZE = 10
     N_STEPS = args.n_steps
     MC_SAMPLES = 2000
-    
     
     seed=1
     torch.manual_seed(seed)
@@ -91,7 +93,7 @@ if __name__ == "__main__":
     state_dict = None
     
     # Generate initial data 
-    df = pd.read_csv(os.path.join(repo_dir,'data','1k_sample.csv'))
+    df = pd.read_csv(os.path.join(repo_dir,'data','moses_test.csv'), nrows = 100) # 100 Initial samples 
     if args.objective == 'aff':
         scores_init = df.scores
     else:
@@ -157,6 +159,7 @@ if __name__ == "__main__":
     # ========================================================================
     # run N_BATCH rounds of BayesOpt after the initial random batch
     # ========================================================================
+    print('-> Invalid molecules get score 0.0')
     
     for iteration in range(N_STEPS):    
     
@@ -175,8 +178,8 @@ if __name__ == "__main__":
         new_smiles, new_z, new_score = optimize_acqf_and_get_observation(qEI, device)
         
         # save acquired scores for next time 
-        print(new_smiles)
-        print(new_score)
+        print('Iter n° ', iteration, '/', N_STEPS)
+        print(new_score.numpy())
     
         # update training points
         new_z.to(device)
@@ -191,4 +194,4 @@ if __name__ == "__main__":
         
         state_dict = GP_model.state_dict()
         
-        print(".", end='')
+        print("\n")
