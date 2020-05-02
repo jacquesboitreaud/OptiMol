@@ -90,7 +90,7 @@ def pca_plot_hue(z,  pca, variable, label):
         # truncate label text to 4 characters
         if(i>0):
             t.set_text(t.get_text()[:4])
-    plt.show()
+    return ax 
     
     
     

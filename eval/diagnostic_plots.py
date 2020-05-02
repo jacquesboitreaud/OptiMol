@@ -43,7 +43,7 @@ parser.add_argument('--name', help="Name of saved model directory, in /results/s
 parser.add_argument('-i', '--test_set', help="Test molecules file, in /data",
                     default='moses_test.csv')
 parser.add_argument('-N', '--n_mols', help="Number of molecules, set to -1 for all in csv ", type = int, 
-                    default=100)
+                    default=4000)
 
 args = parser.parse_args()
 if __name__ == "__main__":
@@ -210,7 +210,9 @@ if __name__ == "__main__":
 
         # PCA Affinities
         plt.figure()
-        pca_plot_hue(z=z_all, pca=fitted_pca, variable=a_all[:, 0],  label = 'Predicted docking')
+        ax = pca_plot_hue(z=z_all, pca=fitted_pca, variable=a_all[:, 0],  label = 'Predicted docking')
+        left, right = ax.get_xlim()
+        down,up = ax.get_ylim()
 
         # ====================================================================
         # Random sampling in latent space 
@@ -220,6 +222,8 @@ if __name__ == "__main__":
         r = torch.tensor(np.random.normal(size=(Nsamples,model.l_size)), dtype=torch.float)        
         # PCA plot 
         plt.figure()
+        plt.xlim(left, right)
+        plt.ylim(down, up)
         pca_plot_color(z=r,  pca=fitted_pca, color = 'red', label = 'random normal')
         plt.title('Random normal samples in PCA space')
         
