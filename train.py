@@ -80,10 +80,11 @@ if __name__ == "__main__":
     parser.add_argument('--tf_anneal_iter', type=int, default=1000)  # nbr of iters between each annealing 
     parser.add_argument('--tf_warmup', type=int, default=200000)  # nbr of steps at tf_init
 
-    # Multitask and properties 
-    parser.add_argument('--properties', type=list, default=['QED', 'logP', 'molWt'] )
-    parser.add_argument('--target', type=list, default=['drd3'] )
+    # Multitask :
+    parser.add_argument('--properties', type=bool, default=True ) # multitask props 
+    parser.add_argument('--target', type=bool, default=True ) # multitask aff 
     parser.add_argument('--bin_affs', type=bool, default=False)  # Binned discretized affs or true values
+    
     parser.add_argument('--parallel', type=bool, default=False)  # parallelize over multiple gpus if available
 
     # =======
@@ -92,20 +93,25 @@ if __name__ == "__main__":
 
     logdir, modeldir = setup(args.name, permissive=True)
     dumper = Dumper(dumping_path=os.path.join(modeldir, 'params.json'), argparse=args)
+    
+    use_props = args.properties
+    use_affs = args.target
 
     # Multitasking : properties and affinities should be in input dataset 
-    # properties = [] # no properties
-    properties = args.properties
+    if use_props :
+        properties = ['QED','logP', 'molWt']
+    else:
+        properties = []
     props_weights = [1e3, 1e2, 1]
-    targets = args.target
+    if use_affs :
+        targets = ['drd3']
+    else:
+        targets = []
     a_weight = 1e2  # Weight for affinity regression loss
 
     if args.bin_affs:
         targets = [t + '_binned' for t in targets]  # use binned scores columns
         classes_weights = torch.tensor([0., 1., 1.])  # class weights
-
-    use_props = bool(len(properties) > 0)
-    use_affs = bool(len(targets) > 0)
 
     writer = SummaryWriter(logdir)
     disable_rdkit_logging()  # function from utils to disable rdkit logs
