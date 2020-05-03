@@ -4,11 +4,9 @@ Created on Mon Apr 22 11:44:23 2019
 
 @author: jacqu
 
-Graph to sequence molecular VAE
+Selfies to selfies molecular VAE
 RGCN encoder, GRU decoder to SELFIES 
 
-RGCN layer at 
-https://docs.dgl.ai/tutorials/models/1_gnn/4_rgcn.html#sphx-glr-tutorials-models-1-gnn-4-rgcn-py
 
 
 """
@@ -70,45 +68,42 @@ class MultiGRU(nn.Module):
         return hidden
 
 
-class RGCN(nn.Module):
-    """ RGCN encoder with num_hidden_layers + 2 RGCN layers, and sum pooling. """
-
-    def __init__(self, features_dim, h_dim, num_rels, num_layers, num_bases=-1):
-        super(RGCN, self).__init__()
-
-        self.features_dim, self.h_dim = features_dim, h_dim
-        self.num_layers = num_layers
-
-        self.num_rels = num_rels
-        self.num_bases = num_bases
-        # create rgcn layers
-        self.build_model()
-        self.pool = SumPooling()
-
-    def build_model(self):
-        self.layers = nn.ModuleList()
-        # input to hidden
-        i2h = RelGraphConv(self.features_dim, self.h_dim, self.num_rels, activation=nn.ReLU())
-        self.layers.append(i2h)
-        # hidden to hidden
-        for _ in range(self.num_layers - 2):
-            h2h = RelGraphConv(self.h_dim, self.h_dim, self.num_rels, activation=nn.ReLU())
-            self.layers.append(h2h)
-        # hidden to output
-        h2o = RelGraphConv(self.h_dim, self.h_dim, self.num_rels, activation=nn.ReLU())
-        self.layers.append(h2o)
-
-    def forward(self, g):
-        sequence = []
-        for i, layer in enumerate(self.layers):
-            # Node update 
-            g.ndata['h'] = layer(g, g.ndata['h'], g.edata['one_hot'])
-            # Jumping knowledge connexion
-            sequence.append(g.ndata['h'])
-        # Concatenation :
-        g.ndata['h'] = torch.cat(sequence, dim=1)  # Num_nodes * (h_dim*num_layers)
-        out = self.pool(g, g.ndata['h'].view(len(g.nodes), -1, self.h_dim * self.num_layers))
-        return out
+class VAE_encode(nn.Module):
+    
+    def __init__(self, layer_1d, layer_2d, layer_3d, latent_dimension):
+        """
+        Fully Connected layers to encode molecule to latent space
+        """
+        super(VAE_encode, self).__init__()
+        
+        # Reduce dimension upto second last layer of Encoder
+        self.encode_nn = nn.Sequential(
+            nn.Linear(len_max_molec1Hot, layer_1d),
+            nn.ReLU(),
+            nn.Linear(layer_1d, layer_2d),
+            nn.ReLU(),
+            nn.Linear(layer_2d, layer_3d),
+			nn.ReLU()
+        )
+        
+        # Latent space mean
+        self.encode_mu = nn.Linear(layer_3d, latent_dimension) 
+        
+        # Latent space variance 
+        self.encode_log_var = nn.Linear(layer_3d, latent_dimension)
+        
+    def forward(self, x):
+        """
+        Pass throught the Encoder
+        """
+        # Get results of encoder network
+        h1 = self.encode_nn(x)
+         
+        # latent space
+        mu = self.encode_mu(h1)
+        log_var = self.encode_log_var(h1)
+        
+        return mu, log_var
 
 
 class Model(nn.Module):
@@ -130,7 +125,7 @@ class Model(nn.Module):
         # Encoding
         self.features_dim = features_dim
         self.gcn_hdim = 48
-        self.gcn_layers = kwargs['gcn_layers']
+        self.gcn_layers = 4  # input, hidden , final.
         self.num_rels = num_rels
 
         # Bottleneck

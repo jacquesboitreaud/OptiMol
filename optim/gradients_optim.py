@@ -62,14 +62,18 @@ args = parser.parse_args()
 early_stopping_QED = 0.940
 
 def eps(props, aff=None):
-    # props = [QED, logP, molWt]
-    # aff = [drd3_aff] is negative !!!!
+    """ 
+    Objective function to maximize. 
+    props =  array [QED, logP, molWt], shape (N_properties,)
+    aff = array with affinities, shape (N_targets,) 
+    """
     obj_expression = 'QED(m)'
     if type(props)==str : 
         return obj_expression # return function expression 
     
     QED, logP, molWt = props
     #return  (QED-1)**2 + aff[0]
+    
     obj = QED
 
     return  obj 
