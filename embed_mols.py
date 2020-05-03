@@ -13,21 +13,28 @@ Reconstruction, validity and novelty metrics
 """
 
 import sys
+import os
 import numpy as np
 import pandas as pd
 import torch
 import pickle
 import argparse
 
+if __name__ == "__main__":
+    script_dir = os.path.dirname(os.path.realpath(__file__))
+    sys.path.append(os.path.join(script_dir, 'eval'))
+
 from utils import Dumper
 from rdkit import Chem
 from rdkit.Chem import Draw
 import matplotlib.pyplot as plt
 
+from joblib import load
+
 from selfies import decoder
 
 if __name__ == '__main__':
-
+    from eval.eval_utils import *
     from dataloaders.molDataset import molDataset, Loader
     from data_processing.rdkit_to_nx import smiles_to_nx
     from model import Model, model_from_json
@@ -35,11 +42,13 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     parser.add_argument('-i', '--input', help="path to csv containing molecules", type=str,
-                        default='data/moses_test.csv')
+                        default='data/drd3_chembl.csv')
     parser.add_argument('-n', "--cutoff", help="Number of molecules to embed. -1 for all", type=int, default=-1)
     parser.add_argument('-name', '--name', type=str, default='inference_default')
     parser.add_argument('-v', '--vocab', type=str, default='selfies')
-    parser.add_argument('-d', '--decode', action='store_true', default=True)
+    parser.add_argument('-d', '--decode', action='store_true', default=False)
+    
+    parser.add_argument('--pca', action='store_true', default=True) # PCA space plot 
 
     # =====================
 
@@ -48,10 +57,6 @@ if __name__ == '__main__':
 
     # Load model (on gpu if available)
     model = model_from_json(args.name)
-    # params = pickle.load(open('saved_models/model_params.pickle','rb')) # model hparams
-    # model = Model(**params)
-    # model.load(model_path)
-    # Provide the model with characters corresponding to indices, for smiles generation
     model.to(device)
     model.eval()
 
@@ -77,12 +82,12 @@ if __name__ == '__main__':
     z = model.embed(dataloader, smiles_df)  # z has shape (N_molecules, latent_size)
 
     # Save molecules latent embeds to pickle.
-    with open('data/latent_rpz.pickle', 'wb') as f:
+    with open('data/latent_z.pickle', 'wb') as f:
         pickle.dump(z, f)
-    print(f'>>> Saved latent representations of {z.shape[0]} molecules to ~/latent_rpz.pickle')
+    print(f'>>> Saved latent representations of {z.shape[0]} molecules to ~/latent_z.pickle')
 
     # Decode to smiles 
-    if (args.decode):
+    if args.decode:
 
         if args.vocab == 'smiles':
             print('>>> Decoding to smiles')
@@ -99,6 +104,21 @@ if __name__ == '__main__':
 
             for s in smiles:
                 print(s)
+                
+    if args.pca : 
+        # Plot the embeddings in predefined 2D PCA space (usually fitted on all moses test data )
+        try:
+            fitted_pca = load( os.path.join(script_dir,'data', 'fitted_pca.joblib'))
+        except(FileNotFoundError):
+            print(
+                'Fitted PCA object not found at /data/fitted_pca.joblib, new PCA will be fitted on current data.')
+            fitted_pca = fit_pca(z)
+
+        # Plot PCA with desired hue variable 
+        plt.figure()
+        plt.xlim(-4,4)
+        plt.ylim(-4,4)
+        pca_plot_color(z=z , pca=fitted_pca, color = 'b', label = args.input)
 
     """
     # Plotting molecules 

@@ -31,9 +31,14 @@ from data_processing.rdkit_to_nx import smiles_to_nx
 
 
 def collate_block(samples):
-    # Collates samples into a batch
-    # The input `samples` is a list of pairs
-    #  (graph, label).
+    """
+    Collates samples into batches. 
+    Samples : list of tuples of size 4 
+    removes 'None' graphs (reduces batch size)
+    """
+
+    samples = [s for s in samples if s[0]!=None]
+    
     graphs, smiles, p_labels, a_labels = map(list, zip(*samples))
     batched_graph = dgl.batch(graphs)
 
@@ -247,7 +252,8 @@ class molDataset(Dataset):
                        (nx.get_node_attributes(graph, 'atomic_num')).items()}
             nx.set_node_attributes(graph, name='atomic_num', values=at_type)
         except KeyError:
-            print('Atom type to one-hot error for input ', smiles)
+            print('!!!! Atom type to one-hot error for input ', smiles, ' ignored')
+            return None, 0,0,0
 
         at_charge = {a: oh_tensor(self.charges_map[label], self.num_charges) for a, label in
                      (nx.get_node_attributes(graph, 'formal_charge')).items()}
