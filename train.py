@@ -47,6 +47,7 @@ if __name__ == "__main__":
     parser.add_argument("--cutoff", help="Max number of molecules to use. Set to -1 for all", type=int, default=-1)
 
     parser.add_argument('--load_model', action='store_true', default=False)
+    parser.add_argument('--load_name',type=str, default='default') # name of model to load from 
     parser.add_argument('--load_iter', type=int, default=0)  # resume training at optimize step n°
 
     parser.add_argument('--decode', type=str, default='selfies')  # 'smiles' or 'selfies'
@@ -154,10 +155,10 @@ if __name__ == "__main__":
     model = Model(**params).to(device)
 
     load_model = args.load_model
-    load_path = 'results/saved_models/inference_default/params.json'
+    load_path = f'results/saved_models/{args.load_name}/params.json'
     if load_model:
-        print("Careful, I'm loading default in train.py, line 154")
-        weights_path = 'results/saved_models/inference_default/weights.pth'
+        print(f"Careful, I'm loading {args.load_name} in train.py, line 160")
+        weights_path = f'results/saved_models/{args.load_name}/weights.pth'
         model.load_state_dict(torch.load(weights_path))
 
     print(model)
