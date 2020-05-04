@@ -46,7 +46,7 @@ if __name__ == "__main__":
     parser.add_argument('--train', help="path to training dataframe", type=str, default='data/moses_train.csv')
     parser.add_argument("--cutoff", help="Max number of molecules to use. Set to -1 for all", type=int, default=-1)
 
-    parser.add_argument('--load_model', type=bool, default=False)
+    parser.add_argument('--load_model', action='store_true', default=False)
     parser.add_argument('--load_iter', type=int, default=0)  # resume training at optimize step n°
 
     parser.add_argument('--decode', type=str, default='selfies')  # 'smiles' or 'selfies'
@@ -81,11 +81,10 @@ if __name__ == "__main__":
     parser.add_argument('--tf_warmup', type=int, default=200000)  # nbr of steps at tf_init
 
     # Multitask :
-    parser.add_argument('--properties', type=bool, default=True ) # multitask props 
-    parser.add_argument('--target', type=bool, default=True ) # multitask aff 
-    parser.add_argument('--bin_affs', type=bool, default=False)  # Binned discretized affs or true values
+    parser.add_argument('--no_props', action='store_true', default=False ) # No multitask props 
+    parser.add_argument('--no_aff', action='store_true', default=False ) # No multitask aff 
+    parser.add_argument('--bin_affs', action='store_true', default=False)  # Binned discretized affs or true values
     
-    parser.add_argument('--parallel', type=bool, default=False)  # parallelize over multiple gpus if available
 
     # =======
 
@@ -94,8 +93,11 @@ if __name__ == "__main__":
     logdir, modeldir = setup(args.name, permissive=True)
     dumper = Dumper(dumping_path=os.path.join(modeldir, 'params.json'), argparse=args)
     
-    use_props = args.properties
-    use_affs = args.target
+    use_props, use_affs = True, True
+    if args.no_props :
+        use_props=False
+    if args.no_aff :
+        use_affs = False
 
     # Multitasking : properties and affinities should be in input dataset 
     if use_props :
@@ -157,10 +159,6 @@ if __name__ == "__main__":
         print("Careful, I'm loading default in train.py, line 154")
         weights_path = 'results/saved_models/inference_default/weights.pth'
         model.load_state_dict(torch.load(weights_path))
-
-    if args.parallel and torch.cuda.device_count() > 1:
-        print("Start training using ", torch.cuda.device_count(), "GPUs!")
-        model = nn.DataParallel(model)
 
     print(model)
     map = ('cpu' if device == 'cpu' else None)
