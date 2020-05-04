@@ -108,7 +108,7 @@ if __name__ == '__main__':
     if args.pca : 
         # Plot the embeddings in predefined 2D PCA space (usually fitted on all moses test data )
         try:
-            fitted_pca = load( os.path.join(script_dir,'data', 'fitted_pca.joblib'))
+            fitted_pca = load( os.path.join(script_dir,'results/saved_models', args.name, 'fitted_pca.joblib'))
         except(FileNotFoundError):
             print(
                 'Fitted PCA object not found at /data/fitted_pca.joblib, new PCA will be fitted on current data.')

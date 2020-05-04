@@ -39,11 +39,11 @@ from sklearn.decomposition import PCA
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--name', help="Name of saved model directory, in /results/saved_models",
-                    default='no_props')
+                    default='inference_default')
 parser.add_argument('-i', '--test_set', help="Test molecules file, in /data",
                     default='moses_test.csv')
 parser.add_argument('-N', '--n_mols', help="Number of molecules, set to -1 for all in csv ", type = int, 
-                    default=4000)
+                    default=1000)
 
 args = parser.parse_args()
 if __name__ == "__main__":
@@ -192,7 +192,7 @@ if __name__ == "__main__":
         # ===================================================================
 
         try:
-            fitted_pca = load( os.path.join(script_dir,'data', 'fitted_pca.joblib'))
+            fitted_pca = load( os.path.join(script_dir,'results/saved_models',args.name,'fitted_pca.joblib'))
         except(FileNotFoundError):
             print(
                 'Fitted PCA object not found at /data/fitted_pca.joblib, new PCA will be fitted on current data.')
