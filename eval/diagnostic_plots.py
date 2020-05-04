@@ -39,7 +39,7 @@ from sklearn.decomposition import PCA
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--name', help="Name of saved model directory, in /results/saved_models",
-                    default='inference_default')
+                    default='no_props')
 parser.add_argument('-i', '--test_set', help="Test molecules file, in /data",
                     default='moses_test.csv')
 parser.add_argument('-N', '--n_mols', help="Number of molecules, set to -1 for all in csv ", type = int, 
@@ -52,8 +52,6 @@ if __name__ == "__main__":
 
     from eval.eval_utils import *
     from utils import *
-
-    name = 'inference_default'
 
     # Should be same as for training
     properties = ['QED', 'logP', 'molWt']
@@ -76,7 +74,7 @@ if __name__ == "__main__":
     _, _, test_loader = loaders.get_data()
 
     # Model loading 
-    model = model_from_json(name)
+    model = model_from_json(args.name)
     device = model.device
     model.eval()
 

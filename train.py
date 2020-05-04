@@ -246,9 +246,9 @@ if __name__ == "__main__":
                     f'Opt step {total_steps}, rec: {rec.item():.2f}, kl: {beta * kl.item():.2f}, props mse: {pmse.item():.2f}, aff mse: {amse.item():.2f}')
                 writer.add_scalar('BatchRec/train', rec.item(), total_steps)
                 writer.add_scalar('BatchKL/train', kl.item(), total_steps)
-                if len(properties) > 0:
+                if use_props :
                     writer.add_scalar('BatchPropMse/train', pmse.item(), total_steps)
-                if len(targets) > 0:
+                if use_affs :
                     writer.add_scalar('BatchAffMse/train', amse.item(), total_steps)
 
             if args.print_smiles_iter > 0 and total_steps % args.print_smiles_iter == 0:
@@ -285,9 +285,9 @@ if __name__ == "__main__":
                 smiles = smiles.to(device)
                 graph = send_graph_to_device(graph, device)
 
-                if (use_props):
+                if use_props:
                     p_target = p_target.to(device).view(-1, len(properties))
-                if (use_affs):
+                if use_affs:
                     a_target = a_target.to(device)
 
                 mu, logv, z, out_smi, out_p, out_a = model(graph, smiles, tf=tf_proba)
@@ -315,6 +315,7 @@ if __name__ == "__main__":
                 
                 # Correctly reconstructed characters in first validation batch
                 if batch_idx == 0:
+                    _, out_chars = torch.max(out_smi.detach(), dim=1)
                     differences = 1. - torch.abs(out_chars - smiles)
                     differences = torch.clamp(differences, min = 0., max = 1.).double()
                     quality     = 100. * torch.mean(differences)
@@ -343,10 +344,10 @@ if __name__ == "__main__":
         writer.add_scalar('EpochKL/valid', val_kl, epoch)
         writer.add_scalar('EpochKL/train', epoch_train_kl, epoch)
 
-        if len(properties) > 0:
+        if use_props:
             writer.add_scalar('EpochPropLoss/valid', val_pmse, epoch)
             writer.add_scalar('EpochPropLoss/train', epoch_train_pmse, epoch)
 
-        if len(targets) > 0:
+        if use_affs:
             writer.add_scalar('EpochAffLoss/valid', val_amse, epoch)
             writer.add_scalar('EpochAffLoss/train', epoch_train_amse, epoch)
