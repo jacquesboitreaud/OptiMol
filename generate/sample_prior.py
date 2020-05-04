@@ -37,7 +37,7 @@ if __name__ == "__main__":
     parser.add_argument('--name', help="Saved model directory, in /results/saved_models",
                         default='inference_default')
     
-    parser.add_argument('-N', "--n_mols", help="Nbr to generate", type=int, default=23000)
+    parser.add_argument('-N', "--n_mols", help="Nbr to generate", type=int, default=2000)
     parser.add_argument('-v', '--vocab', default='selfies')  # vocab used by model
 
     parser.add_argument('-o', '--output_file', type=str, default='data/gen.txt')
@@ -75,9 +75,9 @@ if __name__ == "__main__":
                 smiles = [decoder(s) for s in smiles]
 
             compounds += smiles
-            m=Chem.MolFromSmiles(smiles)
-            if m!=None :
-                cpt +=1 
+            mols = [Chem.MolFromSmiles(s) for s in smiles]
+            mols = [m for m in mols if m!=None]
+            cpt+=len(mols) # nbr valid compounds in batch 
 
     Ntot = len(compounds)
     unique = list(np.unique(compounds))
