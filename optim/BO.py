@@ -60,7 +60,7 @@ if __name__ == "__main__":
     parser.add_argument('-o', '--objective', default='aff_pred') # 'qed', 'aff', 'aff_pred'
     
     parser.add_argument('-e', "--ex", help="Docking exhaustiveness (vina)", type=int, default=16) 
-    parser.add_argument('-s', "--server", help="COmputer used, to set paths for vina", type=str, default='mac')
+    parser.add_argument('-s', "--server", help="COmputer used, to set paths for vina", type=str, default='rup')
     args = parser.parse_args()
 
     # ==============
