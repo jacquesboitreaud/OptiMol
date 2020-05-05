@@ -125,8 +125,8 @@ class molDataset(Dataset):
                 self.alphabet = selfies_a
             
         else: # params.json alphabets and length
-            print('-> Using params.json moses alphabet.')
-            with open(os.path.join(maps_path, 'moses_alphabets.pickle'), 'rb') as f :
+            print('-> Using PREDEFINED selfies alphabet // some strings may be ignored if not one-hot compatible')
+            with open(os.path.join(maps_path, 'predefined_alphabets.pickle'), 'rb') as f :
                 alphabets_dict = pickle.load(f)
                 
             if(self.language == 'smiles'):
@@ -227,10 +227,15 @@ class molDataset(Dataset):
         for selfies_element in selfies_char_list_pre:
             selfies_char_list.append('['+selfies_element+']')   
     
-        integer_encoded = [self.char_to_index[char] for char in selfies_char_list]
-        a = np.array(integer_encoded)
+        try:
+            integer_encoded = [self.char_to_index[char] for char in selfies_char_list]
+            a = np.array(integer_encoded)
+            valid_flag = 1 
+        except:
+            a = 0
+            valid_flag = 0  # no one hot encoding possible : ignoring molecule 
                 
-        return a
+        return a, valid_flag
 
     def __getitem__(self, idx):
         # Returns tuple 
@@ -291,7 +296,10 @@ class molDataset(Dataset):
         if self.language == 'selfies':
             selfies = row.selfies
             string_representation = selfies
-            a = self.selfies_to_hot(string_representation)
+            a, valid_flag = self.selfies_to_hot(string_representation)
+            if valid_flag ==0 : # no one hot encoding for this selfie, ignore 
+                print('!!! Selfie to one-hot failed with current alphabet')
+                return None, 0,0,0
             
         else:
             a = np.zeros(self.max_len)

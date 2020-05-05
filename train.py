@@ -59,7 +59,7 @@ if __name__ == "__main__":
     parser.add_argument('--clip_norm', type=float, default=50.0)  # Gradient clipping max norm
     parser.add_argument('--beta', type=float, default=0.0)  # initial KL annealing weight
     parser.add_argument('--step_beta', type=float, default=0.002)  # beta increase per step
-    parser.add_argument('--max_beta', type=float, default=0.1)  # maximum KL annealing weight
+    parser.add_argument('--max_beta', type=float, default=0.5)  # maximum KL annealing weight
     parser.add_argument('--warmup', type=int, default=40000)  # number of steps with only reconstruction loss (beta=0)
 
     parser.add_argument('--processes', type=int, default=20)  # num workers
@@ -252,9 +252,10 @@ if __name__ == "__main__":
 
             if args.print_smiles_iter > 0 and total_steps % args.print_smiles_iter == 0:
                 _, out_chars = torch.max(out_smi.detach(), dim=1)
-                reconstruction_dataframe, frac_valid = log_reconstruction(smiles, out_smi.detach(),
+                _, frac_valid = log_reconstruction(smiles, out_smi.detach(),
                                                                           loaders.dataset.index_to_char,
                                                                           string_type=args.decode)
+                print(f'{frac_valid} valid smiles in batch')
                 # Correctly reconstructed characters 
                 differences = 1. - torch.abs(out_chars - smiles)
                 differences = torch.clamp(differences, min = 0., max = 1.).double()
