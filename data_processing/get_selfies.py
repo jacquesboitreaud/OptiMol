@@ -27,12 +27,13 @@ def process_one(s):
     s_len = len(individual_selfie) - len(individual_selfie.replace('[', ''))
     return individual_selfie, len(c), s_len
 
-def process_one_isomeric(s):
+def process_one_kekule(s):
     m=Chem.MolFromSmiles(s)
-    c= Chem.MolToSmiles(m, canonical = True, isomericSmiles = True)
-    individual_selfie = encoder(c)
+    Chem.Kekulize(m)
+    s=Chem.MolToSmiles(m, kekuleSmiles=True)
+    individual_selfie = encoder(s)
     s_len = len(individual_selfie) - len(individual_selfie.replace('[', ''))
-    return individual_selfie, len(c), s_len
+    return individual_selfie, len(s), s_len
 
 
 def add_selfies(path='data/moses_train.csv', serial=False, isomeric = False):
@@ -48,7 +49,7 @@ def add_selfies(path='data/moses_train.csv', serial=False, isomeric = False):
             if not isomeric :
                 selfie, smile_len, selfie_len = process_one(s)
             else:
-                selfie, smile_len, selfie_len = process_one_isomeric(s)
+                selfie, smile_len, selfie_len = process_one_kekule(s)
             selfies_list.append(selfie)
             max_smiles_len.append(smile_len)
             max_selfies_len.append(selfie_len)
@@ -58,7 +59,7 @@ def add_selfies(path='data/moses_train.csv', serial=False, isomeric = False):
         if not isomeric:
             res_lists = pool.map(process_one, train.smiles)
         else:
-            res_lists = pool.map(process_one_isomeric, train.smiles)
+            res_lists = pool.map(process_one_kekule, train.smiles)
         selfies_list, max_smiles_len, max_selfies_len = map(list, zip(*res_lists))
 
     # print(time.perf_counter()-time1)
