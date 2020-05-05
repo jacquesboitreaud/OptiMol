@@ -43,13 +43,14 @@ if __name__ == "__main__":
     
     script_dir = os.path.dirname(os.path.realpath(__file__))
     sys.path.append(os.path.join(script_dir, 'docking'))
+    sys.path.append(os.path.join(script_dir, 'dataloaders'))
     
     from dataloaders.molDataset import Loader
     from model import Model, model_from_json
     from utils import *
     from BO_utils import get_fitted_model
     
-    from docking.docking import dock
+    from docking.docking import dock, set_path
 
     parser = argparse.ArgumentParser()
     parser.add_argument( '--name', help="saved model weights fname. Located in saved_models subdir",
@@ -60,7 +61,7 @@ if __name__ == "__main__":
     parser.add_argument('-o', '--objective', default='aff_pred') # 'qed', 'aff', 'aff_pred'
     
     parser.add_argument('-e', "--ex", help="Docking exhaustiveness (vina)", type=int, default=16) 
-    
+    parser.add_argument('-s', "--server", help="COmputer used, to set paths for vina", type=str, default='mac')
     args = parser.parse_args()
 
     # ==============
@@ -104,6 +105,7 @@ if __name__ == "__main__":
         with torch.no_grad():
             scores_init = -1* model.affs(train_z) # careful, maximize -aff <=> minimize binding energy (negative value)
     elif args.objective == 'aff' : 
+        PYTHONSH, VINA = set_path(args.server)
         scores_init = -1* torch.tensor(df.drd3).view(-1,1).to(device) # careful, maximize -aff <=> minimize binding energy (negative value)
         
     best_value = torch.max(scores_init).item()
@@ -143,7 +145,7 @@ if __name__ == "__main__":
             if args.objective == 'aff':
                 new_scores = torch.zeros((BO_BATCH_SIZE,1), dtype=torch.float)
                 for i in range(len(smiles)):
-                    _,sc = dock(smiles, unique_id = i, exhaustiveness = args.ex)
+                    _,sc = dock(smiles, unique_id = i, exhaustiveness = args.ex, )
                     new_scores[i,0]=sc
                 new_scores = -1* new_scores
                 
