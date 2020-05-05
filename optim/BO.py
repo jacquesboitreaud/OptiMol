@@ -144,7 +144,7 @@ if __name__ == "__main__":
             if args.objective == 'aff':
                 new_scores = torch.zeros((BO_BATCH_SIZE,1), dtype=torch.float)
                 for i in range(len(smiles)):
-                    _,sc = dock(smiles[i], unique_id = i, exhaustiveness = args.ex )
+                    _,sc = dock('CC1C2CCC(C2)C1CN(CCO)C(=O)c1ccc(Cl)cc1', unique_id = i, exhaustiveness = args.ex )
                     new_scores[i,0]=sc
                 new_scores = -1* new_scores
                 
