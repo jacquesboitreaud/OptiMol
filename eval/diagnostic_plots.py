@@ -39,9 +39,9 @@ from sklearn.decomposition import PCA
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--name', help="Name of saved model directory, in /results/saved_models",
-                    default='3_layers_gcn')
+                    default='kl1M180k')
 parser.add_argument('-i', '--test_set', help="Test molecules file, in /data",
-                    default='moses_test.csv')
+                    default='moses_scored_valid.csv')
 parser.add_argument('-N', '--n_mols', help="Number of molecules, set to -1 for all in csv ", type = int, 
                     default=1000)
 
