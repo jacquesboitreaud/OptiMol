@@ -393,7 +393,7 @@ class Loader():
 
 
         test_loader = DataLoader(dataset=test_set, shuffle=False, batch_size=self.batch_size,
-                                 num_workers=self.num_workers, collate_fn=collate_block, drop_last=True)
+                                 num_workers=self.num_workers, collate_fn=collate_block, drop_last=False)
 
         # return train_loader, valid_loader, test_loader
         if (not self.test_only):

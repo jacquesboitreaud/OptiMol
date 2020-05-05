@@ -155,6 +155,12 @@ def QED_oracle(smiles):
             t[i] = QED.qed(m)
     return t
 
+def isValid(smiles):
+    m=Chem.MolFromSmiles(smiles)
+    if m==None:
+        return 0
+    return 1
+
 
 # ================= Pytorch utils ================================
 
