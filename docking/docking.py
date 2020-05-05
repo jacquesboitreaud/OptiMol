@@ -47,38 +47,38 @@ def dock(smile, unique_id, parallel=True, exhaustiveness=16):
     soft_mkdir('tmp')
     tmp_path = f'tmp/{str(unique_id)}'
     soft_mkdir(tmp_path)
-    try:
-        pass
-        # PROCESS MOLECULE
-        mol = pybel.readstring("smi", smile)
-        mol.addh()
-        mol.make3D()
-        dump_mol2_path = os.path.join(tmp_path, 'ligand.mol2')
-        dump_pdbqt_path = os.path.join(tmp_path, 'ligand.pdbqt')
-        mol.write('mol2', dump_mol2_path, overwrite=True)
-        subprocess.run(f'{PYTHONSH} prepare_ligand4.py -l {dump_mol2_path} -o {dump_pdbqt_path} -A hydrogens'.split())
+    #try:
+    #pass
+    # PROCESS MOLECULE
+    mol = pybel.readstring("smi", smile)
+    mol.addh()
+    mol.make3D()
+    dump_mol2_path = os.path.join(tmp_path, 'ligand.mol2')
+    dump_pdbqt_path = os.path.join(tmp_path, 'ligand.pdbqt')
+    mol.write('mol2', dump_mol2_path, overwrite=True)
+    subprocess.run(f'{PYTHONSH} prepare_ligand4.py -l {dump_mol2_path} -o {dump_pdbqt_path} -A hydrogens'.split())
 
-        start = time()
-        # DOCK
-        if parallel:
-            print(f'{VINA} --receptor {RECEPTOR_PATH} --ligand {dump_pdbqt_path}'
-                  f' --config {CONF_PATH} --exhaustiveness {exhaustiveness} --log log.txt')
-            subprocess.run(f'{VINA} --receptor {RECEPTOR_PATH} --ligand {dump_pdbqt_path}'
-                           f' --config {CONF_PATH} --exhaustiveness {exhaustiveness} --log log.txt'.split())
-        else:
-            subprocess.run(f'{VINA} --config conf.txt --exhaustiveness 16 --log log.txt --cpu 1'.split())
-        delta_t = time() - start
-        print("Docking time :", delta_t)
+    start = time()
+    # DOCK
+    if parallel:
+        print(f'{VINA} --receptor {RECEPTOR_PATH} --ligand {dump_pdbqt_path}'
+              f' --config {CONF_PATH} --exhaustiveness {exhaustiveness} --log log.txt')
+        subprocess.run(f'{VINA} --receptor {RECEPTOR_PATH} --ligand {dump_pdbqt_path}'
+                       f' --config {CONF_PATH} --exhaustiveness {exhaustiveness} --log log.txt'.split())
+    else:
+        subprocess.run(f'{VINA} --config conf.txt --exhaustiveness 16 --log log.txt --cpu 1'.split())
+    delta_t = time() - start
+    print("Docking time :", delta_t)
 
-        with open(os.path.join(tmp_path, 'ligand_out.pdbqt'), 'r') as f:
-            lines = f.readlines()
-            slines = [l for l in lines if l.startswith('REMARK VINA RESULT')]
-            values = [l.split() for l in slines]
-            # In each split string, item with index 3 should be the kcal/mol energy.
-            score = np.mean([float(v[3]) for v in values])
+    with open(os.path.join(tmp_path, 'ligand_out.pdbqt'), 'r') as f:
+        lines = f.readlines()
+        slines = [l for l in lines if l.startswith('REMARK VINA RESULT')]
+        values = [l.split() for l in slines]
+        # In each split string, item with index 3 should be the kcal/mol energy.
+        score = np.mean([float(v[3]) for v in values])
 
-    except:
-        score = 0
+    #except:
+    #score = 0
     shutil.rmtree(tmp_path)
     print("Score :", score)
     return smile, score
