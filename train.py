@@ -71,7 +71,7 @@ if __name__ == "__main__":
     parser.add_argument('--kl_anneal_iter', type=int, default=2000)  # update beta every _ step
 
     parser.add_argument('--print_iter', type=int, default=1000)  # print loss metrics every _ step
-    parser.add_argument('--print_smiles_iter', type=int, default=10000)  # print reconstructed smiles every _ step
+    parser.add_argument('--print_smiles_iter', type=int, default=10)  # print reconstructed smiles every _ step
     parser.add_argument('--save_iter', type=int, default=10000)  # save model weights every _ step
 
     # teacher forcing rnn schedule
