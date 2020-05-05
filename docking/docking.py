@@ -45,7 +45,7 @@ def prepare_receptor():
 def dock(smile, unique_id, parallel=True, exhaustiveness=16):
     """"""
     soft_mkdir('tmp')
-    tmp_path = f'tmp/{unique_id}'
+    tmp_path = f'tmp/{str(unique_id)}'
     soft_mkdir(tmp_path)
     try:
         pass
