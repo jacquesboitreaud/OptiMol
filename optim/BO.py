@@ -19,6 +19,10 @@ import torch
 import numpy as np
 import pandas as pd 
 
+if __name__ == "__main__":
+    script_dir = os.path.dirname(os.path.realpath(__file__))
+    sys.path.append(os.path.join(script_dir, '..'))
+
 import pickle
 import torch.utils.data
 
@@ -41,15 +45,10 @@ from botorch.sampling.samplers import SobolQMCNormalSampler
 
 if __name__ == "__main__":
     
-    script_dir = os.path.dirname(os.path.realpath(__file__))
-    sys.path.append(os.path.join(script_dir, 'docking'))
-    sys.path.append(os.path.join(script_dir, 'dataloaders'))
-    
     from dataloaders.molDataset import Loader
     from model import Model, model_from_json
     from utils import *
     from BO_utils import get_fitted_model
-    
     from docking.docking import dock, set_path
 
     parser = argparse.ArgumentParser()
