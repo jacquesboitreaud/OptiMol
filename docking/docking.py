@@ -34,15 +34,12 @@ def set_path(computer):
     return PYTHONSH, VINA
 
 
-PYTHONSH, VINA = set_path('mac')
-
-
 def prepare_receptor():
     # just run pythonsh prepare_receptor4.py -r drd3.pdb -o drd3.pdbqt -A hydrogens
     subprocess.run(f"{PYTHONSH} prepare_receptor4.py -r drd3.pdb -o {RECEPTOR_PATH} -A hydrogens".split())
 
 
-def dock(smile, unique_id, parallel=True, exhaustiveness=16):
+def dock(smile, unique_id, PYTHONSH, VINA, parallel=True, exhaustiveness=16):
     """"""
     soft_mkdir('tmp')
     tmp_path = f'tmp/{str(unique_id)}'
@@ -94,4 +91,4 @@ if __name__ == '__main__':
 
     PYTHONSH, VINA = set_path(args.server)
 
-    dock('CC1C2CCC(C2)C1CN(CCO)C(=O)c1ccc(Cl)cc1', unique_id=2, exhaustiveness=args.ex)
+    dock('CC1C2CCC(C2)C1CN(CCO)C(=O)c1ccc(Cl)cc1', PYTHONSH, VINA, unique_id=2, exhaustiveness=args.ex )
