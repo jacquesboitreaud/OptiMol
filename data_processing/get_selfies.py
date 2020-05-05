@@ -36,7 +36,7 @@ def process_one_kekule(s):
     return individual_selfie, len(s), s_len
 
 
-def add_selfies(path='data/moses_train.csv', serial=False, isomeric = False):
+def add_selfies(path='data/moses_train.csv', serial=False, kekule = False):
     train = pd.read_csv(path, index_col=0)
 
     # time1 = time.perf_counter()
@@ -46,7 +46,7 @@ def add_selfies(path='data/moses_train.csv', serial=False, isomeric = False):
         max_smiles_len = []
         max_selfies_len = []
         for s in tqdm(train.smiles):
-            if not isomeric :
+            if not kekule :
                 selfie, smile_len, selfie_len = process_one(s)
             else:
                 selfie, smile_len, selfie_len = process_one_kekule(s)
@@ -56,7 +56,7 @@ def add_selfies(path='data/moses_train.csv', serial=False, isomeric = False):
 
     else:
         pool = Pool()
-        if not isomeric:
+        if not kekule:
             res_lists = pool.map(process_one, train.smiles)
         else:
             res_lists = pool.map(process_one_kekule, train.smiles)
@@ -75,7 +75,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-i', '--smiles_file', help="path to csv with dataset", type=str,
                         default='data/moses_train.csv')
-    parser.add_argument( '--isomeric', help="Isomeric smiles (use stereochemistry)", action='store_true',
+    parser.add_argument( '--k', help="Kekule smiles", action='store_true',
                         default=False)
 
 
@@ -83,4 +83,4 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     print(f'>>> Computing selfies for all smiles in {args.smiles_file}. May take some time.')
-    add_selfies(args.smiles_file)
+    add_selfies(args.smiles_file, kekule = args.k)
