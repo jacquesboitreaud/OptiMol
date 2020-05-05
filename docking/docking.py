@@ -45,7 +45,7 @@ def dock(smile, unique_id, PYTHONSH, VINA, parallel=True, exhaustiveness=16):
     tmp_path = f'tmp/{str(unique_id)}'
     soft_mkdir(tmp_path)
     try:
-    pass
+        pass
         # PROCESS MOLECULE
         mol = pybel.readstring("smi", smile)
         mol.addh()
@@ -75,7 +75,7 @@ def dock(smile, unique_id, PYTHONSH, VINA, parallel=True, exhaustiveness=16):
             score = np.mean([float(v[3]) for v in values])
 
     except:
-    score = 0
+        score = 0
     shutil.rmtree(tmp_path)
     print("Score :", score)
     return smile, score
