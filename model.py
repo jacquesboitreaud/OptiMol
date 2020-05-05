@@ -129,7 +129,7 @@ class Model(nn.Module):
 
         # Encoding
         self.features_dim = features_dim
-        self.gcn_hdim = 48
+        self.gcn_hdim = kwargs['gcn_hdim']
         self.gcn_layers = kwargs['gcn_layers']
         self.num_rels = num_rels
 

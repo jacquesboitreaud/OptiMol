@@ -53,7 +53,7 @@ if __name__ == "__main__":
     parser.add_argument('--decode', type=str, default='selfies')  # 'smiles' or 'selfies'
     parser.add_argument('--build_alphabet', action='store_true', default=False)  # use params.json alphabet
 
-    parser.add_argument('--latent_size', type=int, default=96)  # size of latent code
+    parser.add_argument('--latent_size', type=int, default=56)  # size of latent code
     parser.add_argument('--n_gcn_layers', type=int, default=3)  # number of gcn encoder layers (3 or 4?)
     parser.add_argument('--lr', type=float, default=1e-3)  # Initial learning rate
     parser.add_argument('--clip_norm', type=float, default=50.0)  # Gradient clipping max norm
@@ -138,6 +138,7 @@ if __name__ == "__main__":
     params = {'features_dim': loaders.dataset.emb_size,  # node embedding dimension
               'num_rels': loaders.num_edge_types,
               'gcn_layers':args.n_gcn_layers, 
+              'gcn_hdim': 32,
               'l_size': args.latent_size,
               'voc_size': loaders.dataset.n_chars,
               'max_len': loaders.dataset.max_len,
