@@ -50,9 +50,10 @@ def dock(smile, unique_id, pythonsh=None, vina=None, parallel=True, exhaustivene
         global VINA
         vina = VINA
 
-    soft_mkdir(os.path.join(script_dir, 'tmp'))
-    tmp_path = os.path.join(script_dir, f'tmp/{unique_id}')
+    soft_mkdir('tmp')
+    tmp_path = f'tmp/{unique_id}'
     soft_mkdir(tmp_path)
+
     try:
         pass
         # PROCESS MOLECULE
@@ -61,18 +62,19 @@ def dock(smile, unique_id, pythonsh=None, vina=None, parallel=True, exhaustivene
         mol.make3D()
         dump_mol2_path = os.path.join(tmp_path, 'ligand.mol2')
         dump_pdbqt_path = os.path.join(tmp_path, 'ligand.pdbqt')
-        mol.write(os.path.join(script_dir, 'mol2'), dump_mol2_path, overwrite=True)
+        mol.write('mol2', dump_mol2_path, overwrite=True)
         subprocess.run(f'{pythonsh} prepare_ligand4.py -l {dump_mol2_path} -o {dump_pdbqt_path} -A hydrogens'.split())
 
         start = time()
         # DOCK
+        cmd = f'{vina} --receptor {RECEPTOR_PATH} --ligand {dump_pdbqt_path}' \
+            f' --config {CONF_PATH} --exhaustiveness {exhaustiveness} --log log.txt'
         if parallel:
-            print(f'{vina} --receptor {RECEPTOR_PATH} --ligand {dump_pdbqt_path}'
-                  f' --config {CONF_PATH} --exhaustiveness {exhaustiveness} --log log.txt')
-            subprocess.run(f'{vina} --receptor {RECEPTOR_PATH} --ligand {dump_pdbqt_path}'
-                           f' --config {CONF_PATH} --exhaustiveness {exhaustiveness} --log log.txt'.split())
+            # print(cmd)
+            subprocess.run(cmd.split())
         else:
-            subprocess.run(f'{vina} --config conf.txt --exhaustiveness 16 --log log.txt --cpu 1'.split())
+            cmd += ' --cpu 1'
+            subprocess.run(cmd.split())
         delta_t = time() - start
         print("Docking time :", delta_t)
 
@@ -82,10 +84,10 @@ def dock(smile, unique_id, pythonsh=None, vina=None, parallel=True, exhaustivene
             values = [l.split() for l in slines]
             # In each split string, item with index 3 should be the kcal/mol energy.
             score = np.mean([float(v[3]) for v in values])
-
     except:
         score = 0
     try:
+        pass
         shutil.rmtree(tmp_path)
     except FileNotFoundError:
         pass
@@ -136,6 +138,7 @@ if __name__ == '__main__':
 
     PYTHONSH, VINA = set_path(args.server)
 
+    # ==========SLURM=============
     proc_id, num_procs = int(sys.argv[1]), int(sys.argv[2])
 
     dirname = os.path.join(script_dir, 'docking_results')
@@ -148,7 +151,7 @@ if __name__ == '__main__':
     chunk_size = N // num_procs
     chunk_min, chunk_max = proc_id * chunk_size, (proc_id + 1) * chunk_size
     list_data = list_smiles[chunk_min:chunk_max], list_active[chunk_min:chunk_max], list_px50[chunk_min:chunk_max]
-
+    #
     one_slurm(list_data,
               id=proc_id,
               path=os.path.join(dirname, f"{proc_id}.csv"),
