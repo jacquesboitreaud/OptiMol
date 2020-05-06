@@ -44,8 +44,8 @@ def prepare_receptor():
 
 def dock(smile, unique_id, parallel=True, exhaustiveness=16):
     """"""
-    soft_mkdir('tmp')
-    tmp_path = f'tmp/{unique_id}'
+    soft_mkdir(os.path.join(script_dir, 'tmp'))
+    tmp_path = os.path.join(script_dir, f'tmp/{unique_id}')
     soft_mkdir(tmp_path)
     try:
         pass
@@ -55,7 +55,7 @@ def dock(smile, unique_id, parallel=True, exhaustiveness=16):
         mol.make3D()
         dump_mol2_path = os.path.join(tmp_path, 'ligand.mol2')
         dump_pdbqt_path = os.path.join(tmp_path, 'ligand.pdbqt')
-        mol.write('mol2', dump_mol2_path, overwrite=True)
+        mol.write(os.path.join(script_dir, 'mol2'), dump_mol2_path, overwrite=True)
         subprocess.run(f'{PYTHONSH} prepare_ligand4.py -l {dump_mol2_path} -o {dump_pdbqt_path} -A hydrogens'.split())
 
         start = time()
@@ -79,9 +79,48 @@ def dock(smile, unique_id, parallel=True, exhaustiveness=16):
 
     except:
         score = 0
-    shutil.rmtree(tmp_path)
-    print("Score :", score)
+    try:
+        shutil.rmtree(tmp_path)
+    except FileNotFoundError:
+        pass
     return smile, score
+
+
+import csv
+
+
+def one_slurm(list_data, id, path, parallel=True, exhaustiveness=16):
+    """
+
+    :param list_data: (list_smiles, list_active, list_px50)
+    :param id:
+    :param path:
+    :param parallel:
+    :param exhaustiveness:
+    :return:
+    """
+    list_smiles, list_active, list_px50 = list_data
+    with open(path, 'w', newline='') as csvfile:
+        csv.writer(csvfile).writerow(['smile', 'active', 'affinity', 'score'])
+
+    for i, smile in enumerate(list_smiles):
+        score_smile = dock(smile, unique_id=id, parallel=parallel, exhaustiveness=exhaustiveness)
+        # score_smile = 0
+        with open(path, 'a', newline='') as csvfile:
+            csv.writer(csvfile).writerow([smile,
+                                          list_active[i],
+                                          list_px50[i],
+                                          score_smile])
+
+
+def load_csv(path='to_dock_shuffled.csv'):
+    import pandas as pd
+
+    df = pd.read_csv(path)
+    smiles = df['SMILES'].values
+    actives = df['Activity_Flag'].values
+    px50 = df['pXC50'].values
+    return smiles, actives, px50
 
 
 if __name__ == '__main__':
@@ -90,8 +129,28 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("-s", "--server", default='mac', help="Server to run the docking on, for path and configs.")
     parser.add_argument("-e", "--ex", default=16, help="exhaustiveness parameter for vina")
-    args = parser.parse_args()
+    args, _ = parser.parse_known_args()
 
     PYTHONSH, VINA = set_path(args.server)
 
-    dock('CC1C2CCC(C2)C1CN(CCO)C(=O)c1ccc(Cl)cc1', unique_id=2, exhaustiveness=args.ex)
+    proc_id, num_procs = int(sys.argv[1]), int(sys.argv[2])
+
+    dirname = os.path.join(script_dir, 'docking_results')
+    if not os.path.isdir(dirname):
+        os.mkdir(dirname)
+
+    list_smiles, list_active, list_px50 = load_csv(os.path.join(script_dir, 'to_dock_shuffled.csv'))
+    N = len(list_smiles)
+
+    chunk_size = N // num_procs
+    chunk_min, chunk_max = proc_id * chunk_size, (proc_id + 1) * chunk_size
+    list_data = list_smiles[chunk_min:chunk_max], list_active[chunk_min:chunk_max], list_px50[chunk_min:chunk_max]
+
+    one_slurm(list_data,
+              id=proc_id,
+              path=os.path.join(dirname, f"{proc_id}.csv"),
+              parallel=False,
+              exhaustiveness=args.ex)
+
+    # one_slurm(['toto','tata','titi'], 1, 'zztest')
+    # dock('CC1C2CCC(C2)C1CN(CCO)C(=O)c1ccc(Cl)cc1', unique_id=2, exhaustiveness=args.ex)
