@@ -13,11 +13,15 @@ https://docs.dgl.ai/tutorials/models/1_gnn/4_rgcn.html#sphx-glr-tutorials-models
 
 """
 
+import os, sys
 import numpy as np
 from queue import PriorityQueue
 import json
 from rdkit import Chem
 import pickle
+
+script_dir = os.path.dirname(os.path.realpath(__file__))
+sys.path.append(os.path.join(script_dir))
 
 import torch
 import torch.nn as nn

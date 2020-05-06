@@ -10,7 +10,9 @@ import shutil
 
 script_dir = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(script_dir, '..'))
-from utils import soft_mkdir
+
+if __name__=='__main__':
+    from utils import soft_mkdir
 
 RECEPTOR_PATH = os.path.join(script_dir, 'data_docking/drd3.pdbqt')
 CONF_PATH = os.path.join(script_dir, 'data_docking/conf.txt')
@@ -91,4 +93,4 @@ if __name__ == '__main__':
 
     PYTHONSH, VINA = set_path(args.server)
 
-    dock('CC1C2CCC(C2)C1CN(CCO)C(=O)c1ccc(Cl)cc1', PYTHONSH, VINA, unique_id=2, exhaustiveness=args.ex )
+    dock('CC1C2CCC(C2)C1CN(CCO)C(=O)c1ccc(Cl)cc1', unique_id=2, PYTHONSH= PYTHONSH, VINA=VINA,  exhaustiveness=args.ex )

@@ -11,6 +11,7 @@ from rdkit import Chem
 from rdkit.Chem import QED
 
 import torch
+import numpy as np 
 
 def qed(smiles):
     # takes a list of smiles and returns a list of corresponding QEDs
@@ -27,17 +28,19 @@ def isValid(smiles):
         return 0
     return 1
 
-def normal_cdf(observed_x, var, gamma):
+def normal_cdf_oracle(observed_x, var, gamma):
     """
     Assuming x ~ N(observed_x, var), returns P(x<=gamma)
     """
     raise NotImplementedError
     
-def certain_cdf(observed_x, gamma):
+def deterministic_cdf_oracle(observed_x, gamma):
     """
     Returns P(x<= gamma) assuming x is equal to observed_x with proba 1 
     """
-    if observed_x <= gamma:
-        return 1.
-    else:
-        return 0 
+    w = torch.zeros(observed_x.shape[0], dtype=torch.float)
+    for i in range(observed_x.shape[0]):
+        if observed_x[i] <= gamma:
+            w[i]=1.
+    return w
+

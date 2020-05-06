@@ -25,7 +25,7 @@ from loss_func import CbASLoss
 from dataloaders.simple_loader import SimpleLoader
 from utils import *
 
-def GenTrain(x ,w , init_model_dir='prior_model', epochs = 10, modeldir = 'search_model'):
+def GenTrain(x ,w , model, savepath, epochs = 10):
     """
     Input : x a list of M inputs (smiles)
             w an array of shape (M,) with weights assigned to each of the samples
@@ -36,7 +36,6 @@ def GenTrain(x ,w , init_model_dir='prior_model', epochs = 10, modeldir = 'searc
     Output : None 
     """
     
-    model = model_from_json(init_model_dir)
     device = model.device
     
     teacher_forcing = 0 
@@ -49,7 +48,7 @@ def GenTrain(x ,w , init_model_dir='prior_model', epochs = 10, modeldir = 'searc
     scheduler = lr_scheduler.ExponentialLR(optimizer, anneal_rate)
     
     # loader 
-    train_loader = SimpleLoader(x) # loader for given smiles 
+    train_loader = SimpleLoader(x).get_data() # loader for given smiles 
 
     # Training loop
     total_steps=0 
@@ -84,7 +83,7 @@ def GenTrain(x ,w , init_model_dir='prior_model', epochs = 10, modeldir = 'searc
     # Update weights at 'save_model_weights' : 
     print(f'Finished training at step {total_steps}. Saving model weights')
     model.cpu()
-    torch.save(model.state_dict(), os.path.join(modeldir, "weights.pth"))
+    torch.save(model.state_dict(), os.path.join(search_model, "weights.pth"))
     
     return
 
