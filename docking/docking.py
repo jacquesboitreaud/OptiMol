@@ -89,7 +89,7 @@ def dock(smile, unique_id, pythonsh=None, vina=None, parallel=True, exhaustivene
         shutil.rmtree(tmp_path)
     except FileNotFoundError:
         pass
-    return smile, score
+    return score
 
 
 def one_slurm(list_data, id, path, parallel=True, exhaustiveness=16):
