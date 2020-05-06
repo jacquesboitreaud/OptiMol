@@ -31,9 +31,14 @@ from data_processing.rdkit_to_nx import smiles_to_nx
 
 
 def collate_block(samples):
-    # Collates samples into a batch
-    # The input `samples` is a list of pairs
-    #  (graph, label).
+    """
+    Collates samples into batches. 
+    Samples : list of tuples of size 4 
+    removes 'None' graphs (reduces batch size)
+    """
+
+    samples = [s for s in samples if s[0]!=None]
+    
     graphs, smiles, p_labels, a_labels = map(list, zip(*samples))
     batched_graph = dgl.batch(graphs)
 
@@ -62,9 +67,9 @@ class molDataset(Dataset):
                  props,
                  targets,
                  n_mols=-1,
-                 debug=False):
+                 graph_only=False):
         
-        self.graph_only=False
+        self.graph_only=graph_only
         # 0/ two options: empty loader or csv path given 
         if (csv_path is None):
             print("Empty dataset initialized. Use pass_dataset or pass_dataset_path to add molecules.")
@@ -120,8 +125,8 @@ class molDataset(Dataset):
                 self.alphabet = selfies_a
             
         else: # params.json alphabets and length
-            print('-> Using params.json moses alphabet.')
-            with open(os.path.join(maps_path, 'moses_alphabets.pickle'), 'rb') as f :
+            print('-> Using PREDEFINED selfies alphabet // some strings may be ignored if not one-hot compatible')
+            with open(os.path.join(maps_path, 'predefined_alphabets.pickle'), 'rb') as f :
                 alphabets_dict = pickle.load(f)
                 
             if(self.language == 'smiles'):
@@ -142,9 +147,6 @@ class molDataset(Dataset):
 
         print(f"> Loaded alphabet. Using {self.language}. Max sequence length allowed is {self.max_len}")
 
-        if (debug):
-            # special case for debugging
-            pass
 
     def pass_dataset_path(self, path):
         # Pass a new dataset to the loader, without changing other parameters 
@@ -225,10 +227,15 @@ class molDataset(Dataset):
         for selfies_element in selfies_char_list_pre:
             selfies_char_list.append('['+selfies_element+']')   
     
-        integer_encoded = [self.char_to_index[char] for char in selfies_char_list]
-        a = np.array(integer_encoded)
+        try:
+            integer_encoded = [self.char_to_index[char] for char in selfies_char_list]
+            a = np.array(integer_encoded)
+            valid_flag = 1 
+        except:
+            a = 0
+            valid_flag = 0  # no one hot encoding possible : ignoring molecule 
                 
-        return a
+        return a, valid_flag
 
     def __getitem__(self, idx):
         # Returns tuple 
@@ -250,7 +257,8 @@ class molDataset(Dataset):
                        (nx.get_node_attributes(graph, 'atomic_num')).items()}
             nx.set_node_attributes(graph, name='atomic_num', values=at_type)
         except KeyError:
-            print('Atom type to one-hot error for input ', smiles)
+            print('!!!! Atom type to one-hot error for input ', smiles, ' ignored')
+            return None, 0,0,0
 
         at_charge = {a: oh_tensor(self.charges_map[label], self.num_charges) for a, label in
                      (nx.get_node_attributes(graph, 'formal_charge')).items()}
@@ -288,7 +296,10 @@ class molDataset(Dataset):
         if self.language == 'selfies':
             selfies = row.selfies
             string_representation = selfies
-            a = self.selfies_to_hot(string_representation)
+            a, valid_flag = self.selfies_to_hot(string_representation)
+            if valid_flag ==0 : # no one hot encoding for this selfie, ignore 
+                print('!!! Selfie to one-hot failed with current alphabet')
+                return None, 0,0,0
             
         else:
             a = np.zeros(self.max_len)
@@ -323,7 +334,7 @@ class Loader():
                  n_mols=None,
                  batch_size=64,
                  num_workers=12,
-                 debug=False,
+                 graph_only=False, # Only load molecular graph (to get latent embeddings)
                  test_only=False):
         """
         Wrapper for test loader, train loader 
@@ -342,7 +353,7 @@ class Loader():
                                   vocab=vocab,
                                   build_alphabet = build_alphabet,
                                   n_mols=n_mols,
-                                  debug=debug)
+                                  graph_only=graph_only)
 
         self.num_edge_types, self.num_atom_types = self.dataset.num_edge_types, self.dataset.num_atom_types
         self.num_charges = self.dataset.num_charges
@@ -390,7 +401,7 @@ class Loader():
 
 
         test_loader = DataLoader(dataset=test_set, shuffle=False, batch_size=self.batch_size,
-                                 num_workers=self.num_workers, collate_fn=collate_block, drop_last=True)
+                                 num_workers=self.num_workers, collate_fn=collate_block, drop_last=False)
 
         # return train_loader, valid_loader, test_loader
         if (not self.test_only):

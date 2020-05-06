@@ -5,12 +5,14 @@ import argparse
 from time import time
 import numpy as np
 import pybel
-import pandas as pd
 import shutil
+import csv
 
 script_dir = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(script_dir, '..'))
-from utils import soft_mkdir
+
+if __name__ == '__main__':
+    from utils import soft_mkdir
 
 RECEPTOR_PATH = os.path.join(script_dir, 'data_docking/drd3.pdbqt')
 CONF_PATH = os.path.join(script_dir, 'data_docking/conf.txt')
@@ -34,16 +36,20 @@ def set_path(computer):
     return PYTHONSH, VINA
 
 
-PYTHONSH, VINA = set_path('mac')
-
-
 def prepare_receptor():
     # just run pythonsh prepare_receptor4.py -r drd3.pdb -o drd3.pdbqt -A hydrogens
     subprocess.run(f"{PYTHONSH} prepare_receptor4.py -r drd3.pdb -o {RECEPTOR_PATH} -A hydrogens".split())
 
 
-def dock(smile, unique_id, parallel=True, exhaustiveness=16):
+def dock(smile, unique_id, pythonsh=None, vina=None, parallel=True, exhaustiveness=16):
     """"""
+
+    if pythonsh is None or vina is None:
+        global PYTHONSH
+        pythonsh = PYTHONSH
+        global VINA
+        vina = VINA
+
     soft_mkdir(os.path.join(script_dir, 'tmp'))
     tmp_path = os.path.join(script_dir, f'tmp/{unique_id}')
     soft_mkdir(tmp_path)
@@ -56,17 +62,17 @@ def dock(smile, unique_id, parallel=True, exhaustiveness=16):
         dump_mol2_path = os.path.join(tmp_path, 'ligand.mol2')
         dump_pdbqt_path = os.path.join(tmp_path, 'ligand.pdbqt')
         mol.write(os.path.join(script_dir, 'mol2'), dump_mol2_path, overwrite=True)
-        subprocess.run(f'{PYTHONSH} prepare_ligand4.py -l {dump_mol2_path} -o {dump_pdbqt_path} -A hydrogens'.split())
+        subprocess.run(f'{pythonsh} prepare_ligand4.py -l {dump_mol2_path} -o {dump_pdbqt_path} -A hydrogens'.split())
 
         start = time()
         # DOCK
         if parallel:
-            print(f'{VINA} --receptor {RECEPTOR_PATH} --ligand {dump_pdbqt_path}'
+            print(f'{vina} --receptor {RECEPTOR_PATH} --ligand {dump_pdbqt_path}'
                   f' --config {CONF_PATH} --exhaustiveness {exhaustiveness} --log log.txt')
-            subprocess.run(f'{VINA} --receptor {RECEPTOR_PATH} --ligand {dump_pdbqt_path}'
+            subprocess.run(f'{vina} --receptor {RECEPTOR_PATH} --ligand {dump_pdbqt_path}'
                            f' --config {CONF_PATH} --exhaustiveness {exhaustiveness} --log log.txt'.split())
         else:
-            subprocess.run(f'{VINA} --config conf.txt --exhaustiveness 16 --log log.txt --cpu 1'.split())
+            subprocess.run(f'{vina} --config conf.txt --exhaustiveness 16 --log log.txt --cpu 1'.split())
         delta_t = time() - start
         print("Docking time :", delta_t)
 
@@ -84,9 +90,6 @@ def dock(smile, unique_id, parallel=True, exhaustiveness=16):
     except FileNotFoundError:
         pass
     return smile, score
-
-
-import csv
 
 
 def one_slurm(list_data, id, path, parallel=True, exhaustiveness=16):

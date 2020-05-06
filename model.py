@@ -13,11 +13,15 @@ https://docs.dgl.ai/tutorials/models/1_gnn/4_rgcn.html#sphx-glr-tutorials-models
 
 """
 
+import os, sys
 import numpy as np
 from queue import PriorityQueue
 import json
 from rdkit import Chem
 import pickle
+
+script_dir = os.path.dirname(os.path.realpath(__file__))
+sys.path.append(os.path.join(script_dir))
 
 import torch
 import torch.nn as nn
@@ -129,8 +133,8 @@ class Model(nn.Module):
 
         # Encoding
         self.features_dim = features_dim
-        self.gcn_hdim = 48
-        self.gcn_layers = 4  # input, hidden , final.
+        self.gcn_hdim = kwargs['gcn_hdim']
+        self.gcn_layers = kwargs['gcn_layers']
         self.num_rels = num_rels
 
         # Bottleneck
@@ -276,7 +280,7 @@ class Model(nn.Module):
         indices = indices.cpu().numpy()
         smiles = []
         for i in range(N):
-            smiles.append(''.join([self.index_to_char[idx] for idx in indices[i]]).rstrip())
+            smiles.append(''.join([self.index_to_char[str(idx)] for idx in indices[i]]).rstrip())
         return smiles
 
     def indices_to_smiles(self, indices):
@@ -288,7 +292,7 @@ class Model(nn.Module):
             pass
         smiles = []
         for i in range(N):
-            smiles.append(''.join([self.index_to_char[idx] for idx in indices[i]]).rstrip())
+            smiles.append(''.join([self.index_to_char[str(idx)] for idx in indices[i]]).rstrip())
         return smiles
 
     def beam_out_to_smiles(self, indices):
@@ -298,7 +302,7 @@ class Model(nn.Module):
         for i in range(N):
             k, m = 0, None
             while (k < 2 and m == None):
-                smi = ''.join([self.index_to_char[idx] for idx in indices[i, k]])
+                smi = ''.join([self.index_to_char[str(idx)] for idx in indices[i, k]])
                 smi = smi.rstrip()
                 m = Chem.MolFromSmiles(smi)
                 k += 1
@@ -452,17 +456,18 @@ class Model(nn.Module):
         batch_size = loader.batch_size
 
         # Latent embeddings
-        z_all = torch.zeros(loader.dataset.n, self.l_size)
+        z_all = []
 
         with torch.no_grad():
             for batch_idx, (graph, smiles, p_target, a_target) in enumerate(test_loader):
+                #batch_size = graph.batch_size
                 graph = send_graph_to_device(graph, self.device)
 
                 z = self.encode(graph, mean_only=True)  # z_shape = N * l_size
                 z = z.cpu()
-                z_all[batch_idx * batch_size:(batch_idx + 1) * batch_size] = z
+                z_all.append(z)
 
-        z_all = z_all.numpy()
+        z_all = torch.cat(z_all, dim = 0).numpy()
         return z_all
 
     def load_no_aff_net(self, state_dict):

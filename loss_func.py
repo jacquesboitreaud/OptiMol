@@ -83,3 +83,14 @@ def pairwiseLoss(z_i, z_j, pair_label):
     CE = F.binary_cross_entropy(prod, pair_label)
     # print(prod, pair_label)
     return CE
+
+def CbASLoss(out, indices, mu, logvar, w):
+    """ 
+    CbAS loss function for VAE : weighted sum of - w_i * ELBO(x_i) 
+    w : a tensor of shape (N,)
+    """
+    CE = F.cross_entropy(out, indices, reduction="none")
+    CE = torch.sum(CE, dim = 1) # shape (N,)
+    KL = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp(), dim = 1) # to shape (N,)
+
+    return w*(CE+KL) # elementwise product

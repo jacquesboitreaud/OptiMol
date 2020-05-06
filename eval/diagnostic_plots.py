@@ -14,14 +14,15 @@ Plot all diagnostic plots
 """
 import os
 import sys
+import argparse
 
 if __name__ == "__main__":
     script_dir = os.path.dirname(os.path.realpath(__file__))
     sys.path.append(os.path.join(script_dir, '..'))
 
 import torch
-import dgl
 
+from rdkit import Chem
 from rdkit.Chem import Draw
 from selfies import decoder
 
@@ -32,41 +33,37 @@ import matplotlib.pyplot as plt
 
 from sklearn.metrics import pairwise_distances, silhouette_score
 
-import pickle
-import torch.utils.data
-from torch import nn, optim
-import torch.nn.utils.clip_grad as clip
-import torch.nn.functional as F
-
 from joblib import dump, load
 from sklearn.decomposition import PCA
 
-# Execution is set to take place in graph2smiles root dir
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--name', help="Name of saved model directory, in /results/saved_models",
+                    default='kl1M180k')
+parser.add_argument('-i', '--test_set', help="Test molecules file, in /data",
+                    default='moses_scored_valid.csv')
+parser.add_argument('-N', '--n_mols', help="Number of molecules, set to -1 for all in csv ", type = int, 
+                    default=1000)
+
+args = parser.parse_args()
 if __name__ == "__main__":
-    from dataloaders.molDataset import molDataset, Loader
-    from data_processing.rdkit_to_nx import smiles_to_nx
+    from dataloaders.molDataset import Loader
     from model import Model, model_from_json
 
     from eval.eval_utils import *
     from utils import *
 
-    name = 'inference_default'
-
-    recompute_pca = False
-    reload_model = True
-
     # Should be same as for training
     properties = ['QED', 'logP', 'molWt']
     targets = ['drd3']
-    N = 1000
 
     # Select only DUDE subset to plot in PCA space 
     plot_target = 'drd3'
 
     # Load eval set
-    loaders = Loader(csv_path='../data/moses_train.csv', # change to moses_test or moses_scored_valid.csv
-                     maps_path='../map_files/',
-                     n_mols=N,
+    loaders = Loader(csv_path=os.path.join(script_dir, 'data', args.test_set),
+                     maps_path= os.path.join(script_dir, 'map_files'),
+                     n_mols=args.n_mols,
                      vocab='selfies',
                      num_workers=0,
                      batch_size=100,
@@ -74,11 +71,10 @@ if __name__ == "__main__":
                      targets=targets,
                      test_only=True)
     rem, ram, rchim, rcham = loaders.get_reverse_maps()
-
     _, _, test_loader = loaders.get_data()
 
     # Model loading 
-    model = model_from_json(name)
+    model = model_from_json(args.name)
     device = model.device
     model.eval()
 
@@ -182,6 +178,7 @@ if __name__ == "__main__":
 
         # Affinities prediction plots
         plt.figure()
+        plt.xlim(-12,-5)
         sns.scatterplot(reconstruction_dataframe[targets[0]], reconstruction_dataframe[f'{targets[0]}_pred'])
         sns.lineplot([-12, -5], [-12, -5], color='r')
 
@@ -191,45 +188,58 @@ if __name__ == "__main__":
         # ===================================================================
         # PCA plot 
         # ===================================================================
-        if (recompute_pca):
+
+        try:
+            fitted_pca = load( os.path.join(script_dir,'results/saved_models',args.name,'fitted_pca.joblib'))
+        except(FileNotFoundError):
+            print(
+                'Fitted PCA object not found at /data/fitted_pca.joblib, new PCA will be fitted on current data.')
             fitted_pca = fit_pca(z)
-            dump(fitted_pca, '../eval/fitted_pca.joblib')
-            print('Fitted and saved PCA for next time!')
-        else:
-            try:
-                fitted_pca = load('../eval/fitted_pca.joblib')
-            except(FileNotFoundError):
-                print(
-                    'Fitted PCA object not found at ~/eval/fitted_pca.joblib, new PCA will be fitted on current data.')
-                fitted_pca = fit_pca(z)
-                dump(fitted_pca, 'eval/fitted_pca.joblib')
-                print('Fitted and saved PCA for next time!')
 
         # Plot PCA with desired hue variable 
         plt.figure()
-        pca_plot_hue(z=z_all, variable=p_target_all[:, 1], pca=fitted_pca)
+        pca_plot_hue(z=z_all, pca=fitted_pca, variable=p_target_all[:, 1], label = 'logP')
+        
+        plt.figure()
+        pca_plot_hue(z=z_all, pca=fitted_pca, variable=p_target_all[:, 2],  label = 'Weight')
+        
+        plt.figure()
+        pca_plot_hue(z=z_all, pca=fitted_pca, variable=p_target_all[:, 0], label = 'QED')
 
         # PCA Affinities
         plt.figure()
-        pca_plot_hue(z=z_all, variable=a_all[:, 0], pca=fitted_pca)
+        ax = pca_plot_hue(z=z_all, pca=fitted_pca, variable=a_all[:, 0],  label = 'Predicted docking')
+        left, right = ax.get_xlim()
+        down,up = ax.get_ylim()
 
         # ====================================================================
         # Random sampling in latent space 
         # ====================================================================
-
-        r = torch.tensor(np.random.normal(size=z.shape), dtype=torch.float).to('cuda')
-
+        
+        Nsamples = 1000
+        r = torch.tensor(np.random.normal(size=(Nsamples,model.l_size)), dtype=torch.float)        
+        # PCA plot 
+        plt.figure()
+        plt.xlim(left, right)
+        plt.ylim(down, up)
+        pca_plot_color(z=r,  pca=fitted_pca, color = 'red', label = 'random normal')
+        plt.title('Random normal samples in PCA space')
+        
+        
+        # Decode 
         out = model.decode(r)
         v, indices = torch.max(out, dim=1)
         indices = indices.cpu().numpy()
         sampling_df, frac_valid, _ = log_smiles_from_indices(None, indices,
                                                              loaders.dataset.index_to_char)
 
-        props, affs = model.props(r).detach().cpu().numpy(), model.affs(r).detach().cpu().numpy()
+        props = model.props(r).detach().cpu().numpy()
+        affs = model.affs(r).detach().cpu().numpy()
 
         mols = [Chem.MolFromSmiles(s) for s in list(sampling_df['output smiles'])]
-        fig = Draw.MolsToGridImage(mols)
+        
         """
+        fig = Draw.MolsToGridImage(mols)
         for m in mols:
             fig = Draw.MolToMPL(m, size = (100,100))
         """

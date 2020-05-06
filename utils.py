@@ -155,6 +155,12 @@ def QED_oracle(smiles):
             t[i] = QED.qed(m)
     return t
 
+def isValid(smiles):
+    m=Chem.MolFromSmiles(smiles)
+    if m==None:
+        return 0
+    return 1
+
 
 # ================= Pytorch utils ================================
 
@@ -219,9 +225,13 @@ def log_reconstruction(true_idces, probas, idx_to_char, string_type='smiles'):
         frac_valid = np.mean(valid)
         return df, frac_valid
     else:
+        smiles = [decoder(out) for out in out_smiles]
+        valid = [Chem.MolFromSmiles(s) for s in smiles]
+        valid = [int(m != None) for m in valid]
+        frac_valid = np.mean(valid)
         for i in range(3):  # printing only 3 samples
             print(decoder(in_smiles[i]), ' => ', decoder(out_smiles[i]))
-        return 0, 0
+        return 0, frac_valid
 
 
 def log_smiles_from_indices(true_idces, out_idces, idx_to_char):

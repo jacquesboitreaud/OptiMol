@@ -71,7 +71,7 @@ def pca_plot_color(z, pca, color, label):
     plt.xlabel('PC 1')
     plt.ylabel('PC 2')
     
-def pca_plot_hue(z, variable, pca):
+def pca_plot_hue(z,  pca, variable, label):
     """ Applies fitted PCA on latent batch z (N * ldim) and plots colored according to variable """
     z2 = pca.transform(z)
     
@@ -80,7 +80,7 @@ def pca_plot_hue(z, variable, pca):
     
     chosen='YlGnBu_r'
     
-    ax=sns.scatterplot(x=z2[:,0], y=z2[:,1], s=15, hue = variable, palette = chosen)
+    ax=sns.scatterplot(x=z2[:,0], y=z2[:,1], s=15, hue = variable, palette = chosen, label = label)
     #plt.title("Latent embeddings visualized in 2D PCA space")
     plt.xlabel('PC 1')
     plt.ylabel('PC 2')
@@ -90,7 +90,7 @@ def pca_plot_hue(z, variable, pca):
         # truncate label text to 4 characters
         if(i>0):
             t.set_text(t.get_text()[:4])
-    plt.show()
+    return ax 
     
     
     
