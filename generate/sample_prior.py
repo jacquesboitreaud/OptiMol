@@ -67,17 +67,21 @@ if __name__ == "__main__":
 
             # Sequence of ints to smiles 
             if not args.use_beam :
-                smiles = model.probas_to_smiles(gen_seq)
+                selfies = model.probas_to_smiles(gen_seq)
             else:
-                smiles = model.beam_out_to_smiles(gen_seq)
+                selfies = model.beam_out_to_smiles(gen_seq)
 
             if args.vocab == 'selfies' :
-                smiles = [decoder(s) for s in smiles]
+                smiles = [decoder(s) for s in selfies]
 
             compounds += smiles
             mols = [Chem.MolFromSmiles(s) for s in smiles]
-            mols = [m for m in mols if m!=None]
-            cpt+=len(mols) # nbr valid compounds in batch 
+            for i,m in enumerate(mols) :
+                if m==None:
+                    print(smiles[i], ' , invalid, selfies output was : ')
+                    print(selfies[i])
+                else:
+                    cpt +=1
 
     Ntot = len(compounds)
     unique = list(np.unique(compounds))

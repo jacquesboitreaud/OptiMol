@@ -23,25 +23,28 @@ import numpy as np
 import pickle
 import json
 import networkx as nx
-import selfies
+from selfies import encoder, decoder
 from ordered_set import OrderedSet
 
-from torch.utils.data import Dataset, DataLoader, Subset
+from torch.utils.data import Dataset, DataLoader
 from data_processing.rdkit_to_nx import smiles_to_nx
 
 
 def collate_block(samples):
     """
     Collates samples into batches.  
+      removes 'None' graphs (reduces batch size)
     """
 
+    samples = [s for s in samples if s[0]!=None]
     
-    graphs, smiles, p_labels, a_labels = map(list, zip(*samples))
+    graphs, selfies,w = map(list, zip(*samples))
     batched_graph = dgl.batch(graphs)
 
-    smiles = torch.tensor(smiles, dtype=torch.long)
+    selfies = torch.tensor(selfies, dtype=torch.long)
+    w = torch.tensor(w, dtype=torch.float)
 
-    return batched_graph, smiles
+    return batched_graph, selfies, w
 
 
 def oh_tensor(category, n): 
@@ -51,17 +54,15 @@ def oh_tensor(category, n):
     return t
 
 
-class Dataset(Dataset):
+class SimpleDataset(Dataset):
     """ 
     pytorch Dataset for training on small molecules graphs + smiles 
     """
 
-    def __init__(self, smiles,
+    def __init__(self, 
                  maps_path,
                  vocab):
 
-
-        self.pass_smiles_list(smiles)
         
         # =========== 2/ Graphs handling ====================
 
@@ -102,11 +103,19 @@ class Dataset(Dataset):
 
         print(f"> Loaded alphabet. Using {self.language}. Max sequence length allowed is {self.max_len}")
 
-    def pass_smiles_list(self, smiles):
+    def pass_smiles_list(self, smiles, weights):
         # pass smiles list to the model; a dataframe with unique column 'can' will be created 
-        self.df = pd.DataFrame.from_dict({'smiles': smiles})
+        self.df = pd.DataFrame.from_dict({'smiles': smiles, 'weights':weights})
         self.n = self.df.shape[0]
-        print('New dataset contains only smiles // no props or affinities')
+        print('New dataset contains smiles and sample weights')
+        self.input_type='smiles'
+        
+    def pass_selfies_list(self, selfies, weights):
+        # pass smiles list to the model; a dataframe with unique column 'can' will be created 
+        self.df = pd.DataFrame.from_dict({'selfies': selfies, 'weights':weights})
+        self.n = self.df.shape[0]
+        print('New dataset contains selfies and sample weights')
+        self.input_type = 'selfies'
 
     def __len__(self):
         return self.n
@@ -183,7 +192,13 @@ class Dataset(Dataset):
 
         row = self.df.iloc[idx,:]
         
-        smiles = row.smiles # needed anyway to build graph 
+        if self.input_type =='smiles':
+            smiles = row.smiles # needed anyway to build graph 
+        elif self.input_type =='selfies':
+            selfies = row.selfies # needed anyway to build graph 
+            smiles = decoder(selfies)
+            
+        w = row.weights
         
         # 1 - Graph building
         graph = smiles_to_nx(smiles)
@@ -228,66 +243,31 @@ class Dataset(Dataset):
         g_dgl.ndata['h'] = torch.cat([g_dgl.ndata[f].view(N,-1) for f in node_features], dim=1)
 
         # 2 - Smiles / selfies to integer indices array
-        string_representation = smiles
-        
-        if self.language == 'selfies':
-            selfies = row.selfies
-            string_representation = selfies
+        if self.language == 'selfies': # model works with selfies
+            
+            if self.input_type == 'smiles': # input to dataloader is smiles 
+                string_representation = encoder(smiles)
+            elif self.input_type =='selfies':
+                string_representation = selfies
+            
             a, valid_flag = self.selfies_to_hot(string_representation)
             if valid_flag ==0 : # no one hot encoding for this selfie, ignore 
-                print('!!! Selfie to one-hot failed with current alphabet')
-                return None, 0,0,0
+                print('!!! Selfie to one-hot failed with current alphabet:')
+                print(smiles)
+                return None, 0,0
             
-        else:
+        else: # model decodes to smiles 
+            string_representation = smiles
             a = np.zeros(self.max_len)
             idces = [self.char_to_index[c] for c in string_representation]
             a[:len(idces)] = idces
+        
+        
+            
+        
             
 
-        return g_dgl, a
-
-
-class SimpleLoader():
-    def __init__(self,
-                 smiles,
-                 maps_path ='../map_files/',
-                 vocab='selfies',
-                 batch_size=64,
-                 num_workers=12):
-        """
-        Loader for plain g2s vae training in cbas 
-        """
-
-        self.vocab = vocab
-        self.batch_size = batch_size
-        self.num_workers = num_workers
-        self.dataset = Dataset(smiles = smiles,
-                                  maps_path=maps_path, 
-                                  vocab=vocab)
-
-        self.num_edge_types, self.num_atom_types = self.dataset.num_edge_types, self.dataset.num_atom_types
-        self.num_charges = self.dataset.num_charges
-
-    def get_maps(self):
-        # Returns dataset mapping of edge and node features 
-        return self.dataset.edge_map, self.dataset.at_map, self.dataset.chi_map, self.dataset.charges_map
-
-    def get_reverse_maps(self):
-        # Returns maps of one-hot index to actual feature 
-        rev_em = {v: i for (i, v) in self.dataset.edge_map.items()}
-        rev_am = {v: i for (i, v) in self.dataset.at_map.items()}
-        rev_chi_m = {v: i for (i, v) in self.dataset.chi_map.items()}
-        rev_cm = {v: i for (i, v) in self.dataset.charges_map.items()}
-        return rev_em, rev_am, rev_chi_m, rev_cm
-
-    def get_data(self):
-
-        train_loader = DataLoader(dataset=self.dataset, shuffle=True, batch_size=self.batch_size,
-                                      num_workers=self.num_workers, collate_fn=collate_block, drop_last=True)
-
-
-        return train_loader
-
+        return g_dgl, a, w 
 
 if __name__ == '__main__':
      pass

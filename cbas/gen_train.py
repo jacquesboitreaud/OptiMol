@@ -16,76 +16,92 @@ import torch.optim.lr_scheduler as lr_scheduler
 import torch.nn.utils.clip_grad as clip
 import torch.nn.functional as F
 from torch.utils.tensorboard import SummaryWriter
+from torch.utils.data import Dataset, DataLoader
 
 script_dir = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(script_dir, '..'))
 
 from model import model_from_json
 from loss_func import CbASLoss
-from dataloaders.simple_loader import SimpleLoader
+from dataloaders.simple_loader import SimpleDataset, collate_block
 from utils import *
 
-def GenTrain(x ,w , model, savepath, epochs = 10):
+class GenTrain():
+    """ 
+    Wrapper for search model iterative training in CbAS
     """
-    Input : x a list of M inputs (smiles)
-            w an array of shape (M,) with weights assigned to each of the samples
-            init_model_dir : dir with initial model weights 
-            epochs : nbr of training epochs 
-            model_dir : directory to save update weights at the end of training 
-            
-    Output : None 
-    """
-    
-    device = model.device
-    
-    teacher_forcing = 0 
-    
-    # Optimizer 
-    lr0 = 1e-3
-    anneal_rate = 0.9
-    anneal_iter = 40000
-    optimizer = optim.Adam(model.parameters(), lr=lr0)
-    scheduler = lr_scheduler.ExponentialLR(optimizer, anneal_rate)
-    
-    # loader 
-    train_loader = SimpleLoader(x).get_data() # loader for given smiles 
 
-    # Training loop
-    total_steps=0 
-    for epoch in range(epochs):
-        print(f'Starting epoch {epoch}')
-        model.train()
+    def __init__(self, model_init_path, savepath, epochs, device, lr, clip_grad):
+        super(GenTrain, self).__init__()
         
-        for batch_idx, (graph, smiles, _, _) in enumerate(train_loader):
-            total_steps += 1  # count training steps
-
-            smiles = smiles.to(device)
-            graph = send_graph_to_device(graph, device)
-
-            # Forward pass
-            mu, logv, _, out_smi, out_p, out_a = model(graph, smiles, tf=teacher_forcing) # no tf 
-
-            # Compute CbAS loss with samples weights 
-            loss = CbASLoss(out_smi, smiles, mu, logv, w)
-
-            optimizer.zero_grad()
-            loss.backward()
-            del loss
-            clip.clip_grad_norm_(model.parameters(), 50)
-            optimizer.step()
-
-            # Annealing KL and LR
-            if total_steps % anneal_iter == 0:
-                scheduler.step()
-                print("learning rate: %.6f" % scheduler.get_lr()[0])
-                
+        self.model = model_from_json(model_init_path)
+        self.savepath =savepath
+        soft_mkdir(self.savepath) # create dir to save the search model 
+        self.device = device
+        self.model.to(self.device)
+        self.n_epochs = epochs
+        
+        self.teacher_forcing = 0 
+        # Optimizer 
+        self.lr0 = lr
+        self.anneal_rate = 0.9
+        self.anneal_iter = 40000
+        self.clip_grads = clip_grad
+        self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr0)
+        self.scheduler = lr_scheduler.ExponentialLR(self.optimizer, self.anneal_rate)
+        
+        # loader 
+        self.dataset = SimpleDataset(maps_path = '../map_files', vocab = 'selfies')
+        
+    def step(self, input_type, x , w):
+        """ 
+        Trains the model for n_epochs on samples x, weighted by w 
+        input type : 'selfies' or 'smiles', for dataloader (validity checks and format conversions are different)
+        """
+        
+        if input_type =='smiles':
+            self.dataset.pass_smiles_list( x,w)
+        elif input_type =='selfies':
+            self.dataset.pass_selfies_list( x,w)
+        
+        train_loader = DataLoader(dataset=self.dataset, shuffle=True, batch_size=64,
+                                      num_workers=8, collate_fn=collate_block, drop_last=False)
+        # Training loop
+        total_steps=0 
+        for epoch in range(self.n_epochs):
+            print(f'Starting epoch {epoch}')
+            self.model.train()
+            
+            for batch_idx, (graph, smiles, w_i) in enumerate(train_loader):
+                total_steps += 1  # count training steps
     
-    # Update weights at 'save_model_weights' : 
-    print(f'Finished training at step {total_steps}. Saving model weights')
-    model.cpu()
-    torch.save(model.state_dict(), os.path.join(search_model, "weights.pth"))
+                smiles = smiles.to(self.device)
+                graph = send_graph_to_device(graph, self.device)
+                w_i=w_i.to(self.device)
     
-    return
+                # Forward pass
+                mu, logv, _, out_smi, out_p, out_a = self.model(graph, smiles, tf=self.teacher_forcing) # no tf 
+    
+                # Compute CbAS loss with samples weights 
+                loss = CbASLoss(out_smi, smiles, mu, logv, w_i)
+    
+                self.optimizer.zero_grad()
+                loss.backward()
+                del loss
+                clip.clip_grad_norm_(self.model.parameters(), self.clip_grads)
+                self.optimizer.step()
+    
+                # Annealing KL and LR
+                if total_steps % self.anneal_iter == 0:
+                    self.scheduler.step()
+                    print("learning rate: %.6f" % self.scheduler.get_lr()[0])
+                    
+        
+        # Update weights at 'save_model_weights' : 
+        print(f'Finished training after {total_steps} optimizer steps. Saving search model weights')
+        self.model.cpu()
+        torch.save(self.model.state_dict(), os.path.join(self.savepath, "weights.pth"))
+        self.model.to(self.device)
 
         
         

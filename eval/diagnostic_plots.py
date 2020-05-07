@@ -39,7 +39,7 @@ from sklearn.decomposition import PCA
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--name', help="Name of saved model directory, in /results/saved_models",
-                    default='kl1M180k')
+                    default='kekule')
 parser.add_argument('-i', '--test_set', help="Test molecules file, in /data",
                     default='moses_scored_valid.csv')
 parser.add_argument('-N', '--n_mols', help="Number of molecules, set to -1 for all in csv ", type = int, 
@@ -52,6 +52,7 @@ if __name__ == "__main__":
 
     from eval.eval_utils import *
     from utils import *
+    from dgl_utils import * 
 
     # Should be same as for training
     properties = ['QED', 'logP', 'molWt']
