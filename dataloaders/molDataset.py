@@ -23,8 +23,9 @@ import numpy as np
 import pickle
 import json
 import networkx as nx
-import selfies
+from selfies import encoder, decoder
 from ordered_set import OrderedSet
+from rdkit import Chem
 
 from torch.utils.data import Dataset, DataLoader, Subset
 from data_processing.rdkit_to_nx import smiles_to_nx
@@ -294,8 +295,10 @@ class molDataset(Dataset):
         string_representation = smiles
         
         if self.language == 'selfies':
-            selfies = row.selfies
-            string_representation = selfies
+            #m=Chem.MolFromSmiles(smiles)
+            #Chem.Kekulize(m)
+            #selfies = encoder(Chem.MolToSmiles(m, kekuleSmiles=True))
+            string_representation = row.selfies
             a, valid_flag = self.selfies_to_hot(string_representation)
             if valid_flag ==0 : # no one hot encoding for this selfie, ignore 
                 print('!!! Selfie to one-hot failed with current alphabet')

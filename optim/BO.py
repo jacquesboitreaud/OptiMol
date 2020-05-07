@@ -22,6 +22,7 @@ import pandas as pd
 if __name__ == "__main__":
     script_dir = os.path.dirname(os.path.realpath(__file__))
     sys.path.append(os.path.join(script_dir, '..'))
+    sys.path.append(os.path.join(script_dir, 'docking'))
 
 import pickle
 import torch.utils.data
@@ -53,7 +54,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument( '--name', help="saved model weights fname. Located in saved_models subdir",
-                        default='inference_default')
+                        default='kekule')
     parser.add_argument('-n', "--n_steps", help="Nbr of optim steps", type=int, default=50)
     parser.add_argument('-v', '--vocab', default='selfies') # vocab used by model 
     
@@ -64,6 +65,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # ==============
+    """
+    TODO: make it clearer about what goes to gpu and what does not. 
+    VAE is on GPU, decoding and aff prediction with MLP are on GPU, but Gaussian process operations on CPU. """
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     # Loader for initial sample
@@ -82,7 +86,7 @@ if __name__ == "__main__":
     
     d = model.l_size
     dtype = torch.float
-    bounds = torch.tensor([[-3.0] * d, [3.0] * d], device=device, dtype=dtype)
+    bounds = torch.tensor([[-3.0] * d, [3.0] * d], device='cpu', dtype=dtype)
     BO_BATCH_SIZE = 10
     N_STEPS = args.n_steps
     MC_SAMPLES = 2000
@@ -96,16 +100,16 @@ if __name__ == "__main__":
     df = pd.read_csv(os.path.join(script_dir,'data','moses_scored_valid.csv'), nrows = 400) # 100 Initial samples 
     
     loader.graph_only=True
-    train_z = torch.tensor(model.embed( loader, df)).to(device) # z has shape (N_molecules, latent_size)
+    train_z = torch.tensor(model.embed( loader, df)) # z has shape (N_molecules, latent_size)
     
     if args.objective == 'qed':
         scores_init = torch.tensor([Chem.QED.qed(Chem.MolFromSmiles(s)) for s in df.smiles]).view(-1,1).to(device)
     elif args.objective == 'aff_pred':
         with torch.no_grad():
-            scores_init = -1* model.affs(train_z) # careful, maximize -aff <=> minimize binding energy (negative value)
+            scores_init = -1* model.affs(train_z.to(device)).cpu() # careful, maximize -aff <=> minimize binding energy (negative value)
     elif args.objective == 'aff' : 
         PYTHONSH, VINA = set_path(args.server)
-        scores_init = -1* torch.tensor(df.drd3).view(-1,1).to(device) # careful, maximize -aff <=> minimize binding energy (negative value)
+        scores_init = -1* torch.tensor(df.drd3).view(-1,1).cpu() # careful, maximize -aff <=> minimize binding energy (negative value)
         
     best_value = torch.max(scores_init).item()
     best_observed.append(best_value)
@@ -121,8 +125,8 @@ if __name__ == "__main__":
         candidates, _ = optimize_acqf(
             acq_function=acq_func,
             bounds=torch.stack([
-                torch.zeros(d, dtype=dtype, device=device), 
-                torch.ones(d, dtype=dtype, device=device),
+                torch.zeros(d, dtype=dtype, device='cpu'), 
+                torch.ones(d, dtype=dtype, device='cpu'),
             ]),
             q=BO_BATCH_SIZE,
             num_restarts=10,
@@ -130,11 +134,11 @@ if __name__ == "__main__":
         )
     
         # observe new values 
-        new_z = unnormalize(candidates.detach(), bounds=bounds)
+        new_z = unnormalize(candidates.detach(), bounds=bounds).to(device)
         
         # Decode z into smiles
         with torch.no_grad():
-            gen_seq = model.decode(new_z)
+            gen_seq = model.decode(new_z.to(device))
             smiles = model.probas_to_smiles(gen_seq)
         if(args.vocab=='selfies'):
             smiles =[ decoder(s) for s in smiles]
@@ -173,6 +177,7 @@ if __name__ == "__main__":
     # run N_BATCH rounds of BayesOpt after the initial random batch
     # ========================================================================
     print('-> Invalid molecules get score 0.0')
+    samples_score = [] # avg score of new samples at each step 
     
     for iteration in range(N_STEPS):    
     
@@ -195,15 +200,15 @@ if __name__ == "__main__":
         print(new_score.numpy())
     
         # update training points
-        new_z.to(device)
-        new_score = new_score.to(device)
         
         train_smiles+= new_smiles 
-        train_z = torch.cat((train_z, new_z), dim=0)
+        train_z = torch.cat((train_z, new_z.cpu()), dim=0)
         train_obj = torch.cat((train_obj, new_score), dim=0)
     
         # update progress
+        avg_score = torch.mean(new_score).item()
         best_value, idx = torch.max(train_obj,0)
+        samples_score.append(avg_score)
         best_observed.append(best_value.item())
         idx = idx.item()
         best_smiles = train_smiles[idx]
@@ -211,5 +216,6 @@ if __name__ == "__main__":
         state_dict = GP_model.state_dict()
         
         
-        print(f'current best mol: {best_smiles}, with oracle score {best_value}')
+        print(f'current best mol: {best_smiles}, with oracle score {best_value.item()}')
+        print(f'average score of fresh samples at iter {iteration}: {avg_score}')
         print("\n")
