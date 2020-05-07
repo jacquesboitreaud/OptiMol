@@ -35,7 +35,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--name', help="Saved model directory, in /results/saved_models",
-                        default='kekule')
+                        default='inference_default')
     
     parser.add_argument('-N', "--n_mols", help="Nbr to generate", type=int, default=20000)
     parser.add_argument('-v', '--vocab', default='selfies')  # vocab used by model

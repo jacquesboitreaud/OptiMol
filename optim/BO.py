@@ -61,11 +61,11 @@ if __name__ == "__main__":
     parser.add_argument( '--name', help="saved model weights fname. Located in saved_models subdir",
                         default='inference_default')
     parser.add_argument('-n', "--n_steps", help="Nbr of optim steps", type=int, default=50)
-    parser.add_argument('-q', "--n_queries", help="Nbr of queries per step", type=int, default=100)
+    parser.add_argument('-q', "--n_queries", help="Nbr of queries per step", type=int, default=50)
     
-    parser.add_argument('-o', '--objective', default='aff_pred') # 'qed', 'aff', 'aff_pred'
+    parser.add_argument('-o', '--objective', default='aff') # 'qed', 'aff', 'aff_pred'
     
-    parser.add_argument('-e', "--ex", help="Docking exhaustiveness (vina)", type=int, default=16) 
+    parser.add_argument('-e', "--ex", help="Docking exhaustiveness (vina)", type=int, default=32) 
     parser.add_argument('-s', "--server", help="COmputer used, to set paths for vina", type=str, default='rup')
     
     parser.add_argument('-v', "--verbose", help="print new scores at each iter", action = 'store_true', default=False)
@@ -163,7 +163,7 @@ if __name__ == "__main__":
             if args.objective == 'aff':
                 new_scores = torch.zeros((BO_BATCH_SIZE,1), dtype=torch.float)
                 for i in range(len(smiles)):
-                    _,sc = dock(smiles[i], i, PYTHONSH, VINA, exhaustiveness = args.ex )
+                    sc = dock(smiles[i], i, PYTHONSH, VINA, exhaustiveness = args.ex )
                     new_scores[i,0]=sc
                 new_scores = -1* new_scores
                 
@@ -245,7 +245,7 @@ if __name__ == "__main__":
     
     with open(os.path.join('bo_results',args.bo_name,'top_samples.txt'), 'w') as f :
         for i in idces :
-            f.write(train_smiles[i], ',  ', train_obj[i] )
+            f.write(train_smiles[i], ',  ', train_obj[i].item() )
     print('wrote top samples and scores to txt. ')
 
     
