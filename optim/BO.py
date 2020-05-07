@@ -56,25 +56,30 @@ if __name__ == "__main__":
     parser.add_argument( '--name', help="saved model weights fname. Located in saved_models subdir",
                         default='kekule')
     parser.add_argument('-n', "--n_steps", help="Nbr of optim steps", type=int, default=50)
-    parser.add_argument('-v', '--vocab', default='selfies') # vocab used by model 
+    parser.add_argument('-q', "--n_queries", help="Nbr of queries per step", type=int, default=50)
     
     parser.add_argument('-o', '--objective', default='aff_pred') # 'qed', 'aff', 'aff_pred'
     
     parser.add_argument('-e', "--ex", help="Docking exhaustiveness (vina)", type=int, default=16) 
     parser.add_argument('-s', "--server", help="COmputer used, to set paths for vina", type=str, default='rup')
+    
+    parser.add_argument('-v', "--verbose", help="print new scores at each iter", action = 'store_true', default=False)
     args = parser.parse_args()
 
     # ==============
     """
     TODO: make it clearer about what goes to gpu and what does not. 
-    VAE is on GPU, decoding and aff prediction with MLP are on GPU, but Gaussian process operations on CPU. """
+    VAE is on GPU, decoding and aff prediction with MLP are on GPU, but Gaussian process operations on CPU 
+    (if training set of gaussian process becomes big after some steps, may not fit on gpu 
+    """
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    vocab = 'selfies'
     # Loader for initial sample
     loader = Loader(props=[], 
                     targets=[], 
                     csv_path = None,
-                    vocab=args.vocab, 
+                    vocab=vocab, 
                     num_workers = 0,
                     test_only=True)
 
@@ -87,7 +92,7 @@ if __name__ == "__main__":
     d = model.l_size
     dtype = torch.float
     bounds = torch.tensor([[-3.0] * d, [3.0] * d], device='cpu', dtype=dtype)
-    BO_BATCH_SIZE = 10
+    BO_BATCH_SIZE = args.n_queries
     N_STEPS = args.n_steps
     MC_SAMPLES = 2000
     
@@ -140,7 +145,7 @@ if __name__ == "__main__":
         with torch.no_grad():
             gen_seq = model.decode(new_z.to(device))
             smiles = model.probas_to_smiles(gen_seq)
-        if(args.vocab=='selfies'):
+        if vocab=='selfies' :
             smiles =[ decoder(s) for s in smiles]
         
         if BO_BATCH_SIZE > 1 : # query a batch of smiles 
@@ -180,7 +185,7 @@ if __name__ == "__main__":
     samples_score = [] # avg score of new samples at each step 
     
     for iteration in range(N_STEPS):    
-    
+        print(f'Iter [{iteration}/{N_STEPS}]')
         # fit the model
         GP_model = get_fitted_model(
             normalize(train_z, bounds=bounds), 
@@ -196,8 +201,9 @@ if __name__ == "__main__":
         new_smiles, new_z, new_score = optimize_acqf_and_get_observation(qEI, device)
         
         # save acquired scores for next time 
-        print('Iter n° ', iteration, '/', N_STEPS, ' oracle outputs:')
-        print(new_score.numpy())
+        if(args.verbose):
+            print(' oracle outputs:')
+            print(new_score.numpy())
     
         # update training points
         
