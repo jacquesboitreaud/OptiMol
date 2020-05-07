@@ -1,8 +1,8 @@
 __pycache__
 *.csv
-runs
 model_backups
 data_curation
 eval/plots
 data/
 results/
+optim/bo_results

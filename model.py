@@ -34,6 +34,7 @@ from dgl.nn.pytorch.glob import SumPooling
 from dgl.nn.pytorch.conv import GATConv, RelGraphConv
 
 from utils import *
+from dgl_utils import * 
 
 
 class MultiGRU(nn.Module):

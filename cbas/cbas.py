@@ -22,6 +22,7 @@ from selfies import decoder
 from rdkit import Chem
 
 from utils import *
+from dgl_utils import * 
 from model import model_from_json
 from oracles import qed, deterministic_cdf_oracle, normal_cdf_oracle
 from gen_train import GenTrain

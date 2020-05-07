@@ -52,6 +52,7 @@ if __name__ == "__main__":
 
     from eval.eval_utils import *
     from utils import *
+    from dgl_utils import * 
 
     # Should be same as for training
     properties = ['QED', 'logP', 'molWt']
