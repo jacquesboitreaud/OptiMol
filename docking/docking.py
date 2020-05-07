@@ -11,8 +11,7 @@ import csv
 script_dir = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(script_dir, '..'))
 
-if __name__ == '__main__':
-    from utils import soft_mkdir
+from utils import soft_mkdir
 
 RECEPTOR_PATH = os.path.join(script_dir, 'data_docking/drd3.pdbqt')
 CONF_PATH = os.path.join(script_dir, 'data_docking/conf.txt')
