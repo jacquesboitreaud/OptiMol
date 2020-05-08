@@ -66,7 +66,7 @@ class GenTrain():
             self.dataset.pass_selfies_list( x,w)
         
         train_loader = DataLoader(dataset=self.dataset, shuffle=True, batch_size=64,
-                                      num_workers=8, collate_fn=collate_block, drop_last=False)
+                                      num_workers=8, collate_fn=collate_block, drop_last=True)
         # Training loop
         total_steps=0 
         for epoch in range(self.n_epochs):
