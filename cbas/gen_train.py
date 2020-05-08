@@ -85,6 +85,8 @@ class GenTrain():
     
                 # Compute CbAS loss with samples weights 
                 loss = CbASLoss(out_smi, smiles, mu, logv, w_i)
+                if(batch_idx==0):
+                    print(f'CbAS Loss at batch 0 : {loss.item()}')
     
                 self.optimizer.zero_grad()
                 loss.backward()

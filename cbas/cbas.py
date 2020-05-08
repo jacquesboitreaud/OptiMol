@@ -47,7 +47,7 @@ if __name__ == '__main__':
     
     # Params of the search-model finetuning (seems sensitive)
     parser.add_argument('--epochs', type=int, default=10) # Number of iterations
-    parser.add_argument('--learning_rate', type=int, default=1e-5) # Number of iterations
+    parser.add_argument('--learning_rate', type=int, default=1e-4) # Number of iterations
     parser.add_argument('--clip_grad_norm', type=float, default=5.0) # quantile of scores accepted
     
     # =======
