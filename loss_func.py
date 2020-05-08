@@ -94,5 +94,8 @@ def CbASLoss(out, indices, mu, logvar, w):
     CE = torch.sum(CE, dim = 1) # shape (N,)
     KL = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp(), dim=2).squeeze() # to shape (N,)
     
+    print(w)
+    l = torch.sum(w*(CE + 0.5*KL))
+    print(l)
 
-    return torch.sum(w*(CE + 0.5*KL)) # elementwise product // 0.5 is the same KL weight as used for VAE training, otherwise KL vanishing and poor reconstruction
+    return l # elementwise product // 0.5 is the same KL weight as used for VAE training, otherwise KL vanishing and poor reconstruction
