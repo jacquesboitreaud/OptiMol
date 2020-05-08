@@ -25,6 +25,7 @@ from model import model_from_json
 from loss_func import CbASLoss
 from dataloaders.simple_loader import SimpleDataset, collate_block
 from utils import *
+from dgl_utils import *
 
 class GenTrain():
     """ 

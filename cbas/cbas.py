@@ -34,7 +34,7 @@ if __name__ == '__main__':
     
     parser = argparse.ArgumentParser()
     
-    parser.add_argument('--prior_name', type=str, default='kekule') # the prior VAE (pretrained)
+    parser.add_argument('--prior_name', type=str, default='inference_default') # the prior VAE (pretrained)
     parser.add_argument('--search_name', type=str, default='search_vae') # the prior VAE (pretrained)
     
     parser.add_argument('--oracle', type=str, default='qed') # qed for toy oracle, 'aff' for docking 

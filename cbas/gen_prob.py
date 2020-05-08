@@ -36,6 +36,7 @@ def GenProb(x,z, model):
 if __name__=='__main__':
     
     from utils import *
+    from dgl_utils import *
     from model import model_from_json
     import numpy as np
     
