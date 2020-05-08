@@ -91,11 +91,11 @@ def CbASLoss(out, indices, mu, logvar, w):
     """
     
     CE = F.cross_entropy(out, indices, reduction="none")
-    CE = torch.sum(CE, dim = 1) # shape (N,)
+    CE = torch.mean(CE, dim = 1) # shape (N,)
     KL = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp(), dim=2).squeeze() # to shape (N,)
     
     print(w)
-    l = torch.sum(w*(CE + 0.5*KL))
+    l = torch.mean(w*(CE + 0.5*KL))
     print(l)
 
     return l # elementwise product // 0.5 is the same KL weight as used for VAE training, otherwise KL vanishing and poor reconstruction
