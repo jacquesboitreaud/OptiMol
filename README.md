@@ -7,7 +7,6 @@ Required :
 - dgl 
 - pandas 
 - moses to get the data (pip install molsets)
-- selfies (pip install selfies)
 - rdkit
 - tqdm
  -ordered-sets ( pip install ordered-set )

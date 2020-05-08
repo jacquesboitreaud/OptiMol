@@ -72,7 +72,7 @@ if __name__ == "__main__":
                 selfies = model.beam_out_to_smiles(gen_seq)
 
             if args.vocab == 'selfies' :
-                smiles = [decoder(s) for s in selfies]
+                smiles = [decoder(s, bilocal_ring_function=True) for s in selfies]
 
             compounds += smiles
             mols = [Chem.MolFromSmiles(s) for s in smiles]
