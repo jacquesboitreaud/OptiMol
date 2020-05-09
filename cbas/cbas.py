@@ -118,7 +118,7 @@ if __name__ == '__main__':
             if m!=None and weights[i]>0: # get rid of all samples with weight 0 (do not count in CbAS loss)
                 good_indices.append(i)
                 
-        sample_selfies = [sample_selfies[i] for i in good_indices]
+        samples = [samples[i] for i in good_indices]
         weights = weights[good_indices]
                 
         print(f'{len(good_indices)}/{args.M} samples kept')
