@@ -40,6 +40,8 @@ if __name__ == '__main__':
     parser.add_argument('--oracle', type=str, default='qed') # qed for toy oracle, 'aff' for docking 
     parser.add_argument('--computer', type=str, default='rup') # Computer to use for docking 
     
+    parser.add_argument('--procs', type=int, default=0) # Number of processes for VAE dataloading 
+    
     parser.add_argument('--iters', type=int, default=50) # Number of iterations
     parser.add_argument('--Q', type=float, default=0.8) # quantile of scores accepted
 
@@ -65,7 +67,7 @@ if __name__ == '__main__':
     # Initialize search vae q
     savepath = os.path.join(script_dir,'results/saved_models',args.search_name)
     searchTrainer = GenTrain(args.prior_name, savepath, epochs = args.epochs, device=device, 
-                             lr = args.learning_rate, clip_grad = args.clip_grad_norm)
+                             lr = args.learning_rate, clip_grad = args.clip_grad_norm, processes = args.procs)
     
     # Docking params 
     if args.oracle == 'aff' : 

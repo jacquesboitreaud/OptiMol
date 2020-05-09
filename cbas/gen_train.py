@@ -32,7 +32,7 @@ class GenTrain():
     Wrapper for search model iterative training in CbAS
     """
 
-    def __init__(self, model_init_path, savepath, epochs, device, lr, clip_grad):
+    def __init__(self, model_init_path, savepath, epochs, device, lr, clip_grad, processes = 8):
         super(GenTrain, self).__init__()
         
         self.model = model_from_json(model_init_path)
@@ -41,6 +41,8 @@ class GenTrain():
         self.device = device
         self.model.to(self.device)
         self.n_epochs = epochs
+        
+        self.processes = processes
         
         self.teacher_forcing = 0 
         # Optimizer 
@@ -66,7 +68,7 @@ class GenTrain():
             self.dataset.pass_selfies_list( x,w)
         
         train_loader = DataLoader(dataset=self.dataset, shuffle=True, batch_size=64,
-                                      num_workers=8, collate_fn=collate_block, drop_last=True)
+                                      num_workers=self.processes, collate_fn=collate_block, drop_last=True)
         # Training loop
         total_steps=0 
         for epoch in range(self.n_epochs):
