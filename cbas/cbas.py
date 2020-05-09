@@ -86,6 +86,7 @@ if __name__ == '__main__':
             gen_seq = searchTrainer.model.decode(batch_z)
             _ , sample_indices = torch.max(gen_seq, dim=1)
             sample_selfies += searchTrainer.model.indices_to_smiles(sample_indices)
+            
             # Compute weights while we have indices and store them: p(x|z, theta)/p(x|z, phi)
             weights.append(GenProb(sample_indices, batch_z, prior_model) / GenProb(sample_indices, batch_z, searchTrainer.model))
             
@@ -124,7 +125,7 @@ if __name__ == '__main__':
         
         
         # Update search model 
-        searchTrainer.step('selfies', sample_selfies, weights)
+        searchTrainer.step('smiles', samples, weights)
 
         # Get some prints and repeat 
     

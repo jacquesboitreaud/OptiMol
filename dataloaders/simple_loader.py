@@ -19,6 +19,7 @@ import torch
 import dgl
 import pandas as pd
 import numpy as np
+from rdkit import Chem
 
 import pickle
 import json
@@ -246,7 +247,9 @@ class SimpleDataset(Dataset):
         if self.language == 'selfies': # model works with selfies
             
             if self.input_type == 'smiles': # input to dataloader is smiles 
-                string_representation = encoder(smiles)
+                m=Chem.MolFromSmiles(smiles)
+                Chem.Kekulize(m)
+                string_representation = encoder(Chem.MolToSmiles(smiles, kekuleSmiles=True))
             elif self.input_type =='selfies':
                 string_representation = selfies
             

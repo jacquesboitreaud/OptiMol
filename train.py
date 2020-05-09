@@ -295,6 +295,8 @@ if __name__ == "__main__":
                 mu, logv, z, out_smi, out_p, out_a = model(graph, smiles, tf=tf_proba)
 
                 # Compute loss : change according to multitask
+                
+                rec, kl = VAELoss(out_smi, smiles, mu, logv)
                 if not use_affs and not use_props:  # VAE only
                     pmse, amse = torch.tensor(0), torch.tensor(0)
                 elif use_props and not use_affs:
