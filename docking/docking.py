@@ -4,7 +4,11 @@ import os
 import argparse
 from time import time
 import numpy as np
-import pybel
+try:
+    import pybel
+except:
+    import openbabel
+    from openbabel import pybel 
 import shutil
 import csv
 

@@ -40,6 +40,7 @@ def collate_block(samples):
     samples = [s for s in samples if s[0]!=None]
     
     graphs, selfies,w = map(list, zip(*samples))
+
     batched_graph = dgl.batch(graphs)
 
     selfies = torch.tensor(selfies, dtype=torch.long)
@@ -62,7 +63,9 @@ class SimpleDataset(Dataset):
 
     def __init__(self, 
                  maps_path,
-                 vocab):
+                 vocab, debug = False):
+        
+        self.debug = False # error prints for invalid smiles / mols
 
         
         # =========== 2/ Graphs handling ====================
@@ -246,15 +249,17 @@ class SimpleDataset(Dataset):
         # 2 - Smiles / selfies to integer indices array
         if self.language == 'selfies': # model works with selfies
             
-            if self.input_type == 'smiles': # input to dataloader is smiles 
+            if self.input_type == 'smiles': # input to dataloader is smiles// get kekulesmiles selfie
                 m=Chem.MolFromSmiles(smiles)
                 Chem.Kekulize(m)
-                string_representation = encoder(Chem.MolToSmiles(smiles, kekuleSmiles=True))
+                string_representation = encoder(Chem.MolToSmiles(m, kekuleSmiles=True))
+                
             elif self.input_type =='selfies':
                 string_representation = selfies
             
             a, valid_flag = self.selfies_to_hot(string_representation)
-            if valid_flag ==0 : # no one hot encoding for this selfie, ignore 
+            
+            if valid_flag ==0 and self.debug : # no one hot encoding for this selfie, ignore 
                 print('!!! Selfie to one-hot failed with current alphabet:')
                 print(smiles)
                 return None, 0,0
@@ -264,11 +269,6 @@ class SimpleDataset(Dataset):
             a = np.zeros(self.max_len)
             idces = [self.char_to_index[c] for c in string_representation]
             a[:len(idces)] = idces
-        
-        
-            
-        
-            
 
         return g_dgl, a, w 
 

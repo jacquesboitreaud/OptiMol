@@ -40,7 +40,7 @@ def plot_kde(z):
     # Plot formatting
     plt.title(f'KDE estimate for each latent dimension (n={z.shape[1]})')
     plt.xlabel('Z (unstandardized)')
-    plt.xlim((-0.3,0.3))
+    #plt.xlim((-0.3,0.3))
     plt.ylabel('Density')
 
 def similarity(smi1, smi2):

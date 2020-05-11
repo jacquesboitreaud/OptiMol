@@ -25,6 +25,9 @@ import torch.nn.functional as F
 from selfies import decoder
 from rdkit import Chem
 
+import seaborn as sns
+import matplotlib.pyplot as plt 
+
 
 if __name__ == "__main__":
     
@@ -35,13 +38,15 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--name', help="Saved model directory, in /results/saved_models",
-                        default='inference_default')
+                        default='search_vae')
     
-    parser.add_argument('-N', "--n_mols", help="Nbr to generate", type=int, default=20000)
+    parser.add_argument('-N', "--n_mols", help="Nbr to generate", type=int, default=2000)
     parser.add_argument('-v', '--vocab', default='selfies')  # vocab used by model
 
     parser.add_argument('-o', '--output_file', type=str, default='data/gen.txt')
     parser.add_argument('-b', '--use_beam', action='store_true', help="use beam search (slow!)")
+    
+    parser.add_argument( '--qed', action='store_true', help="plot qed distrib")
 
     args = parser.parse_args()
 
@@ -88,6 +93,12 @@ if __name__ == "__main__":
     N = len(unique)
     
     print(100*cpt/Ntot, '% valid molecules' )
+    print(100*N/Ntot, '% unique molecules' )
+    
+    if args.qed :
+        qed = [Chem.QED.qed(m) for m in mols]
+        sns.distplot(qed, norm_hist = True)
+        plt.title('QED distrib of samples')
 
     out = os.path.join(script_dir, args.output_file)
     with open(out, 'w') as f:

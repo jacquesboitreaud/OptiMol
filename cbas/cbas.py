@@ -42,14 +42,15 @@ if __name__ == '__main__':
     
     parser.add_argument('--procs', type=int, default=0) # Number of processes for VAE dataloading 
     
-    parser.add_argument('--iters', type=int, default=50) # Number of iterations
-    parser.add_argument('--Q', type=float, default=0.8) # quantile of scores accepted
+    parser.add_argument('--iters', type=int, default=25) # Number of iterations
+    parser.add_argument('--Q', type=float, default=0.6) # quantile of scores accepted
 
-    parser.add_argument('--M', type=int, default=10000) # Nbr of samples at each iter 
+    parser.add_argument('--M', type=int, default=1000) # Nbr of samples at each iter 
     
     # Params of the search-model finetuning (seems sensitive)
-    parser.add_argument('--epochs', type=int, default=10) # Number of iterations
+    parser.add_argument('--epochs', type=int, default=5) # Number of iterations
     parser.add_argument('--learning_rate', type=float, default=1e-4) # Number of iterations
+    parser.add_argument('--beta', type=float, default=0.2) # KL weight in loss function 
     parser.add_argument('--clip_grad_norm', type=float, default=5.0) # quantile of scores accepted
     
     # =======
@@ -67,7 +68,8 @@ if __name__ == '__main__':
     # Initialize search vae q
     savepath = os.path.join(script_dir,'results/saved_models',args.search_name)
     searchTrainer = GenTrain(args.prior_name, savepath, epochs = args.epochs, device=device, 
-                             lr = args.learning_rate, clip_grad = args.clip_grad_norm, processes = args.procs)
+                             lr = args.learning_rate, clip_grad = args.clip_grad_norm, beta = args.beta, 
+                             processes = args.procs, DEBUG = True)
     
     # Docking params 
     if args.oracle == 'aff' : 
@@ -93,6 +95,8 @@ if __name__ == '__main__':
             weights.append(GenProb(sample_indices, batch_z, prior_model) / GenProb(sample_indices, batch_z, searchTrainer.model))
             
         samples= [decoder(s) for s in sample_selfies]
+        unique_samples = np.unique(samples)
+        print(f'{unique_samples.shape[0]}/{args.M} unique smiles sampled')
         print(samples[:10]) # debugging 
         weights = torch.cat(weights, dim = 0)
         

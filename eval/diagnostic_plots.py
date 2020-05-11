@@ -24,6 +24,7 @@ import torch
 
 from rdkit import Chem
 from rdkit.Chem import Draw
+from rdkit import DataStructs
 from selfies import decoder
 
 import numpy as np
@@ -39,9 +40,9 @@ from sklearn.decomposition import PCA
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--name', help="Name of saved model directory, in /results/saved_models",
-                    default='kekule')
+                    default='search_vae')
 parser.add_argument('-i', '--test_set', help="Test molecules file, in /data",
-                    default='moses_scored_valid.csv')
+                    default='moses_test.csv')
 parser.add_argument('-N', '--n_mols', help="Number of molecules, set to -1 for all in csv ", type = int, 
                     default=1000)
 
@@ -49,6 +50,7 @@ args = parser.parse_args()
 if __name__ == "__main__":
     from dataloaders.molDataset import Loader
     from model import Model, model_from_json
+    from loss_func import VAELoss
 
     from eval.eval_utils import *
     from utils import *
@@ -97,14 +99,18 @@ if __name__ == "__main__":
     with torch.no_grad():
         for batch_idx, (graph, smiles, p_target, a_target) in enumerate(test_loader):
             graph = send_graph_to_device(graph, device)
+            smiles=smiles.to(device)
 
             # Latent embeddings
-            z = model.encode(graph, mean_only=True)  # z_shape = N * l_size
-            pred_p, pred_a = model.props(z), model.affs(z)
+            mu, logv, z, out, pred_p, pred_a = model(graph, smiles, tf=0 )
 
             # Decoding 
-            out = model.decode(z)
             v, indices = torch.max(out, dim=1)  # get indices of char with max probability
+            
+            # Evaluate loss 
+            rec, kl = VAELoss(out, indices, mu, logv)
+            print('Rec batch loss : ', rec)
+            print('KL batch loss : ', kl)
 
             # Decoding with beam search 
             """
@@ -229,18 +235,37 @@ if __name__ == "__main__":
         
         # Decode 
         out = model.decode(r)
-        v, indices = torch.max(out, dim=1)
-        indices = indices.cpu().numpy()
-        sampling_df, frac_valid, _ = log_smiles_from_indices(None, indices,
-                                                             loaders.dataset.index_to_char)
-
-        props = model.props(r).detach().cpu().numpy()
-        affs = model.affs(r).detach().cpu().numpy()
-
-        mols = [Chem.MolFromSmiles(s) for s in list(sampling_df['output smiles'])]
+        selfies = model.probas_to_smiles(out)
+        s = [decoder(se) for se in selfies]
         
+        # Unique smiles 
+        u = np.unique(s)
+        N_uniques = u.shape[0]
+        print(f'Number unique smiles in {Nsamples}: {N_uniques}')
+        
+
+        mols = [Chem.MolFromSmiles(smi) for smi in u]
+        mols = [m for m in mols if m!=None]
+        qed = [Chem.QED.qed(m) for m in mols]
+        fps = [Chem.RDKFingerprint(x) for x in mols]
+        
+        
+        fig = Draw.MolsToGridImage(mols[:100], legends = [f'{q:.2f}' for q in qed])
         """
-        fig = Draw.MolsToGridImage(mols)
         for m in mols:
             fig = Draw.MolToMPL(m, size = (100,100))
         """
+        
+        i1 = 1
+        
+        cpt=0.
+        cpt_similar = 0 
+        for i in range(len(fps)) :
+            sim = DataStructs.FingerprintSimilarity(fps[i1],fps[i], metric = DataStructs.TanimotoSimilarity)
+            cpt+=sim
+            if(sim >0.8):
+                cpt_similar +=1 
+        print(f'{cpt_similar} molecules with Tanimoto sim > 0.8 to mol n°{i1}')
+        print(f'{cpt/len(mols)} average similarity to seed molecule')
+        
+        

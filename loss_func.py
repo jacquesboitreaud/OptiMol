@@ -84,7 +84,7 @@ def pairwiseLoss(z_i, z_j, pair_label):
     # print(prod, pair_label)
     return CE
 
-def CbASLoss(out, indices, mu, logvar, w):
+def CbASLoss(out, indices, mu, logvar, w, beta=0.2):
     """ 
     CbAS loss function for VAE : weighted sum of - w_i * ELBO(x_i) 
     w : a tensor of shape (N,)
@@ -92,8 +92,11 @@ def CbASLoss(out, indices, mu, logvar, w):
     
     CE = F.cross_entropy(out, indices, reduction="none")
     CE = torch.mean(CE, dim = 1) # shape (N,)
-    KL = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp(), dim=2).squeeze() # to shape (N,)
+    KL = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp(), dim = 2).squeeze() # to shape (N,)
     
-    l = torch.mean(w*(CE + 0.1*KL))
+    #print('CE :', CE)
+    #print('KL :', KL)
+    
+    l = torch.sum(w*(CE + beta*KL))
 
     return l # elementwise product // 0.5 is the same KL weight as used for VAE training, otherwise KL vanishing and poor reconstruction

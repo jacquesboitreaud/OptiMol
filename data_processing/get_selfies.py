@@ -11,13 +11,13 @@ import argparse
 from tqdm import tqdm
 from multiprocessing import Pool
 from rdkit import Chem
+import os, sys
 
-# import time
+script_dir = os.path.dirname(os.path.realpath(__file__))
+sys.path.append(os.path.join(script_dir, '..'))
 
-try:
-    from selfies import encoder, decoder, selfies_alphabet
-except ImportError:
-    print('Please install selfies package by running "pip install selfies" ')
+from selfies import encoder, decoder, selfies_alphabet
+
 
 
 def process_one(s):
@@ -74,13 +74,15 @@ def add_selfies(path='data/moses_train.csv', serial=False, kekule = False):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-i', '--smiles_file', help="path to csv with dataset", type=str,
-                        default='data/moses_train.csv')
+                        default='data/moses_scored_valid.csv')
     parser.add_argument( '--k', help="Kekule smiles", action='store_true',
-                        default=False)
+                        default=True)
 
 
     # ======================
     args = parser.parse_args()
 
     print(f'>>> Computing selfies for all smiles in {args.smiles_file}. May take some time.')
+    if args.k:
+        print('Careful. Converting to kekule smiles before selfies encoding. ')
     add_selfies(args.smiles_file, kekule = args.k)
