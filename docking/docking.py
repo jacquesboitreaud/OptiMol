@@ -157,7 +157,10 @@ if __name__ == '__main__':
 
     dirname = os.path.join(script_dir, 'docking_results')
     if not os.path.isdir(dirname):
-        os.mkdir(dirname)
+        try:
+            os.mkdir(dirname)
+        except:
+            pass
 
     list_smiles, list_active, list_px50 = load_csv(os.path.join(script_dir, 'scores_archive/to_dock.csv'))
     N = len(list_smiles)
