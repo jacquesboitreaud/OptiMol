@@ -45,7 +45,7 @@ if __name__ == '__main__':
     parser.add_argument('--iters', type=int, default=25) # Number of iterations
     parser.add_argument('--Q', type=float, default=0.6) # quantile of scores accepted
 
-    parser.add_argument('--M', type=int, default=1000) # Nbr of samples at each iter 
+    parser.add_argument('--M', type=int, default=10000) # Nbr of samples at each iter 
     
     # Params of the search-model finetuning (seems sensitive)
     parser.add_argument('--epochs', type=int, default=5) # Number of iterations
@@ -62,7 +62,7 @@ if __name__ == '__main__':
     # Load or train prior VAE 
     
     prior_model = model_from_json(args.prior_name)
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    device = 'cpu' #'cuda' if torch.cuda.is_available() else 'cpu'
     prior_model.to(device)
     
     # Initialize search vae q

@@ -65,7 +65,7 @@ class SimpleDataset(Dataset):
                  maps_path,
                  vocab, debug = False):
         
-        self.debug = False # error prints for invalid smiles / mols
+        self.debug = debug # error prints for invalid smiles / mols
 
         
         # =========== 2/ Graphs handling ====================

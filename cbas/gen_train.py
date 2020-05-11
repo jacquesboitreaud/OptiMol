@@ -35,7 +35,7 @@ class GenTrain():
     Wrapper for search model iterative training in CbAS
     """
 
-    def __init__(self, model_init_path, savepath, epochs, device, lr, clip_grad, beta, processes = 8, DEBUG = False):
+    def __init__(self, model_init_path, savepath, epochs, device, lr, clip_grad, beta, processes = 8, DEBUG =False):
         super(GenTrain, self).__init__()
         
         self.model = model_from_json(model_init_path)
