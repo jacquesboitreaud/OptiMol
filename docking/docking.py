@@ -46,8 +46,10 @@ def prepare_receptor():
     subprocess.run(f"{PYTHONSH} prepare_receptor4.py -r drd3.pdb -o {RECEPTOR_PATH} -A hydrogens".split())
 
 
-def dock(smile, unique_id, pythonsh=None, vina=None, parallel=True, exhaustiveness=16):
-    """"""
+def dock(smile, unique_id, pythonsh=None, vina=None, parallel=True, exhaustiveness=16, mean = True):
+    """
+    mean = False : returns list of top 10 poses scores. 
+    """
 
     if pythonsh is None or vina is None:
         global PYTHONSH
@@ -88,9 +90,14 @@ def dock(smile, unique_id, pythonsh=None, vina=None, parallel=True, exhaustivene
             slines = [l for l in lines if l.startswith('REMARK VINA RESULT')]
             values = [l.split() for l in slines]
             # In each split string, item with index 3 should be the kcal/mol energy.
-            score = np.mean([float(v[3]) for v in values])
+            score = [float(v[3]) for v in values]
+            if mean :
+                score = np.mean(score)
     except:
-        score = 0
+        if mean :
+            score = 0
+        else:
+            score = [0]*10
     try:
         pass
         shutil.rmtree(tmp_path)
@@ -99,7 +106,7 @@ def dock(smile, unique_id, pythonsh=None, vina=None, parallel=True, exhaustivene
     return score
 
 
-def one_slurm(list_data, id, path, parallel=True, exhaustiveness=16):
+def one_slurm(list_data, id, path, parallel=True, exhaustiveness=16, mean = False):
     """
 
     :param list_data: (list_smiles, list_active, list_px50)
@@ -110,17 +117,19 @@ def one_slurm(list_data, id, path, parallel=True, exhaustiveness=16):
     :return:
     """
     list_smiles, list_active, list_px50 = list_data
+    header = ['smile', 'active', 'affinity']
+    for i in range(10):
+        header.append(f'score_{i}')
     with open(path, 'w', newline='') as csvfile:
-        csv.writer(csvfile).writerow(['smile', 'active', 'affinity', 'score'])
+        csv.writer(csvfile).writerow(header)
 
     for i, smile in enumerate(list_smiles):
-        score_smile = dock(smile, unique_id=id, parallel=parallel, exhaustiveness=exhaustiveness)
+        score_smile = dock(smile, unique_id=id, parallel=parallel, exhaustiveness=exhaustiveness, mean = mean )
         # score_smile = 0
         with open(path, 'a', newline='') as csvfile:
-            csv.writer(csvfile).writerow([smile,
-                                          list_active[i],
-                                          list_px50[i],
-                                          score_smile])
+            list_to_write = [smile,list_active[i],list_px50[i]]+score_smile
+            
+            csv.writer(csvfile).writerow(list_to_write)
 
 
 def load_csv(path='to_dock_shuffled.csv'):
@@ -138,7 +147,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-s", "--server", default='mac', help="Server to run the docking on, for path and configs.")
-    parser.add_argument("-e", "--ex", default=16, help="exhaustiveness parameter for vina")
+    parser.add_argument("-e", "--ex", default=64, help="exhaustiveness parameter for vina")
     args, _ = parser.parse_known_args()
 
     PYTHONSH, VINA = set_path(args.server)
@@ -150,7 +159,7 @@ if __name__ == '__main__':
     if not os.path.isdir(dirname):
         os.mkdir(dirname)
 
-    list_smiles, list_active, list_px50 = load_csv(os.path.join(script_dir, 'to_dock_shuffled.csv'))
+    list_smiles, list_active, list_px50 = load_csv(os.path.join(script_dir, 'scores_archive/to_dock.csv'))
     N = len(list_smiles)
 
     chunk_size = N // num_procs
@@ -160,7 +169,7 @@ if __name__ == '__main__':
     one_slurm(list_data,
               id=proc_id,
               path=os.path.join(dirname, f"{proc_id}.csv"),
-              parallel=False,
+              parallel=True,
               exhaustiveness=args.ex)
 
     # one_slurm(['toto','tata','titi'], 1, 'zztest')

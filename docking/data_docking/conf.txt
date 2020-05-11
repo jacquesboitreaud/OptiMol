@@ -9,4 +9,4 @@ size_x = 36.975
 size_y = 39.940
 size_z = 38.529
 
-num_modes = 3
+num_modes = 10

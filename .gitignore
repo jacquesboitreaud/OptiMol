@@ -5,4 +5,5 @@ data_curation
 eval/plots
 data/
 results/
+docking/scores_archive
 optim/bo_results
