@@ -136,9 +136,9 @@ def load_csv(path='to_dock_shuffled.csv'):
     import pandas as pd
 
     df = pd.read_csv(path)
-    smiles = df['SMILES'].values
-    actives = df['Activity_Flag'].values
-    px50 = df['pXC50'].values
+    smiles = df['smile'].values
+    actives = df['active'].values
+    px50 = df['affinity'].values
     return smiles, actives, px50
 
 
