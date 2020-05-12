@@ -12,11 +12,15 @@ Like in latentGAN : ECFP6 (= Morgan radius 3 in rdkit), 2048 Bits fps
 import numpy as np
 from sklearn.svm import SVC
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import roc_curve, auc
 import pandas as pd 
+import pickle
 
 from rdkit import DataStructs
 from rdkit import Chem
 from rdkit.Chem import AllChem
+
+import matplotlib.pyplot as plt
 
 df = pd.read_csv('../data/excape_drd3.csv')
 
@@ -50,9 +54,23 @@ X_train, X_test, y_train, y_test = train_test_split( X, Y, test_size=0.5, random
 
 # Fitting SVM 
 
-clf = SVC(gamma='auto')
+clf = SVC(gamma='auto', probability = True  )
 print('>>> Fitting SVM to train molecules')
 clf.fit(X_train, y_train)
 
 sc = clf.score(X_test, y_test)
 print(' Test set accuracy : ', sc)
+
+# ROC Curve 
+y_score = clf.predict_proba(X_test)[:,1]
+fpr, tpr, thresholds = roc_curve(y_test, y_score)
+plt.plot(fpr, tpr)
+roc_auc = auc(fpr, tpr)
+plt.title(f'Test ROC AUC : {roc_auc:.4f}')
+
+print('QSAR roc AUC :', roc_auc)
+
+with open('qsar_fitted_svm.pickle', 'wb') as f :
+    pickle.dump(clf, f)
+print('Saved svm to qsar_fitted_svm.pickle')
+
