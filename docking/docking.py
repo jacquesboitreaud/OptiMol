@@ -4,20 +4,23 @@ import os
 import argparse
 from time import time
 import numpy as np
+
 try:
     import pybel
 except:
     import openbabel
-    from openbabel import pybel 
+    from openbabel import pybel
 import shutil
 import csv
 
 script_dir = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(script_dir, '..'))
 
+
 def soft_mkdir(path):
     if not os.path.exists(path):
         os.mkdir(path)
+
 
 RECEPTOR_PATH = os.path.join(script_dir, 'data_docking/drd3.pdbqt')
 CONF_PATH = os.path.join(script_dir, 'data_docking/conf.txt')
@@ -46,10 +49,18 @@ def prepare_receptor():
     subprocess.run(f"{PYTHONSH} prepare_receptor4.py -r drd3.pdb -o {RECEPTOR_PATH} -A hydrogens".split())
 
 
-def dock(smile, unique_id, pythonsh=None, vina=None, parallel=True, exhaustiveness=16, mean = True):
+def dock(smile, unique_id, pythonsh=None, vina=None, parallel=True, exhaustiveness=16, mean=True, load=False):
     """
+    load if we want to check for possible existing score, we want a dict of results
     mean = False : returns list of top 10 poses scores. 
     """
+    if load:
+        try:
+            pass
+            score = load[smile]
+            return score
+        except KeyError:
+            pass
 
     if pythonsh is None or vina is None:
         global PYTHONSH
@@ -70,7 +81,7 @@ def dock(smile, unique_id, pythonsh=None, vina=None, parallel=True, exhaustivene
         dump_mol2_path = os.path.join(tmp_path, 'ligand.mol2')
         dump_pdbqt_path = os.path.join(tmp_path, 'ligand.pdbqt')
         mol.write('mol2', dump_mol2_path, overwrite=True)
-        prepare_ligand = os.path.join(script_dir,'prepare_ligand4.py')
+        prepare_ligand = os.path.join(script_dir, 'prepare_ligand4.py')
         subprocess.run(f'{pythonsh} {prepare_ligand} -l {dump_mol2_path} -o {dump_pdbqt_path} -A hydrogens'.split())
 
         start = time()
@@ -92,13 +103,13 @@ def dock(smile, unique_id, pythonsh=None, vina=None, parallel=True, exhaustivene
             values = [l.split() for l in slines]
             # In each split string, item with index 3 should be the kcal/mol energy.
             score = [float(v[3]) for v in values]
-            if mean :
+            if mean:
                 score = np.mean(score)
     except:
-        if mean :
+        if mean:
             score = 0
         else:
-            score = [0]*10
+            score = [0] * 10
     try:
         pass
         shutil.rmtree(tmp_path)
@@ -107,7 +118,7 @@ def dock(smile, unique_id, pythonsh=None, vina=None, parallel=True, exhaustivene
     return score
 
 
-def one_slurm(list_data, id, path, parallel=True, exhaustiveness=16, mean = False):
+def one_slurm_experimental(list_data, id, path, parallel=True, exhaustiveness=16, mean=False):
     """
 
     :param list_data: (list_smiles, list_active, list_px50)
@@ -125,11 +136,11 @@ def one_slurm(list_data, id, path, parallel=True, exhaustiveness=16, mean = Fals
         csv.writer(csvfile).writerow(header)
 
     for i, smile in enumerate(list_smiles):
-        score_smile = dock(smile, unique_id=id, parallel=parallel, exhaustiveness=exhaustiveness, mean = mean )
+        score_smile = dock(smile, unique_id=id, parallel=parallel, exhaustiveness=exhaustiveness, mean=mean)
         # score_smile = 0
         with open(path, 'a', newline='') as csvfile:
-            list_to_write = [smile,list_active[i],list_px50[i]]+score_smile
-            
+            list_to_write = [smile, list_active[i], list_px50[i]] + score_smile
+
             csv.writer(csvfile).writerow(list_to_write)
 
 
@@ -153,28 +164,28 @@ if __name__ == '__main__':
 
     PYTHONSH, VINA = set_path(args.server)
 
-    # ==========SLURM=============
-    proc_id, num_procs = int(sys.argv[1]), int(sys.argv[2])
-
-    dirname = os.path.join(script_dir, 'docking_results')
-    if not os.path.isdir(dirname):
-        try:
-            os.mkdir(dirname)
-        except:
-            pass
-
-    list_smiles, list_active, list_px50 = load_csv(os.path.join(script_dir, 'scores_archive/to_dock.csv'))
-    N = len(list_smiles)
-
-    chunk_size = N // num_procs
-    chunk_min, chunk_max = proc_id * chunk_size, (proc_id + 1) * chunk_size
-    list_data = list_smiles[chunk_min:chunk_max], list_active[chunk_min:chunk_max], list_px50[chunk_min:chunk_max]
+    # ==========SLURM for experimental=============
+    # proc_id, num_procs = int(sys.argv[1]), int(sys.argv[2])
     #
-    one_slurm(list_data,
-              id=proc_id,
-              path=os.path.join(dirname, f"{proc_id}.csv"),
-              parallel=True,
-              exhaustiveness=args.ex)
+    # dirname = os.path.join(script_dir, 'docking_results')
+    # if not os.path.isdir(dirname):
+    #     try:
+    #         os.mkdir(dirname)
+    #     except:
+    #         pass
+    #
+    # list_smiles, list_active, list_px50 = load_csv(os.path.join(script_dir, 'scores_archive/to_dock.csv'))
+    # N = len(list_smiles)
+    #
+    # chunk_size = N // (num_procs - 1)
+    # chunk_min, chunk_max = proc_id * chunk_size, min((proc_id + 1) * chunk_size, N)
+    # list_data = list_smiles[chunk_min:chunk_max], list_active[chunk_min:chunk_max], list_px50[chunk_min:chunk_max]
+    # #
+    # one_slurm_experimental(list_data,
+    #                        id=proc_id,
+    #                        path=os.path.join(dirname, f"{proc_id}.csv"),
+    #                        parallel=True,
+    #                        exhaustiveness=args.ex)
 
     # one_slurm(['toto','tata','titi'], 1, 'zztest')
     # dock('CC1C2CCC(C2)C1CN(CCO)C(=O)c1ccc(Cl)cc1', unique_id=2, exhaustiveness=args.ex)
