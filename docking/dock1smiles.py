@@ -7,12 +7,13 @@ Created on Thu May  7 18:03:42 2020
 Dock one smiles 
 """
 
-from docking import dock, set_path
 import argparse
-import os,sys
+import os
+import sys
 
 script_dir = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(script_dir, '..'))
+from docking.docking import dock, set_path
 
 if __name__ == '__main__':
     from utils import soft_mkdir

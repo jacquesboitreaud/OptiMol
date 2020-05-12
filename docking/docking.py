@@ -70,7 +70,8 @@ def dock(smile, unique_id, pythonsh=None, vina=None, parallel=True, exhaustivene
         dump_mol2_path = os.path.join(tmp_path, 'ligand.mol2')
         dump_pdbqt_path = os.path.join(tmp_path, 'ligand.pdbqt')
         mol.write('mol2', dump_mol2_path, overwrite=True)
-        subprocess.run(f'{pythonsh} prepare_ligand4.py -l {dump_mol2_path} -o {dump_pdbqt_path} -A hydrogens'.split())
+        prepare_ligand = os.path.join(script_dir,'prepare_ligand4.py')
+        subprocess.run(f'{pythonsh} {prepare_ligand} -l {dump_mol2_path} -o {dump_pdbqt_path} -A hydrogens'.split())
 
         start = time()
         # DOCK
