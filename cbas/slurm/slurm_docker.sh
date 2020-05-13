@@ -6,4 +6,7 @@
 
 # This is a jobarray file that can be run from master
 
+source ~/anaconda3/bin/activate
+conda activate optimol
+
 python docker.py $SLURM_ARRAY_TASK_ID 60 -s pasteur
