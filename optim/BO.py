@@ -8,8 +8,9 @@ Optimize affinity with bayesian optimization.
 
 Following tutorial at https://botorch.org/tutorials/vae_mnist
 
-TODO : 
-    adapt for affinity (when args.objective == 'aff' )
+****Logging and list of already scored molecules to implement 
+
+
 
 """
 import os
@@ -56,27 +57,31 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     
     parser.add_argument( '--bo_name', help="Name for BO results subdir ",
-                        default='first_bo')
+                        default='debug')
     
     parser.add_argument( '--name', help="saved model weights fname. Located in saved_models subdir",
                         default='inference_default')
-    parser.add_argument('-n', "--n_steps", help="Nbr of optim steps", type=int, default=50)
+    parser.add_argument('-n', "--n_steps", help="Nbr of optim steps", type=int, default=20)
     parser.add_argument('-q', "--n_queries", help="Nbr of queries per step", type=int, default=50)
+    parser.add_argument('-o', '--objective', default='aff_pred') # 'qed', 'aff', 'aff_pred'
     
-    parser.add_argument('-o', '--objective', default='aff') # 'qed', 'aff', 'aff_pred'
+    # initial samples to use 
+    parser.add_argument('--init_samples', default='excape_drd3_scored.csv') # samples to start with // random or excape data
+    parser.add_argument('--n_init', type = int ,  default=500) # Number of samples to start with 
     
+    # docking specific params 
     parser.add_argument('-e', "--ex", help="Docking exhaustiveness (vina)", type=int, default=32) 
     parser.add_argument('-s', "--server", help="COmputer used, to set paths for vina", type=str, default='rup')
+    parser.add_argument( '--load', default='drd3_scores.pickle') # Pickle file with dict of already docked molecules // keyed by kekuleSMiles
     
     parser.add_argument('-v', "--verbose", help="print new scores at each iter", action = 'store_true', default=False)
     args = parser.parse_args()
 
     # ==============
-    """
-    TODO: make it clearer about what goes to gpu and what does not. 
-    VAE is on GPU, decoding and aff prediction with MLP are on GPU, but Gaussian process operations on CPU 
-    (if training set of gaussian process becomes big after some steps, may not fit on gpu 
-    """
+    
+    with open(os.path.join(script_dir,'docking', args.load), 'rb') as f:
+        load_dict = pickle.load(f)
+    print(f'Preloaded {len(load_dict)} docking scores')
     
     soft_mkdir('bo_results')
     soft_mkdir(os.path.join('bo_results',args.bo_name))
@@ -110,7 +115,7 @@ if __name__ == "__main__":
     state_dict = None
     
     # Generate initial data 
-    df = pd.read_csv(os.path.join(script_dir,'data','moses_scored_valid.csv'), nrows = 400) # 100 Initial samples 
+    df = pd.read_csv(os.path.join(script_dir,'data',args.init_samples), nrows = args.n_init) # n_init Initial samples 
     
     loader.graph_only=True
     train_z = torch.tensor(model.embed( loader, df)) # z has shape (N_molecules, latent_size)
@@ -156,16 +161,31 @@ if __name__ == "__main__":
             gen_seq = model.decode(new_z.to(device))
             smiles = model.probas_to_smiles(gen_seq)
         if vocab=='selfies' :
-            smiles =[ decoder(s) for s in smiles]
+            k = []
+            for s in smiles :
+                s = decoder(s)
+                m = Chem.MolFromSmiles(s)
+                Chem.Kekulize(m)
+                s= Chem.MolToSmiles(m, kekuleSmiles = True)
+                k.append(s)
+            smiles = k 
+            
+            
         
         if BO_BATCH_SIZE > 1 : # query a batch of smiles 
             
             if args.objective == 'aff':
                 new_scores = torch.zeros((BO_BATCH_SIZE,1), dtype=torch.float)
                 for i in range(len(smiles)):
-                    sc = dock(smiles[i], i, PYTHONSH, VINA, exhaustiveness = args.ex )
+                    sc = dock(smiles[i], i, PYTHONSH, VINA, exhaustiveness = args.ex, load = load_dict )
                     new_scores[i,0]=sc
+                    # Update dict with scores 
+                    if smiles[i] not in load_dict :
+                        load_dict[smiles[i]]= sc
+                    
                 new_scores = -1* new_scores
+                
+                
                 
             elif args.objective == 'aff_pred':
                 with torch.no_grad():
@@ -235,18 +255,26 @@ if __name__ == "__main__":
         print(f'average score of fresh samples at iter {iteration}: {avg_score}')
         print("\n")
         
-        # Save 
+        # Save epoch samples 
         with open(os.path.join('bo_results',args.bo_name,'sample_scores.pickle'), 'wb') as f :
             pickle.dump(sc_dict, f)
         
-    train_obj=train_obj.numpy()
-    idces = np.argsort(train_obj)
-    idces=idces[:100]
+        # Update file with top 100 samples discovered 
+        train_obj_flat=train_obj.numpy().flatten()
+        idces = np.argsort(train_obj_flat)
+        idces=idces[-100:] # top 100
+        with open(os.path.join('bo_results',args.bo_name,f'top_samples_{iteration}.txt'), 'w') as f :
+            for i in idces :
+                f.write(train_smiles[i] +',  ' + str(train_obj_flat[i].item())+'\n' )
+        print('wrote top samples and scores to txt. ')
+        
+        # Save updated dict with docking scores 
+        if args.objective =='aff':
+            with open(os.path.join(script_dir,'docking', args.load), 'wb') as f:
+                pickle.dump(load_dict,f)
+        
+        
     
-    with open(os.path.join('bo_results',args.bo_name,'top_samples.txt'), 'w') as f :
-        for i in idces :
-            f.write(train_smiles[i], ',  ', train_obj[i].item() )
-    print('wrote top samples and scores to txt. ')
 
     
     

@@ -40,11 +40,11 @@ from sklearn.decomposition import PCA
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--name', help="Name of saved model directory, in /results/saved_models",
-                    default='search_vae')
+                    default='inference_default')
 parser.add_argument('-i', '--test_set', help="Test molecules file, in /data",
                     default='moses_test.csv')
 parser.add_argument('-N', '--n_mols', help="Number of molecules, set to -1 for all in csv ", type = int, 
-                    default=1000)
+                    default=10000)
 
 args = parser.parse_args()
 if __name__ == "__main__":
@@ -109,8 +109,8 @@ if __name__ == "__main__":
             
             # Evaluate loss 
             rec, kl = VAELoss(out, indices, mu, logv)
-            print('Rec batch loss : ', rec)
-            print('KL batch loss : ', kl)
+            #print('Rec batch loss : ', rec)
+            #print('KL batch loss : ', kl)
 
             # Decoding with beam search 
             """
