@@ -57,7 +57,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     
     parser.add_argument( '--bo_name', help="Name for BO results subdir ",
-                        default='debug')
+                        default='diverse')
     
     parser.add_argument( '--name', help="saved model weights fname. Located in saved_models subdir",
                         default='inference_default')
@@ -66,11 +66,11 @@ if __name__ == "__main__":
     parser.add_argument('-o', '--objective', default='aff_pred') # 'qed', 'aff', 'aff_pred'
     
     # initial samples to use 
-    parser.add_argument('--init_samples', default='excape_drd3_scored.csv') # samples to start with // random or excape data
-    parser.add_argument('--n_init', type = int ,  default=500) # Number of samples to start with 
+    parser.add_argument('--init_samples', default='2k_diverse_samples.csv') # samples to start with // random or excape data
+    parser.add_argument('--n_init', type = int ,  default=2000) # Number of samples to start with 
     
     # docking specific params 
-    parser.add_argument('-e', "--ex", help="Docking exhaustiveness (vina)", type=int, default=32) 
+    parser.add_argument('-e', "--ex", help="Docking exhaustiveness (vina)", type=int, default=16) 
     parser.add_argument('-s', "--server", help="COmputer used, to set paths for vina", type=str, default='rup')
     parser.add_argument( '--load', default='drd3_scores.pickle') # Pickle file with dict of already docked molecules // keyed by kekuleSMiles
     
@@ -177,7 +177,7 @@ if __name__ == "__main__":
             if args.objective == 'aff':
                 new_scores = torch.zeros((BO_BATCH_SIZE,1), dtype=torch.float)
                 for i in range(len(smiles)):
-                    sc = dock(smiles[i], i, PYTHONSH, VINA, exhaustiveness = args.ex, load = load_dict )
+                    sc = dock(smiles[i], i, PYTHONSH, VINA, exhaustiveness = args.ex, load = False )
                     new_scores[i,0]=sc
                     # Update dict with scores 
                     if smiles[i] not in load_dict :
