@@ -10,7 +10,7 @@ import csv
 import pickle
 
 script_dir = os.path.dirname(os.path.realpath(__file__))
-sys.path.append(os.path.join(script_dir, '..'))
+sys.path.append(os.path.join(script_dir, '..', '..'))
 
 from docking.docking import dock, set_path
 
@@ -52,7 +52,7 @@ if __name__ == '__main__':
     # proc_id, num_procs = int(sys.argv[1]), int(sys.argv[2])
     proc_id, num_procs = 2, 3
 
-    dirname = os.path.join(script_dir, 'docking_small_results')
+    dirname = os.path.join(script_dir, 'results','docking_small_results')
     if not os.path.isdir(dirname):
         try:
             os.mkdir(dirname)
@@ -60,12 +60,13 @@ if __name__ == '__main__':
             pass
 
     # Memoization
-    whole_path = os.path.join(script_dir, '..', 'data', 'whole_docking_memo.p')
+    whole_path = os.path.join(script_dir, '..', '..', 'data', 'whole_docking_memo.p')
     docking_whole_results = pickle.load(open(whole_path, 'rb'))
 
     # parse the docking task of the whole job array and split it
-    df = pd.read_csv(os.path.join(script_dir, 'to_dock.csv'))
-    list_smiles = df['smiles']
+    dump_path = os.path.join(script_dir, 'results/samples.p')
+    list_smiles, _ = pickle.load(open(dump_path, 'rb'))
+
     N = len(list_smiles)
     chunk_size = N // (num_procs - 1)
     chunk_min, chunk_max = proc_id * chunk_size, min((proc_id + 1) * chunk_size, N)

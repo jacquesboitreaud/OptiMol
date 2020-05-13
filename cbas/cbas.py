@@ -61,15 +61,15 @@ if __name__ == '__main__':
 
     # Initialization 
 
-    # Load or train prior VAE 
-
+    # Load or train prior VAE
     prior_model = model_from_json(args.prior_name)
     device = 'cpu'  # 'cuda' if torch.cuda.is_available() else 'cpu'
     prior_model.to(device)
 
     # Initialize search vae q
     savepath = os.path.join(script_dir, 'results/saved_models', args.search_name)
-    searchTrainer = GenTrain(args.prior_name, savepath, epochs=args.epochs, device=device,
+    prior_model_init =  model_from_json(args.prior_name)
+    searchTrainer = GenTrain(prior_model_init, savepath, epochs=args.epochs, device=device,
                              lr=args.learning_rate, clip_grad=args.clip_grad_norm, beta=args.beta,
                              processes=args.procs, DEBUG=True)
 
