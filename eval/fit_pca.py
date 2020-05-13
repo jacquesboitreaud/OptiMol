@@ -38,6 +38,7 @@ from data_processing.rdkit_to_nx import smiles_to_nx
 from model import Model, model_from_json
 from eval.eval_utils import *
 from utils import *
+from dgl_utils import *
 
 
 parser = argparse.ArgumentParser()
