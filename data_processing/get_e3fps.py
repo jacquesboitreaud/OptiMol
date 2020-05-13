@@ -13,6 +13,7 @@ import os, sys
 import pickle
 import argparse
 from e3fp.pipeline import fprints_from_mol, confs_from_smiles, fprints_from_smiles
+from e3fp.config.params import default_params
 
 from glob import glob
 from python_utilities.parallel import Parallelizer
@@ -28,7 +29,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-i', '--csv', help="molecules file, in /data",
                     default='moses_test.csv')
 parser.add_argument('-N', '--n_mols', help="Number of molecules, set to -1 for all in csv ", type = int, 
-                    default=10)
+                    default=-1)
 parser.add_argument('--parallel', help="parallelize over processors ", action = 'store_true', 
                     default=True)
 
@@ -41,25 +42,29 @@ if __name__=='__main__':
     csv_name = args.csv
     
     # e3fp params 
-    fprint_params = {'bits': 4096, 'radius_multiplier': 1.5, 'rdkit_invariants': True}
-    confgen_params = {'max_energy_diff': 20.0, 'first': 3}
     
-    df = pd.read_csv(os.path.join(script_dir,'..', 'data', csv_name), nrows = args.n_mols)
-    smiles = df.smiles 
+    if args.n_mols >0:
+        df = pd.read_csv(os.path.join(script_dir,'..', 'data', csv_name), nrows = args.n_mols)
+    else:
+         df = pd.read_csv(os.path.join(script_dir,'..', 'data', csv_name))
+         
+    try:
+        smiles = df.smiles 
+    except:
+        smiles = df.smile # in case csv has different header 
     print(f'>>> computing e3fp for {smiles.shape[0]} molecules')
     
     if not args.parallel:
         fprints_list=[]
-        for s in smiles[:10] :
-            fprints_list.append(fprints_from_smiles(s, "m1", confgen_params=confgen_params))
+        for i,s in enumerate(smiles) :
+            fprints_list.append(fprints_from_smiles(s, i))
         
     else:
         # Parallel fingerprinting 
         smiles_iter = ( (s,smiles_id) for smiles_id,s in enumerate(smiles) )
         
-        kwargs = {"confgen_params": confgen_params, "fprint_params": fprint_params}
         parallelizer = Parallelizer(parallel_mode="processes")
-        fprints_list = parallelizer.run(fprints_from_smiles, smiles_iter, kwargs=kwargs) 
+        fprints_list = parallelizer.run(fprints_from_smiles, smiles_iter) 
         
     fprints_dict = {t[1][0]:t[0] for t in fprints_list}
     
@@ -69,9 +74,10 @@ if __name__=='__main__':
     # t[1] = (smiles, unique_id)
     
     print(fprints_dict)
-    with open(os.path.join(script_dir, '..', 'data', 'e3fp_dict.pickle') , 'wb') as f:
+    fname = args.csv[:-4]
+    with open(os.path.join(script_dir, '..', 'data', f'fname.pickle') , 'wb') as f:
         pickle.dump(fprints_dict,f)
-    print('Saved e3fps to e3fp_dict.pickle')
+    print(f'Saved e3fps to e3fp_{fname}.pickle')
 
 
     
