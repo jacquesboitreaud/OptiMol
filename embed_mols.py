@@ -53,7 +53,7 @@ if __name__ == '__main__':
     # =====================
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    args = parser.parse_args()
+    args, _ = parser.parse_known_args()
 
     # Load model (on gpu if available)
     model = model_from_json(args.name)

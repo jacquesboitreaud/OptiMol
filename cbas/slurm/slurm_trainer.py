@@ -74,7 +74,7 @@ if __name__ == '__main__':
     parser.add_argument('--iteration', type=int, default=0)  # the prior VAE (pretrained)
 
     # =======
-    args = parser.parse_known_args()
+    args, _ = parser.parse_known_args()
 
     # Aggregate docking results
     score_dict = gather_scores(args.iteration)

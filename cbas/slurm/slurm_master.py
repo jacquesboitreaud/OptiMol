@@ -55,7 +55,7 @@ if __name__ == '__main__':
 
     # =======
 
-    args = parser.parse_known_args()
+    args, _ = parser.parse_known_args()
 
     device = 'cpu'  # 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -82,7 +82,7 @@ if __name__ == '__main__':
 
     for t in range(1, args.iters + 1):
 
-        slurm_sampler_path = os.path.jin(script_dir, 'slurm_sampler.sh')
+        slurm_sampler_path = os.path.join(script_dir, 'slurm_sampler.sh')
         if id_train is not None:
             cmd = f'sbatch {slurm_sampler_path}'
         else:

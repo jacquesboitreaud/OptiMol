@@ -63,7 +63,7 @@ if __name__ == '__main__':
                         type=bool, params.json=True)
     
     # ================================
-    args=parser.parse_args()
+    args, _ = parser.parse_known_args()
     """
     add_scores()
     """

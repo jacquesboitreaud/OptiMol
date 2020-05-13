@@ -75,7 +75,7 @@ if __name__ == "__main__":
     parser.add_argument( '--load', default='drd3_scores.pickle') # Pickle file with dict of already docked molecules // keyed by kekuleSMiles
     
     parser.add_argument('-v', "--verbose", help="print new scores at each iter", action = 'store_true', default=False)
-    args = parser.parse_args()
+    args, _ = parser.parse_known_args()
 
     # ==============
     

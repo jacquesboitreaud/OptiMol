@@ -18,7 +18,7 @@ if __name__=='__main__':
 
     parser.add_argument('-i', "--generated_samples", help="Nbr to generate", type=str, default='data/gen.txt')
 
-    args = parser.parse_args()
+    args, _ = parser.parse_known_args()
     # =======================================
     
     script_dir = os.path.dirname(os.path.realpath(__file__))

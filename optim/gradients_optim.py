@@ -55,7 +55,7 @@ parser.add_argument("--lr", help="Learning rate at each step", type=float,
 parser.add_argument('-v', "--verbose", help="Extensive step by step logs ", action = 'store_true',
                     default = False)
 
-args = parser.parse_args()
+args, _ = parser.parse_known_args()
 
 # =======================================
 

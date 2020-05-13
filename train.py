@@ -89,7 +89,7 @@ if __name__ == "__main__":
 
     # =======
 
-    args = parser.parse_known_args()
+    args, _ = parser.parse_known_args()
 
     logdir, modeldir = setup(args.name, permissive=True)
     dumper = Dumper(dumping_path=os.path.join(modeldir, 'params.json'), argparse=args)

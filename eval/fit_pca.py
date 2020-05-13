@@ -44,7 +44,7 @@ from dgl_utils import *
 parser = argparse.ArgumentParser()
 parser.add_argument('--name', help="Saved model directory, in /results/saved_models",
                         default='inference_default')
-args = parser.parse_args()
+args, _ = parser.parse_known_args()
 
 # ============================
 

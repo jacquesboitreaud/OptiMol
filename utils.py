@@ -91,7 +91,7 @@ if __name__ == '__main__':
     #
     # parser = argparse.ArgumentParser()
     # parser.add_argument('--name', type=str, default='Overriding the original dict')
-    # args = parser.parse_args()
+    # args, _ = parser.parse_known_args()
     #
     # dumper = Dumper(dumping_path='test_dump')
     # dumper.dump(d)

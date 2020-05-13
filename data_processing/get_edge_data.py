@@ -34,7 +34,7 @@ if __name__ == '__main__':
 
     # =======
 
-    args = parser.parse_args()
+    args, _ = parser.parse_known_args()
 
     data = pd.read_csv(args.csv)
     try:

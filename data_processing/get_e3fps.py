@@ -33,7 +33,7 @@ parser.add_argument('-N', '--n_mols', help="Number of molecules, set to -1 for a
 parser.add_argument('--parallel', help="parallelize over processors ", action = 'store_true', 
                     default=True)
 
-args = parser.parse_args()
+args, _ = parser.parse_known_args()
 
 # ================
 

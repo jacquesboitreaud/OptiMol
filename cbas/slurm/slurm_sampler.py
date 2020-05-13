@@ -61,7 +61,7 @@ if __name__ == '__main__':
 
     # =======
 
-    args = parser.parse_known_args()
+    args, _ = parser.parse_known_args()
     prior_model = model_from_json(args.prior_name)
 
     search_model = model_from_json(args.prior_name)

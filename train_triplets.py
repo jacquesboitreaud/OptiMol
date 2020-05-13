@@ -33,7 +33,7 @@ from model import Model
 from loss_func import Loss, RecLoss, tripletLoss
 from dataloaders.tripletsDataset import Loader
 from utils import *
-from dgl_utils import * 
+from dgl_utils import *
 
 if __name__ == "__main__":
 
@@ -64,9 +64,7 @@ if __name__ == "__main__":
     parser.add_argument('--print_smiles_iter', type=int, default=1000)  # print reconstructed smiles every _ step
     parser.add_argument('--save_iter', type=int, default=5000)  # save model weights every _ step
 
-    args = parser.parse_args()
-
-
+    args, _ = parser.parse_known_args()
 
     # config
     n_epochs = args.n_epochs  # epochs to train
@@ -221,7 +219,6 @@ tripletLoss {:.2f}'.format(epoch, total_steps, rec.item(), pmse.item(), simLoss.
                 print('fraction of valid smiles in training batch: ', frac_valid)
 
             if total_steps % args.save_iter == 0:
-
                 torch.save(model.state_dict(), f"{args.save_path}_iter_{total_steps}.pth")
                 pickle.dump(logs_dict, open(f'{log_path}.npy', 'wb'))
 

@@ -61,7 +61,7 @@ if __name__ == "__main__":
     parser.add_argument('--save_iter', type=int, default=10000)  # save model weights every _ step
     parser.add_argument('--parallel', type=bool, default=False)  # parallelize over multiple gpus if available
 
-    args = parser.parse_args()
+    args, _ = parser.parse_known_args()
 
     from model import Model, Loss, RecLoss, pairwiseLoss
     from dataloaders.pairwiseDataset import Loader

@@ -20,7 +20,7 @@ if __name__=='__main__':
     
     # =======
 
-    args=parser.parse_args()
+    args, _ = parser.parse_known_args()
     
     if(args.cutoff>0):
         data = pd.read_csv(args.csv, nrows = args.cutoff)

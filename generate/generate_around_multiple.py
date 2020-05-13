@@ -46,7 +46,7 @@ if __name__ == "__main__":
     parser.add_argument('-b', '--use_beam', action='store_true', help="use beam search")
     
 
-    args = parser.parse_args()
+    args, _ = parser.parse_known_args()
 
     # ==============
 

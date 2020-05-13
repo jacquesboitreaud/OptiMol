@@ -61,6 +61,6 @@ if __name__ == '__main__':
                         type=str, default='data/moses_train.csv')
     # =======
 
-    args = parser.parse_args()
+    args, _ = parser.parse_known_args()
 
     add_props(args.input)
