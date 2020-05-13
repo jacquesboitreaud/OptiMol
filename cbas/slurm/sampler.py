@@ -75,7 +75,7 @@ if __name__ == '__main__':
     samples, weights = get_samples(prior_model, search_model, max=args.max)
 
     # Memoization, we split the list into already docked ones and dump a simili-docking csv
-    whole_path = os.path.join(script_dir, '..', '..', 'data', 'drd3_scores.pickle.p')
+    whole_path = os.path.join(script_dir, '..', '..', 'data', 'drd3_scores.pickle')
     docking_whole_results = pickle.load(open(whole_path, 'rb'))
 
     filtered_smiles = list()
@@ -99,4 +99,4 @@ if __name__ == '__main__':
 
     # Dump for the trainer
     dump_path = os.path.join(script_dir, 'results', 'samples.p')
-    pickle.dump(samples, open(dump_path, 'wb'))
+    pickle.dump((samples, weights), open(dump_path, 'wb'))

@@ -85,6 +85,10 @@ if __name__ == '__main__':
         a = subprocess.run(cmd.split(), stdout=subprocess.PIPE).stdout.decode('utf-8')
         id_sample = a.split()[3]
 
+
+        print(f'id_sample was {id_sample}')
+        sys.exit()
+
         # SIMULATE DOCKING
         slurm_docker_path = os.path.join(script_dir, 'slurm_docker.sh')
         cmd = f'sbatch --depend=afterany:{id_sample} {slurm_docker_path}'

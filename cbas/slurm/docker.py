@@ -79,6 +79,6 @@ if __name__ == '__main__':
               vina=VINA,
               dump_path=os.path.join(dirname, f"{proc_id}.csv"),
               unique_id=proc_id,
-              parallel=True,
+              parallel=False,
               exhaustiveness=args.ex,
               mean=True)

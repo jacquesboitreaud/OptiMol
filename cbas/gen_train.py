@@ -58,8 +58,9 @@ class GenTrain():
         self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr0)
         self.scheduler = lr_scheduler.ExponentialLR(self.optimizer, self.anneal_rate)
 
-        # loader 
-        self.dataset = SimpleDataset(maps_path='../map_files', vocab='selfies', debug=self.debug)
+        # loader
+        map_path = os.path.join(script_dir, '..', 'map_files')
+        self.dataset = SimpleDataset(maps_path=map_path, vocab='selfies', debug=self.debug)
 
     def step(self, input_type, x, w):
         """ 

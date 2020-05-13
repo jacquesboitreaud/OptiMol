@@ -26,7 +26,16 @@ def gather_scores(iteration):
     dump_path = os.path.join(script_dir, 'results', 'docking_results', f'{iteration}.csv')
     merged.to_csv(dump_path)
 
-    shutil.rmtree(dirname)
+    def empty_folder(folder_path):
+        folder_path = '/path/to/folder'
+        for file_object in os.listdir(folder_path):
+            file_object_path = os.path.join(folder_path, file_object)
+            if os.path.isfile(file_object_path) or os.path.islink(file_object_path):
+                os.unlink(file_object_path)
+            else:
+                shutil.rmtree(file_object_path)
+
+    empty_folder(dirname)
 
     molecules = merged['smile']
     scores = merged['score']
@@ -92,6 +101,9 @@ if __name__ == '__main__':
 
     # Aggregate docking results
     score_dict = gather_scores(args.iteration)
+    # df = pd.read_csv(script_dir, 'results/docking_results/0.csv')
+    # mol, score = df['smile'], df['score']
+    # score_dict = dict(zip(mol, score))
 
     # Reweight and discard wrong samples
     dump_path = os.path.join(script_dir, 'results/samples.p')
