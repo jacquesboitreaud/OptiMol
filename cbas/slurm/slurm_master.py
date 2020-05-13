@@ -16,19 +16,10 @@ script_dir = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(script_dir, '..', '..'))
 
 import torch
-import numpy as np
 import argparse
 
-from selfies import decoder
-from rdkit import Chem
-
-from utils import *
-from dgl_utils import *
+from utils import Dumper, soft_mkdir
 from model import model_from_json
-from cbas.oracles import qed, deterministic_cdf_oracle, normal_cdf_oracle
-from cbas.gen_train import GenTrain
-from cbas.gen_prob import GenProb
-from docking.docking import dock, set_path
 
 if __name__ == '__main__':
 
@@ -37,14 +28,9 @@ if __name__ == '__main__':
     parser.add_argument('--prior_name', type=str, default='inference_default')  # the prior VAE (pretrained)
     parser.add_argument('--search_name', type=str, default='search_vae')  # the prior VAE (pretrained)
 
-    parser.add_argument('--oracle', type=str, default='qed')  # qed for toy oracle, 'aff' for docking
-    parser.add_argument('--computer', type=str, default='rup')  # Computer to use for docking
-
     parser.add_argument('--procs', type=int, default=0)  # Number of processes for VAE dataloading
-
-    parser.add_argument('--iters', type=int, default=25)  # Number of iterations
+    parser.add_argument('--iters', type=int, default=5)  # Number of iterations
     parser.add_argument('--Q', type=float, default=0.6)  # quantile of scores accepted
-
     parser.add_argument('--M', type=int, default=1000)  # Nbr of samples at each iter
 
     # Params of the search-model finetuning (seems sensitive)
@@ -59,9 +45,8 @@ if __name__ == '__main__':
 
     device = 'cpu'  # 'cuda' if torch.cuda.is_available() else 'cpu'
 
-    # Initialize search vae q
-    save_dir = os.path.join(script_dir, 'results/models')
-    savepath = os.path.join(save_dir, args.search_name)
+    savepath = os.path.join(script_dir, 'results', 'models', args.search_name)
+    soft_mkdir(savepath)
 
     params = {'savepath': savepath,
               'epochs': args.epochs,
@@ -71,19 +56,18 @@ if __name__ == '__main__':
               'beta': args.beta,
               'processes': args.procs,
               'DEBUG': True}
-    dumper = Dumper(dumping_path=os.path.join(save_dir, 'params.json'), default_model=False)
+    dumper = Dumper(dumping_path=os.path.join(savepath, 'params_gentrain.json'), default_model=False)
     dumper.dic.update(params)
     dumper.dump()
 
     prior_model_init = model_from_json(args.prior_name)
     torch.save(prior_model_init.state_dict(), os.path.join(savepath, "weights.pth"))
-
     id_train = None
 
-    for t in range(1, args.iters + 1):
+    for iteration in range(1, args.iters + 1):
 
         slurm_sampler_path = os.path.join(script_dir, 'slurm_sampler.sh')
-        if id_train is not None:
+        if id_train is None:
             cmd = f'sbatch {slurm_sampler_path}'
         else:
             cmd = f'sbatch --depend=afterany:{id_train} {slurm_sampler_path}'
@@ -98,6 +82,6 @@ if __name__ == '__main__':
         # print(f'launched docking run with id {id_run}')
 
         slurm_trainer_path = os.path.join(script_dir, 'slurm_trainer.sh')
-        cmd = f'sbatch --depend=afterany:{id_dock} {slurm_trainer_path}'
+        cmd = f'sbatch --depend=afterany:{id_dock} {slurm_trainer_path} {iteration}'
         a = subprocess.run(cmd.split(), stdout=subprocess.PIPE).stdout.decode('utf-8')
         id_train = a.split()[3]

@@ -18,7 +18,7 @@ from selfies import decoder
 import os
 import json
 
-script_dir = os.path.dirname(os.path.realpath(__file__))
+script_dir_utils = os.path.dirname(os.path.realpath(__file__))
 
 
 #  ============== Dumping utils  ==============
@@ -45,12 +45,12 @@ class Dumper():
 
         if default_model:
             self.dic = self.load(
-                os.path.join(script_dir, 'results/saved_models/inference_default/params.json'))
+                os.path.join(script_dir_utils, 'results/saved_models/inference_default/params.json'))
         else:
             self.dic = {}
 
         if ini is not None:
-            ini_dic = self.load(os.path.join(script_dir, '..', ini))
+            ini_dic = self.load(os.path.join(script_dir_utils, '..', ini))
             self.dic.update(ini_dic)
 
         if argparse is not None:
@@ -114,12 +114,12 @@ def setup(name=None, permissive=True):
     :param permissive: if False, will not allow for overwriting
     :return:
     """
-    soft_mkdir(os.path.join(script_dir, 'results'))
-    soft_mkdir(os.path.join(script_dir, 'results/logs'))
-    soft_mkdir(os.path.join(script_dir, 'results/saved_models'))
+    soft_mkdir(os.path.join(script_dir_utils, 'results'))
+    soft_mkdir(os.path.join(script_dir_utils, 'results/logs'))
+    soft_mkdir(os.path.join(script_dir_utils, 'results/saved_models'))
     if name is not None:
-        logdir = os.path.join(script_dir, 'results/logs', name)
-        modeldir = os.path.join(script_dir, 'results/saved_models', name)
+        logdir = os.path.join(script_dir_utils, 'results/logs', name)
+        modeldir = os.path.join(script_dir_utils, 'results/saved_models', name)
         if permissive:
             soft_mkdir(logdir)
             soft_mkdir(modeldir)

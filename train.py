@@ -31,9 +31,10 @@ import torch.nn.functional as F
 from torch.utils.tensorboard import SummaryWriter
 
 script_dir = os.path.dirname(os.path.realpath(__file__))
-sys.path.append(script_dir)
+if __name__=='__main__':
+    sys.path.append(script_dir)
 
-from utils import *
+from utils import Dumper, disable_rdkit_logging, setup, log_reconstruction
 from dgl_utils import *
 from model import Model
 from loss_func import VAELoss, weightedPropsLoss, affsRegLoss, affsClassifLoss

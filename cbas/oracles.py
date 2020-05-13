@@ -44,6 +44,9 @@ def deterministic_cdf_oracle(observed_x, gamma):
     """
     w = torch.zeros(observed_x.shape[0], dtype=torch.float)
     for i in range(observed_x.shape[0]):
-        if observed_x[i] <= gamma:
-            w[i] = 1.
+        w[i] = deterministic_one(observed_x[i], gamma)
     return w
+
+
+def deterministic_one(value, gamma):
+    return float(value <= gamma)

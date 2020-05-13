@@ -523,3 +523,15 @@ def model_from_json(name='inference_default', load_weights=True, default_dir=Tru
         except:
             print('Weights could not be loaded by the util functions')
     return model
+
+
+def model_from_dir(dir, load_weights=True):
+    dumper = Dumper()
+    params = dumper.load(os.path.join(dir, 'params.json'))
+    model = Model(**params)
+    if load_weights:
+        try:
+            model.load(os.path.join(dir, "weights.pth"))
+        except:
+            print('Weights could not be loaded by the util functions')
+    return model

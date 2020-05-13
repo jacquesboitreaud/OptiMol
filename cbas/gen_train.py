@@ -104,8 +104,8 @@ class GenTrain():
                     print('fraction of correct characters at reconstruction : ', quality.item())
 
                 self.optimizer.zero_grad()
-                clip.clip_grad_norm_(self.model.parameters(), self.clip_grads)
                 loss.backward()
+                clip.clip_grad_norm_(self.model.parameters(), self.clip_grads)
                 del loss
                 self.optimizer.step()
 

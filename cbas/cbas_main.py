@@ -11,10 +11,8 @@ import os
 import sys
 
 script_dir = os.path.dirname(os.path.realpath(__file__))
-sys.path.append(os.path.join(script_dir, '..'))
-sys.path.append(os.path.join(script_dir, '..', 'dataloaders'))
-
-
+if __name__ == '__main__':
+    sys.path.append(os.path.join(script_dir, '..'))
 
 import torch
 import numpy as np
@@ -30,7 +28,6 @@ from cbas.oracles import qed, deterministic_cdf_oracle, normal_cdf_oracle
 from cbas.gen_train import GenTrain
 from cbas.gen_prob import GenProb
 from docking.docking import dock, set_path
-
 
 if __name__ == '__main__':
 
@@ -68,7 +65,7 @@ if __name__ == '__main__':
 
     # Initialize search vae q
     savepath = os.path.join(script_dir, 'results/saved_models', args.search_name)
-    prior_model_init =  model_from_json(args.prior_name)
+    prior_model_init = model_from_json(args.prior_name)
     searchTrainer = GenTrain(prior_model_init, savepath, epochs=args.epochs, device=device,
                              lr=args.learning_rate, clip_grad=args.clip_grad_norm, beta=args.beta,
                              processes=args.procs, DEBUG=True)

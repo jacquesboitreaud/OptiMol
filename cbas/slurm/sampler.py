@@ -2,7 +2,8 @@ import os
 import sys
 
 script_dir = os.path.dirname(os.path.realpath(__file__))
-sys.path.append(os.path.join(script_dir, '..', '..'))
+if __name__ == '__main__':
+    sys.path.append(os.path.join(script_dir, '..', '..'))
 
 import argparse
 
@@ -18,11 +19,12 @@ def get_samples(prior_model, search_model, max):
     weights = []
     sample_selfies_set = set()
     tries = 0
-    stop = 100
+    # TODO : RESET
+    stop = 5
     batch_size = 100
 
     # Importance weights
-    while tries < stop or len(sample_selfies) < max:
+    while tries < stop and len(sample_selfies) < max:
         new_ones = 0
 
         # Get raw samples
@@ -46,7 +48,6 @@ def get_samples(prior_model, search_model, max):
         tries += 1
 
         print(f'{new_ones}/{batch_size} unique smiles sampled')
-        weights = torch.cat(weights, dim=0)
     return sample_selfies, weights
 
 
@@ -56,7 +57,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--prior_name', type=str, default='inference_default')  # the prior VAE (pretrained)
-    parser.add_argument('--search_path', type=str)  # the prior VAE (pretrained)
+    parser.add_argument('--search_name', type=str, default='search_vae')  # the prior VAE (pretrained)
     parser.add_argument('--max', type=int, default=1000)  # the prior VAE (pretrained)
 
     # =======
@@ -64,13 +65,13 @@ if __name__ == '__main__':
     args, _ = parser.parse_known_args()
     prior_model = model_from_json(args.prior_name)
 
+    # We start by creating another prior instance, then replace it with the actual weights
+    # name = search_vae
     search_model = model_from_json(args.prior_name)
-    search_model.load(args.search_path)
+    name = args.search_name
+    model_weights_path = os.path.join(script_dir, 'results', 'models', name, 'weights.pth')
+    search_model.load(model_weights_path)
 
     samples, weights = get_samples(prior_model, search_model, max=args.max)
     dump_path = os.path.join(script_dir, 'results/samples.p')
     pickle.dump((samples, weights), open(dump_path, 'wb'))
-
-    dumper = Dumper(default_model=False)
-    params = dumper.load(args.json_path)
-    savepath = params['savepath']

@@ -10,7 +10,8 @@ import csv
 import pickle
 
 script_dir = os.path.dirname(os.path.realpath(__file__))
-sys.path.append(os.path.join(script_dir, '..', '..'))
+if __name__ == '__main__':
+    sys.path.append(os.path.join(script_dir, '..', '..'))
 
 from docking.docking import dock, set_path
 
@@ -49,10 +50,10 @@ if __name__ == '__main__':
     PYTHONSH, VINA = set_path(args.server)
 
     # ========== SLURM =============
-    # proc_id, num_procs = int(sys.argv[1]), int(sys.argv[2])
-    proc_id, num_procs = 2, 3
+    proc_id, num_procs = int(sys.argv[1]), int(sys.argv[2])
+    # proc_id, num_procs = 205, 300
 
-    dirname = os.path.join(script_dir, 'results','docking_small_results')
+    dirname = os.path.join(script_dir, 'results', 'docking_small_results')
     if not os.path.isdir(dirname):
         try:
             os.mkdir(dirname)
@@ -68,9 +69,13 @@ if __name__ == '__main__':
     list_smiles, _ = pickle.load(open(dump_path, 'rb'))
 
     N = len(list_smiles)
-    chunk_size = N // (num_procs - 1)
+    chunk_size, rab = N // (num_procs), N % num_procs
     chunk_min, chunk_max = proc_id * chunk_size, min((proc_id + 1) * chunk_size, N)
     list_data = list_smiles[chunk_min:chunk_max]
+    # N = chunk_size*num_procs + rab
+    # Share rab between procs
+    if proc_id < rab:
+        list_data.append(list_smiles[-(proc_id + 1)])
 
     # Do the docking and dump results
     one_slurm(list_data,
