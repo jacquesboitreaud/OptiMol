@@ -13,7 +13,7 @@ import os
 import sys
 
 script_dir = os.path.dirname(os.path.realpath(__file__))
-sys.path.append(os.path.join(script_dir, '..'))
+sys.path.append(os.path.join(script_dir, '..', '..'))
 
 import torch
 import numpy as np
@@ -55,21 +55,28 @@ if __name__ == '__main__':
 
     # =======
 
-    args = parser.parse_args()
+    args = parser.parse_known_args()
 
-    # Initialization
-
-    # Load or train prior VAE
-
-    prior_model = model_from_json(args.prior_name)
     device = 'cpu'  # 'cuda' if torch.cuda.is_available() else 'cpu'
-    prior_model.to(device)
 
     # Initialize search vae q
-    savepath = os.path.join(script_dir, 'results/saved_models', args.search_name)
-    searchTrainer = GenTrain(args.prior_name, savepath, epochs=args.epochs, device=device,
-                             lr=args.learning_rate, clip_grad=args.clip_grad_norm, beta=args.beta,
-                             processes=args.procs, DEBUG=True)
+    save_dir = os.path.join(script_dir, 'results/models')
+    savepath = os.path.join(save_dir, args.search_name)
+
+    params = {'savepath': savepath,
+              'epochs': args.epochs,
+              'device': device,
+              'lr': args.learning_rate,
+              'clip_grad': args.clip_grad_norm,
+              'beta': args.beta,
+              'processes': args.procs,
+              'DEBUG': True}
+    dumper = Dumper(dumping_path=os.path.join(save_dir, 'params.json'), default_model=False)
+    dumper.dic.update(params)
+    dumper.dump()
+
+    prior_model_init = model_from_json(args.prior_name)
+    torch.save(prior_model_init.state_dict(), os.path.join(savepath, "weights.pth"))
 
     # Docking params
     if args.oracle == 'aff':
@@ -79,46 +86,6 @@ if __name__ == '__main__':
     for t in range(1, args.iters + 1):
 
         print(f'> start iteration {t}')
-
-
-        # Sampling from q (split into batches of size 100 )
-        def get_samples(prior_model, searchTrainer):
-            sample_selfies = []
-            weights = []
-            sample_selfies_set = set()
-            tries = 0
-            stop = 100
-            batch_size = 100
-
-            # Importance weights
-            while tries < stop or len(sample_selfies) < args.M:
-                new_ones = 0
-
-                # Get raw samples
-                samples_z = searchTrainer.model.sample_z_prior(n_mols=batch_size)
-                gen_seq = searchTrainer.model.decode(samples_z)
-                _, sample_indices = torch.max(gen_seq, dim=1)
-
-                # Compute weights while we have indices and store them: p(x|z, theta)/p(x|z, phi)
-                batch_weights = GenProb(sample_indices, samples_z, prior_model) / \
-                                GenProb(sample_indices, samples_z, searchTrainer.model)
-
-                # Check the novelty
-                batch_selfies = searchTrainer.model.indices_to_smiles(sample_indices)
-                for i, s in enumerate(batch_selfies):
-                    new_selfie = decoder(s)
-                    if new_selfie not in sample_selfies_set:
-                        new_ones += 1
-                        sample_selfies_set.add(new_selfie)
-                        sample_selfies.append(new_selfie)
-                        weights.append(batch_weights[i])
-                tries += 1
-
-                print(f'{new_ones}/{batch_size} unique smiles sampled')
-                print(samples[:10])  # debugging
-                weights = torch.cat(weights, dim=0)
-            return samples, weights
-
 
         # TODO: package as a slurm standalone
 
@@ -147,29 +114,5 @@ if __name__ == '__main__':
         # TODO : sampling weights, do one training and save this model.
         # TODO : Then package as a standalone slurm call
         # Sort scores and find Qth quantile
-        sorted_sc = sorted(scores)
-        gamma = np.quantile(sorted_sc, args.Q)
-        print(f"step {t}/{args.iters}, gamma = {gamma}")
-
-        # Weight samples
-        scores = np.array(scores)
-
-        # Update weights by proba that oracle passes threshold
-        weights = weights * (1 - deterministic_cdf_oracle(scores, gamma))  # weight 0 if oracle < gamma
-
-        # Drop invalid and correct smiles to kekule format to avoid reencoding issues when training search model
-        good_indices = []
-        for i, s in enumerate(samples):
-            m = Chem.MolFromSmiles(s)
-            if m is not None and weights[i] > 0:  # get rid of all samples with weight 0 (do not count in CbAS loss)
-                good_indices.append(i)
-
-        samples = [samples[i] for i in good_indices]
-        weights = weights[good_indices]
-
-        print(f'{len(good_indices)}/{args.M} samples kept')
-
-        # Update search model
-        searchTrainer.step('smiles', samples, weights)
 
         # Get some prints and repeat

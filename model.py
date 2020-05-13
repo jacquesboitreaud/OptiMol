@@ -34,7 +34,7 @@ from dgl.nn.pytorch.glob import SumPooling
 from dgl.nn.pytorch.conv import GATConv, RelGraphConv
 
 from utils import *
-from dgl_utils import * 
+from dgl_utils import *
 
 
 class MultiGRU(nn.Module):
@@ -461,14 +461,14 @@ class Model(nn.Module):
 
         with torch.no_grad():
             for batch_idx, (graph, smiles, p_target, a_target) in enumerate(test_loader):
-                #batch_size = graph.batch_size
+                # batch_size = graph.batch_size
                 graph = send_graph_to_device(graph, self.device)
 
                 z = self.encode(graph, mean_only=True)  # z_shape = N * l_size
                 z = z.cpu()
                 z_all.append(z)
 
-        z_all = torch.cat(z_all, dim = 0).numpy()
+        z_all = torch.cat(z_all, dim=0).numpy()
         return z_all
 
     def load_no_aff_net(self, state_dict):
@@ -498,20 +498,28 @@ class BeamSearchNode():
         return True
 
 
-def model_from_json(name='inference_default', load_weights=True):
+def model_from_json(name='inference_default', load_weights=True, default_dir=True, weights_path=None):
     """
     Load a model from the name of the experiment
     :param name:
     :param load_weights:
     :return:
     """
-    path_to_dir = os.path.join(script_dir, 'results/saved_models', name)
     dumper = Dumper()
-    params = dumper.load(os.path.join(path_to_dir, 'params.json'))
+    if default_dir:
+        path_to_dir = os.path.join(script_dir, 'results/saved_models', name)
+        params = dumper.load(os.path.join(path_to_dir, 'params.json'))
+    else:
+        params = dumper.load(name)
+
     model = Model(**params)
     if load_weights:
         try:
-            model.load(os.path.join(path_to_dir, "weights.pth"))
+            if default_dir:
+                model.load(os.path.join(path_to_dir, "weights.pth"))
+            else:
+                model.load(weights_path)
+
         except:
             print('Weights could not be loaded by the util functions')
     return model

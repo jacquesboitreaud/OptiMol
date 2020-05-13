@@ -33,16 +33,21 @@ class Dumper():
     argparse
     """
 
-    def __init__(self, dumping_path=None, ini=None, argparse=None):
+    def __init__(self, dumping_path=None, ini=None, argparse=None, default_model=True):
         """
 
         :param ini: Optional : path to ini from the root of the project
         :param argparse: Optional, an argparse object
         :param dumping_path: Optional, where to dump by params.json
+        :param default_model: if the dumper is used for dumping models
         """
         self.dumping_path = dumping_path
-        self.dic = self.load(
-            os.path.join(script_dir, 'results/saved_models/inference_default/params.json'))
+
+        if default_model:
+            self.dic = self.load(
+                os.path.join(script_dir, 'results/saved_models/inference_default/params.json'))
+        else:
+            self.dic = {}
 
         if ini is not None:
             ini_dic = self.load(os.path.join(script_dir, '..', ini))
@@ -154,9 +159,10 @@ def QED_oracle(smiles):
             t[i] = QED.qed(m)
     return t
 
+
 def isValid(smiles):
-    m=Chem.MolFromSmiles(smiles)
-    if m==None:
+    m = Chem.MolFromSmiles(smiles)
+    if m == None:
         return 0
     return 1
 
@@ -171,7 +177,6 @@ def debug_memory():
     print(f"Found {len(tensors)} unique tensors. Total: {sum(tensors.values())}")
     for line in sorted(tensors.items(), key=lambda x: x[1], reverse=True):
         print('{}\t{}'.format(*line))
-
 
 
 # ============== Smiles handling utils ===============================

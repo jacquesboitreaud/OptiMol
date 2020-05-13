@@ -34,7 +34,7 @@ script_dir = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(script_dir)
 
 from utils import *
-from dgl_utils import * 
+from dgl_utils import *
 from model import Model
 from loss_func import VAELoss, weightedPropsLoss, affsRegLoss, affsClassifLoss
 from dataloaders.molDataset import molDataset, Loader
@@ -48,7 +48,7 @@ if __name__ == "__main__":
     parser.add_argument("--cutoff", help="Max number of molecules to use. Set to -1 for all", type=int, default=-1)
 
     parser.add_argument('--load_model', action='store_true', default=False)
-    parser.add_argument('--load_name',type=str, default='default') # name of model to load from 
+    parser.add_argument('--load_name', type=str, default='default')  # name of model to load from
     parser.add_argument('--load_iter', type=int, default=0)  # resume training at optimize step n°
 
     parser.add_argument('--decode', type=str, default='selfies')  # 'smiles' or 'selfies'
@@ -83,31 +83,30 @@ if __name__ == "__main__":
     parser.add_argument('--tf_warmup', type=int, default=200000)  # nbr of steps at tf_init
 
     # Multitask :
-    parser.add_argument('--no_props', action='store_true', default=False ) # No multitask props 
-    parser.add_argument('--no_aff', action='store_true', default=False ) # No multitask aff 
+    parser.add_argument('--no_props', action='store_true', default=False)  # No multitask props
+    parser.add_argument('--no_aff', action='store_true', default=False)  # No multitask aff
     parser.add_argument('--bin_affs', action='store_true', default=False)  # Binned discretized affs or true values
-    
 
     # =======
 
-    args = parser.parse_args()
+    args = parser.parse_known_args()
 
     logdir, modeldir = setup(args.name, permissive=True)
     dumper = Dumper(dumping_path=os.path.join(modeldir, 'params.json'), argparse=args)
-    
+
     use_props, use_affs = True, True
-    if args.no_props :
-        use_props=False
-    if args.no_aff :
+    if args.no_props:
+        use_props = False
+    if args.no_aff:
         use_affs = False
 
     # Multitasking : properties and affinities should be in input dataset 
-    if use_props :
-        properties = ['QED','logP', 'molWt']
+    if use_props:
+        properties = ['QED', 'logP', 'molWt']
     else:
         properties = []
     props_weights = [1e3, 1e2, 1]
-    if use_affs :
+    if use_affs:
         targets = ['drd3']
     else:
         targets = []
@@ -138,7 +137,7 @@ if __name__ == "__main__":
 
     params = {'features_dim': loaders.dataset.emb_size,  # node embedding dimension
               'num_rels': loaders.num_edge_types,
-              'gcn_layers':args.n_gcn_layers, 
+              'gcn_layers': args.n_gcn_layers,
               'gcn_hdim': 32,
               'l_size': args.latent_size,
               'voc_size': loaders.dataset.n_chars,
@@ -201,7 +200,7 @@ if __name__ == "__main__":
 
             # Compute loss terms : change according to multitask setting
             rec, kl = VAELoss(out_smi, smiles, mu, logv)
-            
+
             if not use_affs and not use_props:  # VAE only
                 pmse, amse = torch.tensor(0), torch.tensor(0)
             elif use_props and not use_affs:
@@ -216,7 +215,6 @@ if __name__ == "__main__":
                     pmse = weightedPropsLoss(p_target, out_p, props_weights)
                 else:
                     pmse = torch.tensor(0)
-                
 
             # COMPOSE TOTAL LOSS TO BACKWARD
             if total_steps < args.warmup:  # Only reconstruction (warmup)
@@ -247,25 +245,24 @@ if __name__ == "__main__":
                     f'Opt step {total_steps}, rec: {rec.item():.2f}, kl: {beta * kl.item():.2f}, props mse: {pmse.item():.2f}, aff mse: {amse.item():.2f}')
                 writer.add_scalar('BatchRec/train', rec.item(), total_steps)
                 writer.add_scalar('BatchKL/train', kl.item(), total_steps)
-                if use_props :
+                if use_props:
                     writer.add_scalar('BatchPropMse/train', pmse.item(), total_steps)
-                if use_affs :
+                if use_affs:
                     writer.add_scalar('BatchAffMse/train', amse.item(), total_steps)
 
             if args.print_smiles_iter > 0 and total_steps % args.print_smiles_iter == 0:
                 _, out_chars = torch.max(out_smi.detach(), dim=1)
                 _, frac_valid = log_reconstruction(smiles, out_smi.detach(),
-                                                                          loaders.dataset.index_to_char,
-                                                                          string_type=args.decode)
+                                                   loaders.dataset.index_to_char,
+                                                   string_type=args.decode)
                 print(f'{frac_valid} valid smiles in batch')
                 # Correctly reconstructed characters 
                 differences = 1. - torch.abs(out_chars - smiles)
-                differences = torch.clamp(differences, min = 0., max = 1.).double()
-                quality     = 100. * torch.mean(differences)
-                quality     = quality.detach().cpu()
+                differences = torch.clamp(differences, min=0., max=1.).double()
+                quality = 100. * torch.mean(differences)
+                quality = quality.detach().cpu()
                 writer.add_scalar('quality/train', quality.item(), total_steps)
                 print('fraction of correct characters at reconstruction : ', quality.item())
-                
 
             if total_steps % args.save_iter == 0:
                 model.cpu()
@@ -295,7 +292,7 @@ if __name__ == "__main__":
                 mu, logv, z, out_smi, out_p, out_a = model(graph, smiles, tf=tf_proba)
 
                 # Compute loss : change according to multitask
-                
+
                 rec, kl = VAELoss(out_smi, smiles, mu, logv)
                 if not use_affs and not use_props:  # VAE only
                     pmse, amse = torch.tensor(0), torch.tensor(0)
@@ -316,14 +313,14 @@ if __name__ == "__main__":
                 val_kl += kl.item()
                 val_pmse += pmse.item()
                 val_amse += amse.item()
-                
+
                 # Correctly reconstructed characters in first validation batch
                 if batch_idx == 0:
                     _, out_chars = torch.max(out_smi.detach(), dim=1)
                     differences = 1. - torch.abs(out_chars - smiles)
-                    differences = torch.clamp(differences, min = 0., max = 1.).double()
-                    quality     = 100. * torch.mean(differences)
-                    quality     = quality.detach().cpu()
+                    differences = torch.clamp(differences, min=0., max=1.).double()
+                    quality = 100. * torch.mean(differences)
+                    quality = quality.detach().cpu()
                     writer.add_scalar('quality/valid', quality.item(), epoch)
                     print('fraction of correct characters in first valid batch : ', quality.item())
 
