@@ -73,5 +73,30 @@ if __name__ == '__main__':
     search_model.load(model_weights_path)
 
     samples, weights = get_samples(prior_model, search_model, max=args.max)
-    dump_path = os.path.join(script_dir, 'results/samples.p')
-    pickle.dump((samples, weights), open(dump_path, 'wb'))
+
+    # Memoization, we split the list into already docked ones and dump a simili-docking csv
+    whole_path = os.path.join(script_dir, '..', '..', 'data', 'drd3_scores.pickle.p')
+    docking_whole_results = pickle.load(open(whole_path, 'rb'))
+
+    filtered_smiles = list()
+    already_smiles = list()
+    already_scores = list()
+    for i, smile in enumerate(samples):
+        if smile in docking_whole_results:
+            already_smiles.append(smile)
+            already_scores.append(docking_whole_results[smile])
+        else:
+            filtered_smiles.append(smile)
+
+    # Dump simili-docking
+    dump_path = os.path.join(script_dir, 'results', 'docking_small_results', 'simili.csv')
+    df = pd.DataFrame.from_dict({'smile': already_smiles, 'score': already_scores})
+    df.to_csv(dump_path)
+
+    # Dump for the docker
+    dump_path = os.path.join(script_dir, 'results', 'docker_samples.p')
+    pickle.dump(filtered_smiles, open(dump_path, 'wb'))
+
+    # Dump for the trainer
+    dump_path = os.path.join(script_dir, 'results', 'samples.p')
+    pickle.dump(samples, open(dump_path, 'wb'))

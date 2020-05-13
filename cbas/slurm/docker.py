@@ -60,13 +60,9 @@ if __name__ == '__main__':
         except:
             pass
 
-    # Memoization
-    whole_path = os.path.join(script_dir, '..', '..', 'data', 'whole_docking_memo.p')
-    docking_whole_results = pickle.load(open(whole_path, 'rb'))
-
     # parse the docking task of the whole job array and split it
-    dump_path = os.path.join(script_dir, 'results/samples.p')
-    list_smiles, _ = pickle.load(open(dump_path, 'rb'))
+    dump_path = os.path.join(script_dir, 'results/docker_samples.p')
+    list_smiles = pickle.load(open(dump_path, 'rb'))
 
     N = len(list_smiles)
     chunk_size, rab = N // (num_procs), N % num_procs
@@ -85,5 +81,4 @@ if __name__ == '__main__':
               unique_id=proc_id,
               parallel=True,
               exhaustiveness=args.ex,
-              mean=True,
-              load=docking_whole_results)
+              mean=True)
