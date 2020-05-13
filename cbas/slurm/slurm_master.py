@@ -78,41 +78,26 @@ if __name__ == '__main__':
     prior_model_init = model_from_json(args.prior_name)
     torch.save(prior_model_init.state_dict(), os.path.join(savepath, "weights.pth"))
 
-    # Docking params
-    if args.oracle == 'aff':
-        print(f'Docking params setup for {args.computer}')
-        pythonsh, vina = set_path(args.computer)
+    id_train = None
 
     for t in range(1, args.iters + 1):
 
-        print(f'> start iteration {t}')
-
-        # TODO: package as a slurm standalone
+        slurm_sampler_path = os.path.jin(script_dir, 'slurm_sampler.sh')
+        if id_train is not None:
+            cmd = f'sbatch {slurm_sampler_path}'
+        else:
+            cmd = f'sbatch --depend=afterany:{id_train} {slurm_sampler_path}'
+        a = subprocess.run(cmd.split(), stdout=subprocess.PIPE).stdout.decode('utf-8')
+        id_sample = a.split()[3]
 
         # SIMULATE DOCKING
         slurm_docker_path = os.path.join(script_dir, 'slurm_docker.sh')
-        cmd = f'sbatch {slurm_docker_path}'
+        cmd = f'sbatch --depend=afterany:{id_sample} {slurm_docker_path}'
         a = subprocess.run(cmd.split(), stdout=subprocess.PIPE).stdout.decode('utf-8')
-        id_run = a.split()[3]
+        id_dock = a.split()[3]
         # print(f'launched docking run with id {id_run}')
 
-        """
-        # WAIT FOR COMPLETION BEFORE RUNNING THAT
-        cmd_2 = f"sbatch --depend=afterany:{id_run} arrayer.sh"
-        print(cmd_2)
-        out_2 = subprocess.run(cmd_2.split(), stdout=subprocess.PIPE).stdout.decode('utf-8')
-        id_run_2 = out_2.split()[3]
-        print(f'launched second run with id {id_run_2}')
-        """
-        # scoring
-        if args.oracle == 'aff':
-            scores = [dock(s, i, pythonsh, vina) for i, s in enumerate(samples)]
-        elif args.oracle == 'qed':  # toy oracle
-            scores = qed(samples)  # function takes a list of mols
-
-        # TODO : gather docking with the main, sort scores and get quantiles, load old model and importance
-        # TODO : sampling weights, do one training and save this model.
-        # TODO : Then package as a standalone slurm call
-        # Sort scores and find Qth quantile
-
-        # Get some prints and repeat
+        slurm_trainer_path = os.path.join(script_dir, 'slurm_trainer.sh')
+        cmd = f'sbatch --depend=afterany:{id_dock} {slurm_trainer_path}'
+        a = subprocess.run(cmd.split(), stdout=subprocess.PIPE).stdout.decode('utf-8')
+        id_train = a.split()[3]
