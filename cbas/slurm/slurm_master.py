@@ -45,6 +45,17 @@ if __name__ == '__main__':
 
     device = 'cpu'  # 'cuda' if torch.cuda.is_available() else 'cpu'
 
+
+    def setup():
+        pass
+        soft_mkdir(os.path.join(script_dir, 'results'))
+        soft_mkdir(os.path.join(script_dir, 'results', 'models'))
+        soft_mkdir(os.path.join(script_dir, 'results', 'docking_results'))
+        soft_mkdir(os.path.join(script_dir, 'results', 'docking_small_results'))
+
+
+    setup()
+
     savepath = os.path.join(script_dir, 'results', 'models', args.search_name)
     soft_mkdir(savepath)
 
