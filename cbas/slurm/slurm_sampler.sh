@@ -7,3 +7,4 @@ source ~/anaconda3/etc/profile.d/conda.sh
 conda activate optimol_cpu
 
 python sampler.py
+
