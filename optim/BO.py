@@ -23,7 +23,6 @@ import pandas as pd
 if __name__ == "__main__":
     script_dir = os.path.dirname(os.path.realpath(__file__))
     sys.path.append(os.path.join(script_dir, '..'))
-    sys.path.append(os.path.join(script_dir, 'docking'))
 
 import pickle
 import torch.utils.data
@@ -52,7 +51,7 @@ if __name__ == "__main__":
     from utils import *
     from dgl_utils import * 
     from bo_utils import get_fitted_model
-    from docking.docking import dock, set_path
+    from docking.docking_debug import dock, set_path
 
     parser = argparse.ArgumentParser()
     
@@ -180,7 +179,7 @@ if __name__ == "__main__":
                     sc = dock(smiles[i], i, PYTHONSH, VINA, exhaustiveness = args.ex, load = False )
                     new_scores[i,0]=sc
                     # Update dict with scores 
-                    if smiles[i] not in load_dict :
+                    if smiles[i] not in load_dict and sc < 0 :
                         load_dict[smiles[i]]= sc
                     
                 new_scores = -1* new_scores
