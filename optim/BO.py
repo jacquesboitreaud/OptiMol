@@ -79,7 +79,7 @@ if __name__ == "__main__":
 
     # ==============
     
-    with open(os.path.join(script_dir,'docking', args.load), 'rb') as f:
+    with open(os.path.join(script_dir,'..', 'docking', args.load), 'rb') as f:
         load_dict = pickle.load(f)
     print(f'Preloaded {len(load_dict)} docking scores')
     
@@ -115,7 +115,7 @@ if __name__ == "__main__":
     state_dict = None
     
     # Generate initial data 
-    df = pd.read_csv(os.path.join(script_dir,'data',args.init_samples), nrows = args.n_init) # n_init Initial samples 
+    df = pd.read_csv(os.path.join(script_dir,'..','data',args.init_samples), nrows = args.n_init) # n_init Initial samples 
     
     loader.graph_only=True
     train_z = torch.tensor(model.embed( loader, df)) # z has shape (N_molecules, latent_size)
@@ -270,7 +270,7 @@ if __name__ == "__main__":
         
         # Save updated dict with docking scores 
         if args.objective =='aff':
-            with open(os.path.join(script_dir,'docking', args.load), 'wb') as f:
+            with open(os.path.join(script_dir,'..','docking', args.load), 'wb') as f:
                 pickle.dump(load_dict,f)
         
         
