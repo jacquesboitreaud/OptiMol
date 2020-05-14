@@ -23,7 +23,6 @@ import pandas as pd
 if __name__ == "__main__":
     script_dir = os.path.dirname(os.path.realpath(__file__))
     sys.path.append(os.path.join(script_dir, '..'))
-    sys.path.append(os.path.join(script_dir, 'docking'))
 
 import pickle
 import torch.utils.data
@@ -57,7 +56,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     
     parser.add_argument( '--bo_name', help="Name for BO results subdir ",
-                        default='debug')
+                        default='diverse')
     
     parser.add_argument( '--name', help="saved model weights fname. Located in saved_models subdir",
                         default='inference_default')
@@ -66,11 +65,11 @@ if __name__ == "__main__":
     parser.add_argument('-o', '--objective', default='aff_pred') # 'qed', 'aff', 'aff_pred'
     
     # initial samples to use 
-    parser.add_argument('--init_samples', default='excape_drd3_scored.csv') # samples to start with // random or excape data
-    parser.add_argument('--n_init', type = int ,  default=500) # Number of samples to start with 
+    parser.add_argument('--init_samples', default='2k_diverse_samples.csv') # samples to start with // random or excape data
+    parser.add_argument('--n_init', type = int ,  default=2000) # Number of samples to start with 
     
     # docking specific params 
-    parser.add_argument('-e', "--ex", help="Docking exhaustiveness (vina)", type=int, default=32) 
+    parser.add_argument('-e', "--ex", help="Docking exhaustiveness (vina)", type=int, default=16) 
     parser.add_argument('-s', "--server", help="COmputer used, to set paths for vina", type=str, default='rup')
     parser.add_argument( '--load', default='drd3_scores.pickle') # Pickle file with dict of already docked molecules // keyed by kekuleSMiles
     
@@ -79,7 +78,7 @@ if __name__ == "__main__":
 
     # ==============
     
-    with open(os.path.join(script_dir,'docking', args.load), 'rb') as f:
+    with open(os.path.join(script_dir,'..', 'docking', args.load), 'rb') as f:
         load_dict = pickle.load(f)
     print(f'Preloaded {len(load_dict)} docking scores')
     
@@ -97,6 +96,7 @@ if __name__ == "__main__":
 
     # Load model (on gpu if available)
     device = 'cuda' if torch.cuda.is_available() else 'cpu' # the model device 
+    gp_device = 'cuda' if torch.cuda.is_available() else 'cpu' # gaussian process device 
     model = model_from_json(args.name)
     model.to(device)
     model.eval()
@@ -104,7 +104,7 @@ if __name__ == "__main__":
     # Search space 
     d = model.l_size
     dtype = torch.float
-    bounds = torch.tensor([[-3.0] * d, [3.0] * d], device='cpu', dtype=dtype)
+    bounds = torch.tensor([[-3.0] * d, [3.0] * d], device=gp_device, dtype=dtype)
     BO_BATCH_SIZE = args.n_queries
     N_STEPS = args.n_steps
     MC_SAMPLES = 2000
@@ -115,7 +115,7 @@ if __name__ == "__main__":
     state_dict = None
     
     # Generate initial data 
-    df = pd.read_csv(os.path.join(script_dir,'data',args.init_samples), nrows = args.n_init) # n_init Initial samples 
+    df = pd.read_csv(os.path.join(script_dir,'..','data',args.init_samples), nrows = args.n_init) # n_init Initial samples 
     
     loader.graph_only=True
     train_z = torch.tensor(model.embed( loader, df)) # z has shape (N_molecules, latent_size)
@@ -138,15 +138,15 @@ if __name__ == "__main__":
     print(f'-> Best value observed in initial samples : {best_value}')
     
     # Acquisition function 
-    def optimize_acqf_and_get_observation(acq_func, device):
+    def optimize_acqf_and_get_observation(acq_func, device, gp_device):
         """Optimizes the acquisition function, and returns a new candidate and a noisy observation"""
         
         # optimize
         candidates, _ = optimize_acqf(
             acq_function=acq_func,
             bounds=torch.stack([
-                torch.zeros(d, dtype=dtype, device='cpu'), 
-                torch.ones(d, dtype=dtype, device='cpu'),
+                torch.zeros(d, dtype=dtype, device=gp_device), 
+                torch.ones(d, dtype=dtype, device=gp_device),
             ]),
             q=BO_BATCH_SIZE,
             num_restarts=10,
@@ -158,7 +158,7 @@ if __name__ == "__main__":
         
         # Decode z into smiles
         with torch.no_grad():
-            gen_seq = model.decode(new_z.to(device))
+            gen_seq = model.decode(new_z)
             smiles = model.probas_to_smiles(gen_seq)
         if vocab=='selfies' :
             k = []
@@ -177,10 +177,10 @@ if __name__ == "__main__":
             if args.objective == 'aff':
                 new_scores = torch.zeros((BO_BATCH_SIZE,1), dtype=torch.float)
                 for i in range(len(smiles)):
-                    sc = dock(smiles[i], i, PYTHONSH, VINA, exhaustiveness = args.ex, load = load_dict )
+                    sc = dock(smiles[i], i, PYTHONSH, VINA, exhaustiveness = args.ex, load = False )
                     new_scores[i,0]=sc
                     # Update dict with scores 
-                    if smiles[i] not in load_dict :
+                    if smiles[i] not in load_dict and sc < 0 :
                         load_dict[smiles[i]]= sc
                     
                 new_scores = -1* new_scores
@@ -217,6 +217,9 @@ if __name__ == "__main__":
     for iteration in range(N_STEPS):    
         print(f'Iter [{iteration}/{N_STEPS}]')
         # fit the model
+        train_z =train_z.to(gp_device)
+        train_obj=train_obj.to(gp_device)
+        
         GP_model = get_fitted_model(
             normalize(train_z, bounds=bounds), 
             standardize(train_obj), 
@@ -228,7 +231,7 @@ if __name__ == "__main__":
         qEI = qExpectedImprovement(model=GP_model, sampler=qmc_sampler, best_f=standardize(train_obj).max())
     
         # optimize and get new observation
-        new_smiles, new_z, new_score = optimize_acqf_and_get_observation(qEI, device)
+        new_smiles, new_z, new_score = optimize_acqf_and_get_observation(qEI, device, gp_device)
         
         # save acquired scores for next time 
         if(args.verbose):
@@ -239,8 +242,8 @@ if __name__ == "__main__":
         # update training points
         
         train_smiles+= new_smiles 
-        train_z = torch.cat((train_z, new_z.cpu()), dim=0)
-        train_obj = torch.cat((train_obj, new_score), dim=0)
+        train_z = torch.cat((train_z, new_z.to(gp_device)), dim=0)
+        train_obj = torch.cat((train_obj, new_score.to(gp_device)), dim=0)
         state_dict = GP_model.state_dict()
     
         # update progress
@@ -260,7 +263,7 @@ if __name__ == "__main__":
             pickle.dump(sc_dict, f)
         
         # Update file with top 100 samples discovered 
-        train_obj_flat=train_obj.numpy().flatten()
+        train_obj_flat=train_obj.cpu().numpy().flatten()
         idces = np.argsort(train_obj_flat)
         idces=idces[-100:] # top 100
         with open(os.path.join('bo_results',args.bo_name,f'top_samples_{iteration}.txt'), 'w') as f :
@@ -270,7 +273,7 @@ if __name__ == "__main__":
         
         # Save updated dict with docking scores 
         if args.objective =='aff':
-            with open(os.path.join(script_dir,'docking', args.load), 'wb') as f:
+            with open(os.path.join(script_dir,'..','docking', args.load), 'wb') as f:
                 pickle.dump(load_dict,f)
         
         
