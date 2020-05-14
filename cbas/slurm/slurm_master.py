@@ -18,7 +18,7 @@ sys.path.append(os.path.join(script_dir, '..', '..'))
 import torch
 import argparse
 
-from utils import Dumper, soft_mkdir
+from utils import ModelDumper, soft_mkdir
 from model import model_from_json
 
 if __name__ == '__main__':
@@ -67,7 +67,7 @@ if __name__ == '__main__':
               'beta': args.beta,
               'processes': args.procs,
               'DEBUG': True}
-    dumper = Dumper(dumping_path=os.path.join(savepath, 'params_gentrain.json'), default_model=False)
+    dumper = ModelDumper(dumping_path=os.path.join(savepath, 'params_gentrain.json'), default_model=False)
     dumper.dic.update(params)
     dumper.dump()
 
@@ -76,7 +76,7 @@ if __name__ == '__main__':
     id_train = None
 
     for iteration in range(1, args.iters + 1):
-
+        # SAMPLING
         slurm_sampler_path = os.path.join(script_dir, 'slurm_sampler.sh')
         if id_train is None:
             cmd = f'sbatch {slurm_sampler_path}'
@@ -85,18 +85,16 @@ if __name__ == '__main__':
         a = subprocess.run(cmd.split(), stdout=subprocess.PIPE).stdout.decode('utf-8')
         id_sample = a.split()[3]
 
-
-        print(f'id_sample was {id_sample}')
-        sys.exit()
-
-        # SIMULATE DOCKING
+        # DOCKING
         slurm_docker_path = os.path.join(script_dir, 'slurm_docker.sh')
         cmd = f'sbatch --depend=afterany:{id_sample} {slurm_docker_path}'
         a = subprocess.run(cmd.split(), stdout=subprocess.PIPE).stdout.decode('utf-8')
         id_dock = a.split()[3]
-        # print(f'launched docking run with id {id_run}')
 
+        # AGGREGATION AND TRAINING
         slurm_trainer_path = os.path.join(script_dir, 'slurm_trainer.sh')
         cmd = f'sbatch --depend=afterany:{id_dock} {slurm_trainer_path} {iteration}'
         a = subprocess.run(cmd.split(), stdout=subprocess.PIPE).stdout.decode('utf-8')
         id_train = a.split()[3]
+
+        print(f'launched iteration {iteration}')

@@ -6,4 +6,4 @@
 source ~/anaconda3/etc/profile.d/conda.sh
 conda activate optimol_cpu
 
-python trainer.py --iteration $2
+python trainer.py --iteration $1

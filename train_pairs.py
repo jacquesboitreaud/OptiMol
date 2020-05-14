@@ -68,7 +68,7 @@ if __name__ == "__main__":
     from utils import *
 
     logdir, modeldir = setup(args.name, permissive=True)
-    dumper = Dumper(dumping_path=os.path.join(modeldir, 'params.json'), argparse=args)
+    dumper = ModelDumper(dumping_path=os.path.join(modeldir, 'params.json'), argparse=args)
 
     properties = ['QED', 'logP', 'molWt']
     targets = None  # If we use multitask affinities prediction

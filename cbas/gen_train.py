@@ -125,3 +125,5 @@ class GenTrain():
         self.model.cpu()
         torch.save(self.model.state_dict(), os.path.join(self.savepath, "weights.pth"))
         self.model.to(self.device)
+
+

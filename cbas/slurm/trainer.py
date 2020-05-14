@@ -17,8 +17,9 @@ from utils import *
 
 def gather_scores(iteration):
     """
-    Gather docking results
-    :return:
+    Gather docking results from small csv and merge them in a big iteration.csv file.
+    :param iteration: integer to index the merged csv
+    :return: {smile : docking_score}
     """
     dirname = os.path.join(script_dir, 'results', 'docking_small_results')
     dfs = [pd.read_csv(os.path.join(dirname, csv_file)) for csv_file in os.listdir(dirname)]
@@ -27,7 +28,6 @@ def gather_scores(iteration):
     merged.to_csv(dump_path)
 
     def empty_folder(folder_path):
-        folder_path = '/path/to/folder'
         for file_object in os.listdir(folder_path):
             file_object_path = os.path.join(folder_path, file_object)
             if os.path.isfile(file_object_path) or os.path.islink(file_object_path):
@@ -40,8 +40,7 @@ def gather_scores(iteration):
     molecules = merged['smile']
     scores = merged['score']
 
-    score_dict = dict(zip(molecules, scores))
-    return score_dict
+    return dict(zip(molecules, scores))
 
 
 def process_samples(score_dict, samples, weights, quantile):
@@ -97,13 +96,14 @@ if __name__ == '__main__':
     # =======
     args, _ = parser.parse_known_args()
 
-    # print('iteration is ', args.iteration)
-
     # Aggregate docking results
     score_dict = gather_scores(args.iteration)
-    # df = pd.read_csv(script_dir, 'results/docking_results/0.csv')
-    # mol, score = df['smile'], df['score']
-    # score_dict = dict(zip(mol, score))
+
+    # Memoization of the sampled compounds
+    whole_path = os.path.join(script_dir, '..', '..', 'data', 'drd3_scores.pickle')
+    docking_whole_results = pickle.load(open(whole_path, 'rb'))
+    docking_whole_results.update(score_dict)
+    pickle.dump(docking_whole_results, open(whole_path, 'wb'))
 
     # Reweight and discard wrong samples
     dump_path = os.path.join(script_dir, 'results/samples.p')
@@ -114,7 +114,7 @@ if __name__ == '__main__':
     search_model = model_from_json(args.prior_name)
 
     # Retrieve the gentrain object and feed it with updated model
-    dumper = Dumper(default_model=False)
+    dumper = ModelDumper(default_model=False)
     json_path = os.path.join(script_dir, 'results', 'models', args.search_name, 'params_gentrain.json')
     params = dumper.load(json_path)
     savepath = os.path.join(params['savepath'], 'weights.pth')
@@ -122,5 +122,4 @@ if __name__ == '__main__':
 
     # Update search model
     search_trainer = GenTrain(search_model, **params)
-
     search_trainer.step('smiles', samples, weights)
