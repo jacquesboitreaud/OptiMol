@@ -265,9 +265,13 @@ class molDataset(Dataset):
                      (nx.get_node_attributes(graph, 'formal_charge')).items()}
         nx.set_node_attributes(graph, name='formal_charge', values=at_charge)
         
-        hydrogens = {a: torch.tensor(self.chi_map[label], dtype=torch.float) for a, label in
-                   (nx.get_node_attributes(graph, 'num_explicit_hs')).items()}
-        nx.set_node_attributes(graph, name='num_explicit_hs', values=hydrogens)
+        try:
+            hydrogens = {a: torch.tensor(self.chi_map[label], dtype=torch.float) for a, label in
+                       (nx.get_node_attributes(graph, 'num_explicit_hs')).items()}
+            nx.set_node_attributes(graph, name='num_explicit_hs', values=hydrogens)
+        except KeyError:
+            print('!!!! Number of explicit hydrogens to one-hot error for input ', smiles, ' ignored')
+            return None, 0,0,0
         
         aromatic = {a: torch.tensor(self.chi_map[label], dtype=torch.float) for a, label in
                    (nx.get_node_attributes(graph, 'is_aromatic')).items()}

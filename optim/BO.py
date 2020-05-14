@@ -51,7 +51,7 @@ if __name__ == "__main__":
     from utils import *
     from dgl_utils import * 
     from bo_utils import get_fitted_model
-    from docking.docking_debug import dock, set_path
+    from docking.docking import dock, set_path
 
     parser = argparse.ArgumentParser()
     
@@ -96,6 +96,7 @@ if __name__ == "__main__":
 
     # Load model (on gpu if available)
     device = 'cuda' if torch.cuda.is_available() else 'cpu' # the model device 
+    gp_device = 'cuda' if torch.cuda.is_available() else 'cpu' # gaussian process device 
     model = model_from_json(args.name)
     model.to(device)
     model.eval()
@@ -103,7 +104,7 @@ if __name__ == "__main__":
     # Search space 
     d = model.l_size
     dtype = torch.float
-    bounds = torch.tensor([[-3.0] * d, [3.0] * d], device='cpu', dtype=dtype)
+    bounds = torch.tensor([[-3.0] * d, [3.0] * d], device=gp_device, dtype=dtype)
     BO_BATCH_SIZE = args.n_queries
     N_STEPS = args.n_steps
     MC_SAMPLES = 2000
@@ -137,15 +138,15 @@ if __name__ == "__main__":
     print(f'-> Best value observed in initial samples : {best_value}')
     
     # Acquisition function 
-    def optimize_acqf_and_get_observation(acq_func, device):
+    def optimize_acqf_and_get_observation(acq_func, device, gp_device):
         """Optimizes the acquisition function, and returns a new candidate and a noisy observation"""
         
         # optimize
         candidates, _ = optimize_acqf(
             acq_function=acq_func,
             bounds=torch.stack([
-                torch.zeros(d, dtype=dtype, device='cpu'), 
-                torch.ones(d, dtype=dtype, device='cpu'),
+                torch.zeros(d, dtype=dtype, device=gp_device), 
+                torch.ones(d, dtype=dtype, device=gp_device),
             ]),
             q=BO_BATCH_SIZE,
             num_restarts=10,
@@ -157,7 +158,7 @@ if __name__ == "__main__":
         
         # Decode z into smiles
         with torch.no_grad():
-            gen_seq = model.decode(new_z.to(device))
+            gen_seq = model.decode(new_z)
             smiles = model.probas_to_smiles(gen_seq)
         if vocab=='selfies' :
             k = []
@@ -216,6 +217,9 @@ if __name__ == "__main__":
     for iteration in range(N_STEPS):    
         print(f'Iter [{iteration}/{N_STEPS}]')
         # fit the model
+        train_z =train_z.to(gp_device)
+        train_obj=train_obj.to(gp_device)
+        
         GP_model = get_fitted_model(
             normalize(train_z, bounds=bounds), 
             standardize(train_obj), 
@@ -227,7 +231,7 @@ if __name__ == "__main__":
         qEI = qExpectedImprovement(model=GP_model, sampler=qmc_sampler, best_f=standardize(train_obj).max())
     
         # optimize and get new observation
-        new_smiles, new_z, new_score = optimize_acqf_and_get_observation(qEI, device)
+        new_smiles, new_z, new_score = optimize_acqf_and_get_observation(qEI, device, gp_device)
         
         # save acquired scores for next time 
         if(args.verbose):
@@ -238,8 +242,8 @@ if __name__ == "__main__":
         # update training points
         
         train_smiles+= new_smiles 
-        train_z = torch.cat((train_z, new_z.cpu()), dim=0)
-        train_obj = torch.cat((train_obj, new_score), dim=0)
+        train_z = torch.cat((train_z, new_z.to(gp_device)), dim=0)
+        train_obj = torch.cat((train_obj, new_score.to(gp_device)), dim=0)
         state_dict = GP_model.state_dict()
     
         # update progress
@@ -259,7 +263,7 @@ if __name__ == "__main__":
             pickle.dump(sc_dict, f)
         
         # Update file with top 100 samples discovered 
-        train_obj_flat=train_obj.numpy().flatten()
+        train_obj_flat=train_obj.cpu().numpy().flatten()
         idces = np.argsort(train_obj_flat)
         idces=idces[-100:] # top 100
         with open(os.path.join('bo_results',args.bo_name,f'top_samples_{iteration}.txt'), 'w') as f :
