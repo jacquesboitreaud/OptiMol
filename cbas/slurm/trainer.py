@@ -114,7 +114,7 @@ if __name__ == '__main__':
     search_model = model_from_json(args.prior_name)
 
     # Retrieve the gentrain object and feed it with updated model
-    dumper = Dumper(default_model=False)
+    dumper = ModelDumper(default_model=False)
     json_path = os.path.join(script_dir, 'results', 'models', args.search_name, 'params_gentrain.json')
     params = dumper.load(json_path)
     savepath = os.path.join(params['savepath'], 'weights.pth')

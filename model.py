@@ -505,7 +505,7 @@ def model_from_json(name='inference_default', load_weights=True, default_dir=Tru
     :param load_weights:
     :return:
     """
-    dumper = Dumper()
+    dumper = ModelDumper()
     if default_dir:
         path_to_dir = os.path.join(script_dir, 'results/saved_models', name)
         params = dumper.load(os.path.join(path_to_dir, 'params.json'))
@@ -526,7 +526,7 @@ def model_from_json(name='inference_default', load_weights=True, default_dir=Tru
 
 
 def model_from_dir(dir, load_weights=True):
-    dumper = Dumper()
+    dumper = ModelDumper()
     params = dumper.load(os.path.join(dir, 'params.json'))
     model = Model(**params)
     if load_weights:

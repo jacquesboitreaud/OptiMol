@@ -34,7 +34,7 @@ script_dir = os.path.dirname(os.path.realpath(__file__))
 if __name__=='__main__':
     sys.path.append(script_dir)
 
-from utils import Dumper, disable_rdkit_logging, setup, log_reconstruction
+from utils import ModelDumper, disable_rdkit_logging, setup, log_reconstruction
 from dgl_utils import *
 from model import Model
 from loss_func import VAELoss, weightedPropsLoss, affsRegLoss, affsClassifLoss
@@ -80,7 +80,7 @@ if __name__ == "__main__":
     parser.add_argument('--tf_init', type=float, default=1.0)
     parser.add_argument('--tf_step', type=float, default=0.002)  # step decrease
     parser.add_argument('--tf_end', type=float, default=0)  # final tf frequency
-    parser.add_argument('--tf_anneal_iter', type=int, default=1000)  # nbr of iters between each annealing 
+    parser.add_argument('--tf_anneal_iter', type=int, default=1000)  # nbr of iters between each annealing
     parser.add_argument('--tf_warmup', type=int, default=200000)  # nbr of steps at tf_init
 
     # Multitask :
@@ -93,7 +93,7 @@ if __name__ == "__main__":
     args, _ = parser.parse_known_args()
 
     logdir, modeldir = setup(args.name, permissive=True)
-    dumper = Dumper(dumping_path=os.path.join(modeldir, 'params.json'), argparse=args)
+    dumper = ModelDumper(dumping_path=os.path.join(modeldir, 'params.json'), argparse=args)
 
     use_props, use_affs = True, True
     if args.no_props:
@@ -101,7 +101,7 @@ if __name__ == "__main__":
     if args.no_aff:
         use_affs = False
 
-    # Multitasking : properties and affinities should be in input dataset 
+    # Multitasking : properties and affinities should be in input dataset
     if use_props:
         properties = ['QED', 'logP', 'molWt']
     else:
@@ -257,7 +257,7 @@ if __name__ == "__main__":
                                                    loaders.dataset.index_to_char,
                                                    string_type=args.decode)
                 print(f'{frac_valid} valid smiles in batch')
-                # Correctly reconstructed characters 
+                # Correctly reconstructed characters
                 differences = 1. - torch.abs(out_chars - smiles)
                 differences = torch.clamp(differences, min=0., max=1.).double()
                 quality = 100. * torch.mean(differences)

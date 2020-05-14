@@ -24,37 +24,22 @@ script_dir_utils = os.path.dirname(os.path.realpath(__file__))
 #  ============== Dumping utils  ==============
 
 
-class Dumper():
+class Dumper:
     """
     Small class to deal with model loading/dumping
 
     Can be used as a dumping utility or a model logger
-    Then it starts by adding a params.json dict (to have all necessary values) and update it with an ini and then with the
-    argparse
+
     """
 
-    def __init__(self, dumping_path=None, ini=None, argparse=None, default_model=True):
+    def __init__(self, dumping_path=None, dic={}):
         """
 
-        :param ini: Optional : path to ini from the root of the project
-        :param argparse: Optional, an argparse object
         :param dumping_path: Optional, where to dump by params.json
-        :param default_model: if the dumper is used for dumping models
+        :param dic: Optional, if we want to start with a dic
         """
         self.dumping_path = dumping_path
-
-        if default_model:
-            self.dic = self.load(
-                os.path.join(script_dir_utils, 'results/saved_models/inference_default/params.json'))
-        else:
-            self.dic = {}
-
-        if ini is not None:
-            ini_dic = self.load(os.path.join(script_dir_utils, '..', ini))
-            self.dic.update(ini_dic)
-
-        if argparse is not None:
-            self.dic.update(argparse.__dict__)
+        self.dic = dic
 
     def dump(self, dict_to_dump=None, dumping_path=None):
         """
@@ -74,10 +59,41 @@ class Dumper():
         with open(dumping_path, 'w') as f:
             print(j, file=f)
 
-    def load(self, file_to_read):
+    def load(self, file_to_read, update=False):
         with open(file_to_read, 'r') as f:
             json_dict = json.load(f)
+        if update:
+            self.dic.update(json_dict)
         return json_dict
+
+
+class ModelDumper(Dumper):
+
+    def __init__(self, dumping_path=None, dic={}, ini=None, argparse=None, default_model=True):
+        """
+        Then it starts by adding a params.json dict (to have all necessary values) and update it with an ini and then
+        with the argparse and then with dic.
+
+        :param dumping_path: Optional, where to dump by params.json
+        :param default_model: if the dumper is used for dumping models, load the default parameters
+        :param ini: Optional : path to ini from the root of the project
+        :param argparse: Optional, an argparse object
+        :param dic: Optional, if we want to start with a dic
+        """
+        Dumper.__init__(self=self, dumping_path=dumping_path, dic=dic)
+
+        if default_model:
+            self.dic = self.load(
+                os.path.join(script_dir_utils, 'results/saved_models/inference_default/params.json'))
+
+        if ini is not None:
+            ini_dic = self.load(os.path.join(script_dir_utils, '..', ini))
+            self.dic.update(ini_dic)
+
+        if argparse is not None:
+            self.dic.update(argparse.__dict__)
+
+        self.dic.update(dic)
 
 
 if __name__ == '__main__':

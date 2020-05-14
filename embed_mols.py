@@ -24,7 +24,7 @@ if __name__ == "__main__":
     script_dir = os.path.dirname(os.path.realpath(__file__))
     sys.path.append(os.path.join(script_dir, 'eval'))
 
-from utils import Dumper
+from utils import ModelDumper
 from rdkit import Chem
 from rdkit.Chem import Draw
 import matplotlib.pyplot as plt

@@ -18,7 +18,7 @@ sys.path.append(os.path.join(script_dir, '..', '..'))
 import torch
 import argparse
 
-from utils import Dumper, soft_mkdir
+from utils import ModelDumper, soft_mkdir
 from model import model_from_json
 
 if __name__ == '__main__':
@@ -67,7 +67,7 @@ if __name__ == '__main__':
               'beta': args.beta,
               'processes': args.procs,
               'DEBUG': True}
-    dumper = Dumper(dumping_path=os.path.join(savepath, 'params_gentrain.json'), default_model=False)
+    dumper = ModelDumper(dumping_path=os.path.join(savepath, 'params_gentrain.json'), default_model=False)
     dumper.dic.update(params)
     dumper.dump()
 
