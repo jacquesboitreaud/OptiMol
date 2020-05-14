@@ -19,6 +19,7 @@ import argparse
 import torch
 import numpy as np
 import pandas as pd 
+import csv 
 
 if __name__ == "__main__":
     script_dir = os.path.dirname(os.path.realpath(__file__))
@@ -56,17 +57,18 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     
     parser.add_argument( '--bo_name', help="Name for BO results subdir ",
-                        default='diverse')
+                        default='qed_4')
     
     parser.add_argument( '--name', help="saved model weights fname. Located in saved_models subdir",
                         default='inference_default')
-    parser.add_argument('-n', "--n_steps", help="Nbr of optim steps", type=int, default=20)
+    
+    parser.add_argument('-n', "--n_steps", help="Nbr of optim steps", type=int, default=100)
     parser.add_argument('-q', "--n_queries", help="Nbr of queries per step", type=int, default=50)
-    parser.add_argument('-o', '--objective', default='aff_pred') # 'qed', 'aff', 'aff_pred'
+    parser.add_argument('-o', '--objective', default='qed') # 'qed', 'aff', 'aff_pred'
     
     # initial samples to use 
     parser.add_argument('--init_samples', default='2k_diverse_samples.csv') # samples to start with // random or excape data
-    parser.add_argument('--n_init', type = int ,  default=2000) # Number of samples to start with 
+    parser.add_argument('--n_init', type = int ,  default=500) # Number of samples to start with 
     
     # docking specific params 
     parser.add_argument('-e', "--ex", help="Docking exhaustiveness (vina)", type=int, default=16) 
@@ -83,7 +85,12 @@ if __name__ == "__main__":
     print(f'Preloaded {len(load_dict)} docking scores')
     
     soft_mkdir('bo_results')
-    soft_mkdir(os.path.join('bo_results',args.bo_name))
+    os.mkdir(os.path.join('bo_results',args.bo_name)) # not soft to not overwrite a previous experiment 
+    
+    save_csv = os.path.join(script_dir, 'bo_results', args.bo_name, 'samples.csv') # csv to write samples and their score 
+    header = ['smiles',args.objective, 'step']
+    with open(save_csv, 'w', newline='') as csvfile:
+        csv.writer(csvfile).writerow(header)
 
     vocab = 'selfies'
     # Loader for initial sample
@@ -137,6 +144,11 @@ if __name__ == "__main__":
     train_smiles = list(df.smiles)
     print(f'-> Best value observed in initial samples : {best_value}')
     
+    with open(save_csv, 'a', newline='') as csvfile:
+        for i,s in enumerate(df.smiles):
+            csv.writer(csvfile).writerow([s, scores_init[i,0].item(), 0])
+
+    
     # Acquisition function 
     def optimize_acqf_and_get_observation(acq_func, device, gp_device):
         """Optimizes the acquisition function, and returns a new candidate and a noisy observation"""
@@ -171,7 +183,6 @@ if __name__ == "__main__":
             smiles = k 
             
             
-        
         if BO_BATCH_SIZE > 1 : # query a batch of smiles 
             
             if args.objective == 'aff':
@@ -214,7 +225,7 @@ if __name__ == "__main__":
     print('-> Invalid molecules get score 0.0')
     samples_score = [] # avg score of new samples at each step 
     
-    for iteration in range(N_STEPS):    
+    for iteration in range(1,N_STEPS+1):    
         print(f'Iter [{iteration}/{N_STEPS}]')
         # fit the model
         train_z =train_z.to(gp_device)
@@ -232,6 +243,11 @@ if __name__ == "__main__":
     
         # optimize and get new observation
         new_smiles, new_z, new_score = optimize_acqf_and_get_observation(qEI, device, gp_device)
+        
+        # Save epoch samples 
+        with open(save_csv, 'a', newline='') as csvfile:
+            for i,s in enumerate(new_smiles):
+                csv.writer(csvfile).writerow([s, new_score[i,0].item(), iteration])
         
         # save acquired scores for next time 
         if(args.verbose):
@@ -258,9 +274,6 @@ if __name__ == "__main__":
         print(f'average score of fresh samples at iter {iteration}: {avg_score}')
         print("\n")
         
-        # Save epoch samples 
-        with open(os.path.join('bo_results',args.bo_name,'sample_scores.pickle'), 'wb') as f :
-            pickle.dump(sc_dict, f)
         
         # Update file with top 100 samples discovered 
         train_obj_flat=train_obj.cpu().numpy().flatten()

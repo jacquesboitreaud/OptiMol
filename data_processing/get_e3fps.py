@@ -28,10 +28,10 @@ from rdkit import Chem
 parser = argparse.ArgumentParser()
 parser.add_argument('-i', '--csv', help="molecules file, in /data",
                     default='moses_test.csv')
-parser.add_argument('-N', '--n_mols', help="Number of molecules, set to -1 for all in csv ", type = int, 
-                    default=-1)
 parser.add_argument('--parallel', help="parallelize over processors ", action = 'store_true', 
                     default=True)
+parser.add_argument('--start_idx', type=int, default = 0)
+parser.add_argument('--end_idx', type=int, default = 1000)
 
 args, _ = parser.parse_known_args()
 
@@ -42,17 +42,15 @@ if __name__=='__main__':
     csv_name = args.csv
     
     # e3fp params 
-    
-    if args.n_mols >0:
-        df = pd.read_csv(os.path.join(script_dir,'..', 'data', csv_name), nrows = args.n_mols)
-    else:
-         df = pd.read_csv(os.path.join(script_dir,'..', 'data', csv_name))
+    df = pd.read_csv(os.path.join(script_dir,'..', 'data', csv_name))
          
     try:
         smiles = df.smiles 
     except:
         smiles = df.smile # in case csv has different header 
     print(f'>>> computing e3fp for {smiles.shape[0]} molecules')
+    
+    smiles = smiles[args.start_idx:args.end_idx]
     
     if not args.parallel:
         fprints_list=[]
