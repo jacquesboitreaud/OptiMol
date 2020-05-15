@@ -15,16 +15,17 @@ from model import model_from_json
 from utils import *
 
 
-def gather_scores(iteration):
+def gather_scores(iteration, name):
     """
     Gather docking results from small csv and merge them in a big iteration.csv file.
     :param iteration: integer to index the merged csv
+    :param name: to get the loading and dumping path
     :return: {smile : docking_score}
     """
-    dirname = os.path.join(script_dir, 'results', 'docking_small_results')
+    dirname = os.path.join(script_dir, 'results', name, 'docking_small_results')
     dfs = [pd.read_csv(os.path.join(dirname, csv_file)) for csv_file in os.listdir(dirname)]
     merged = pd.concat(dfs)
-    dump_path = os.path.join(script_dir, 'results', 'docking_results', f'{iteration}.csv')
+    dump_path = os.path.join(script_dir, 'results', name, 'docking_results', f'{iteration}.csv')
     merged.to_csv(dump_path)
 
     def empty_folder(folder_path):
@@ -83,9 +84,9 @@ def process_samples(score_dict, samples, weights, quantile):
     return filtered_samples, filtered_weights
 
 
-def main(iteration, quantile, prior_name, search_name, qed):
+def main(iteration, quantile, prior_name, name, qed):
     # Aggregate docking results
-    score_dict = gather_scores(iteration)
+    score_dict = gather_scores(iteration,name)
 
     # Memoization of the sampled compounds, if they are not qed scores
     if not qed:
@@ -96,7 +97,7 @@ def main(iteration, quantile, prior_name, search_name, qed):
         pickle.dump(docking_whole_results, open(whole_path, 'wb'))
 
     # Reweight and discard wrong samples
-    dump_path = os.path.join(script_dir, 'results/samples.p')
+    dump_path = os.path.join(script_dir, 'results', name, 'samples.p')
     samples, weights = pickle.load(open(dump_path, 'rb'))
     samples, weights = process_samples(score_dict, samples, weights, quantile=quantile)
 
@@ -105,7 +106,7 @@ def main(iteration, quantile, prior_name, search_name, qed):
 
     # Retrieve the gentrain object and feed it with updated model
     dumper = ModelDumper(default_model=False)
-    json_path = os.path.join(script_dir, 'results', 'models', search_name, 'params_gentrain.json')
+    json_path = os.path.join(script_dir, 'results', name, 'params_gentrain.json')
     params = dumper.load(json_path)
     savepath = os.path.join(params['savepath'], 'weights.pth')
     search_model.load(savepath)
@@ -122,7 +123,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--iteration', type=int, default=0)
     parser.add_argument('--prior_name', type=str, default='inference_default')  # the prior VAE (pretrained)
-    parser.add_argument('--search_name', type=str, default='search_vae')  # the experiment name
+    parser.add_argument('--name', type=str, default='search_vae')  # the experiment name
     parser.add_argument('--quantile', type=float, default=0.6)  # quantile of scores accepted
     parser.add_argument('--qed', action='store_true')
 
@@ -131,5 +132,5 @@ if __name__ == '__main__':
     main(iteration=args.iteration,
          quantile=args.quantile,
          prior_name=args.prior_name,
-         search_name=args.search_name,
+         name=args.name,
          qed=args.qed)

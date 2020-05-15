@@ -18,13 +18,14 @@ if __name__ == '__main__':
 from docking.docking import dock, set_path
 
 
-def one_slurm(list_smiles, server, unique_id, parallel=True, exhaustiveness=16, mean=False,
+def one_slurm(list_smiles, server, unique_id, name, parallel=True, exhaustiveness=16, mean=False,
               load=False):
     """
 
     :param list_smiles:
     :param server:
     :param unique_id:
+    :param name:
     :param parallel:
     :param exhaustiveness:
     :param mean:
@@ -32,7 +33,7 @@ def one_slurm(list_smiles, server, unique_id, parallel=True, exhaustiveness=16, 
     :return:
     """
     pythonsh, vina = set_path(server)
-    dirname = os.path.join(script_dir, 'results', 'docking_small_results')
+    dirname = os.path.join(script_dir, 'results', name, 'docking_small_results')
     dump_path = os.path.join(dirname, f"{unique_id}.csv")
 
     header = ['smile', 'score']
@@ -48,14 +49,15 @@ def one_slurm(list_smiles, server, unique_id, parallel=True, exhaustiveness=16, 
             csv.writer(csvfile).writerow(list_to_write)
 
 
-def one_slurm_qed(list_smiles, unique_id):
+def one_slurm_qed(list_smiles, unique_id, name):
     """
 
     :param list_smiles:
     :param unique_id:
+    :param name:
     :return:
     """
-    dirname = os.path.join(script_dir, 'results', 'docking_small_results')
+    dirname = os.path.join(script_dir, 'results', name, 'docking_small_results')
     dump_path = os.path.join(dirname, f"{unique_id}.csv")
 
     header = ['smile', 'score']
@@ -73,9 +75,9 @@ def one_slurm_qed(list_smiles, unique_id):
             csv.writer(csvfile).writerow(list_to_write)
 
 
-def main(proc_id, num_procs, server, exhaustiveness, qed):
+def main(proc_id, num_procs, server, exhaustiveness, name, qed):
     # parse the docking task of the whole job array and split it
-    dump_path = os.path.join(script_dir, 'results/docker_samples.p')
+    dump_path = os.path.join(script_dir, 'results', name, 'docker_samples.p')
     list_smiles = pickle.load(open(dump_path, 'rb'))
 
     N = len(list_smiles)
@@ -89,10 +91,11 @@ def main(proc_id, num_procs, server, exhaustiveness, qed):
 
     # Just use qed
     if qed:
-        one_slurm_qed(list_data, proc_id)
+        one_slurm_qed(list_data, proc_id, name)
     # Do the docking and dump results
     else:
         one_slurm(list_data,
+                  name=name,
                   server=server,
                   unique_id=proc_id,
                   parallel=False,
@@ -106,6 +109,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("-s", "--server", default='mac', help="Server to run the docking on, for path and configs.")
     parser.add_argument("-ex", "--exhaustiveness", default=64, help="exhaustiveness parameter for vina")
+    parser.add_argument("-n", "--name", default='search_vae', help="Name of the exp")
     parser.add_argument('--qed', action='store_true')
     args, _ = parser.parse_known_args()
 
@@ -122,4 +126,5 @@ if __name__ == '__main__':
          num_procs=num_procs,
          server=args.server,
          exhaustiveness=args.exhaustiveness,
+         name=args.name,
          qed=args.qed)

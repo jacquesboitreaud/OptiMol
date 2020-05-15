@@ -23,14 +23,14 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--prior_name', type=str, default='inference_default')  # the prior VAE (pretrained)
-    parser.add_argument('--search_name', type=str, default='search_vae')  # the name of the experiment
+    parser.add_argument('-n', '--name', type=str, default='search_vae')  # the name of the experiment
     parser.add_argument('--iters', type=int, default=2)  # Number of iterations
+    parser.add_argument('--qed', action='store_true')
 
     # SAMPLER
     parser.add_argument('--max_samples', type=int, default=1000)  # Nbr of samples at each iter
 
     # DOCKER
-    parser.add_argument('--qed', action='store_true')
     parser.add_argument('--server', type=str, default='pasteur', help='server to run on')  # the prior VAE (pretrained)
     parser.add_argument('--ex', type=int, default=16)  # Nbr of samples at each iter
 
@@ -53,17 +53,17 @@ if __name__ == '__main__':
     def setup():
         pass
         soft_mkdir(os.path.join(script_dir, 'results'))
-        soft_mkdir(os.path.join(script_dir, 'results', 'models'))
-        soft_mkdir(os.path.join(script_dir, 'results', 'docking_results'))
-        soft_mkdir(os.path.join(script_dir, 'results', 'docking_small_results'))
+        soft_mkdir(os.path.join(script_dir, 'results', args.name))
+        soft_mkdir(os.path.join(script_dir, 'results', args.name, 'docking_results'))
+        soft_mkdir(os.path.join(script_dir, 'results', args.name, 'docking_small_results'))
 
 
     setup()
-    savepath = os.path.join(script_dir, 'results', 'models', args.search_name)
+    savepath = os.path.join(script_dir, 'results', args.name)
     soft_mkdir(savepath)
 
     # Save experiment parameters
-    dumper = Dumper(dumping_path=os.path.join(savepath, 'experiments.json'), dic=args.__dict__)
+    dumper = Dumper(dumping_path=os.path.join(savepath, 'experiment.json'), dic=args.__dict__)
     dumper.dump()
 
     params_gentrain = {'savepath': savepath,
@@ -88,15 +88,17 @@ if __name__ == '__main__':
             cmd = f'sbatch {slurm_sampler_path}'
         else:
             cmd = f'sbatch --depend=afterany:{id_train} {slurm_sampler_path}'
-        extra_args = f' {args.prior_name} {args.search_name} {args.max_samples}'
+        extra_args = f' {args.prior_name} {args.name} {args.max_samples}'
         cmd = cmd + extra_args
+        if args.qed:
+            cmd = cmd + ' --qed'
         a = subprocess.run(cmd.split(), stdout=subprocess.PIPE).stdout.decode('utf-8')
         id_sample = a.split()[3]
 
         # DOCKING
         slurm_docker_path = os.path.join(script_dir, 'slurm_docker.sh')
         cmd = f'sbatch --depend=afterany:{id_sample} {slurm_docker_path}'
-        extra_args = f' {args.server} {args.ex}'
+        extra_args = f' {args.server} {args.ex} {args.name}'
         cmd = cmd + extra_args
         if args.qed:
             cmd = cmd + ' --qed'
@@ -106,7 +108,7 @@ if __name__ == '__main__':
         # AGGREGATION AND TRAINING
         slurm_trainer_path = os.path.join(script_dir, 'slurm_trainer.sh')
         cmd = f'sbatch --depend=afterany:{id_dock} {slurm_trainer_path}'
-        extra_args = f' {args.prior_name} {args.search_name} {iteration} {args.quantile}'
+        extra_args = f' {args.prior_name} {args.name} {iteration} {args.quantile}'
         cmd = cmd + extra_args
         if args.qed:
             cmd = cmd + ' --qed'
