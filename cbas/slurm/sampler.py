@@ -57,43 +57,52 @@ def get_samples(prior_model, search_model, max, stop_trying=10000):
     return sample_selfies, weights
 
 
-def main(prior_name, search_name, max_samples):
+def main(prior_name, name, max_samples, qed):
     prior_model = model_from_json(prior_name)
 
     # We start by creating another prior instance, then replace it with the actual weights
     # name = search_vae
     search_model = model_from_json(prior_name)
-    name = search_name
-    model_weights_path = os.path.join(script_dir, 'results', 'models', name, 'weights.pth')
+    model_weights_path = os.path.join(script_dir, 'results', name, 'weights.pth')
     search_model.load(model_weights_path)
 
     samples, weights = get_samples(prior_model, search_model, max=max_samples)
 
-    # Memoization, we split the list into already docked ones and dump a simili-docking csv
-    whole_path = os.path.join(script_dir, '..', '..', 'data', 'drd3_scores.pickle')
-    docking_whole_results = pickle.load(open(whole_path, 'rb'))
-    filtered_smiles = list()
-    already_smiles = list()
-    already_scores = list()
-    for i, smile in enumerate(samples):
-        if smile in docking_whole_results:
-            already_smiles.append(smile)
-            already_scores.append(docking_whole_results[smile])
-        else:
-            filtered_smiles.append(smile)
+    # Since we don't maintain a dict for qed, we just give everything to the docker
+    if qed:
+        dump_path = os.path.join(script_dir, 'results', name, 'docker_samples.p')
+        pickle.dump(samples, open(dump_path, 'wb'))
 
-    # Dump simili-docking
-    dump_path = os.path.join(script_dir, 'results', 'docking_small_results', 'simili.csv')
-    df = pd.DataFrame.from_dict({'smile': already_smiles, 'score': already_scores})
-    df.to_csv(dump_path)
+        # Dump for the trainer
+        dump_path = os.path.join(script_dir, 'results', name, 'samples.p')
+        pickle.dump((samples, weights), open(dump_path, 'wb'))
 
-    # Dump for the docker
-    dump_path = os.path.join(script_dir, 'results', 'docker_samples.p')
-    pickle.dump(filtered_smiles, open(dump_path, 'wb'))
+    else:
+        # Memoization, we split the list into already docked ones and dump a simili-docking csv
+        whole_path = os.path.join(script_dir, '..', '..', 'data', 'drd3_scores.pickle')
+        docking_whole_results = pickle.load(open(whole_path, 'rb'))
+        filtered_smiles = list()
+        already_smiles = list()
+        already_scores = list()
+        for i, smile in enumerate(samples):
+            if smile in docking_whole_results:
+                already_smiles.append(smile)
+                already_scores.append(docking_whole_results[smile])
+            else:
+                filtered_smiles.append(smile)
 
-    # Dump for the trainer
-    dump_path = os.path.join(script_dir, 'results', 'samples.p')
-    pickle.dump((samples, weights), open(dump_path, 'wb'))
+        # Dump simili-docking
+        dump_path = os.path.join(script_dir, 'results', name, 'docking_small_results', 'simili.csv')
+        df = pd.DataFrame.from_dict({'smile': already_smiles, 'score': already_scores})
+        df.to_csv(dump_path)
+
+        # Dump for the docker
+        dump_path = os.path.join(script_dir, 'results', name, 'docker_samples.p')
+        pickle.dump(filtered_smiles, open(dump_path, 'wb'))
+
+        # Dump for the trainer
+        dump_path = os.path.join(script_dir, 'results', name, 'samples.p')
+        pickle.dump((samples, weights), open(dump_path, 'wb'))
 
 
 if __name__ == '__main__':
@@ -102,13 +111,14 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--prior_name', type=str, default='inference_default')  # the prior VAE (pretrained)
-    parser.add_argument('--search_name', type=str, default='search_vae')  # the prior VAE (pretrained)
+    parser.add_argument('--name', type=str, default='search_vae')  # the prior VAE (pretrained)
     parser.add_argument('--max_samples', type=int, default=1000)  # the prior VAE (pretrained)
-
+    parser.add_argument('--qed', action='store_true')
     # =======
 
     args, _ = parser.parse_known_args()
 
     main(prior_name=args.prior_name,
-         search_name=args.search_name,
-         max_samples=args.max_samples)
+         name=args.name,
+         max_samples=args.max_samples,
+         qed=args.qed)
