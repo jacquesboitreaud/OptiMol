@@ -21,7 +21,7 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 
 from sklearn.cluster import AgglomerativeClustering
-from sklearn.metrics import pairwise_distances
+from sklearn.metrics import pairwise_distances, precision_score, recall_score
 from scipy.spatial.distance import jaccard
 
 import matplotlib.pyplot as plt
@@ -42,26 +42,65 @@ with open('../data/qsar/valid.pickle','rb') as f:
     y_valid= pickle.load(f)
 
 
-
-
 # Fitting SVM 
+    
+C, gamma = 32.0, 0.01
 
-clf = SVC(C=1.0, gamma='auto', probability = True  )
+clf = SVC(C=C, gamma=gamma, probability = True  )
 
-print('>>> Fitting SVM to train molecules')
+print(f'>>> Fitting SVM to train molecules: C = {C}, gamma = {gamma}')
 clf.fit(X_train, y_train)
-
-
-
-# ROC Curve 
-y_score = clf.predict_proba(X_test)[:,1]
-fpr, tpr, thresholds = roc_curve(y_test, y_score)
-plt.plot(fpr, tpr)
-roc_auc = auc(fpr, tpr)
-plt.title(f'Test ROC AUC : {roc_auc:.4f}')
-
-print('QSAR roc AUC :', roc_auc)
 
 with open('qsar_fitted_svm.pickle', 'wb') as f :
     pickle.dump(clf, f)
 print('Saved svm to qsar_fitted_svm.pickle')
+
+
+# Train metrics  
+print('************Train set **************')
+y_score = clf.predict_proba(X_train)[:,1]
+
+fpr, tpr, thresholds = roc_curve(y_train, y_score)
+roc_auc = auc(fpr, tpr)
+
+y_score = np.round(y_score)
+precision, rec = precision_score(y_train, y_score), recall_score(y_train, y_score)
+
+print('QSAR roc AUC :', roc_auc)
+print('precision :', precision)
+print('recall :', rec)
+
+
+
+# Valid metrics 
+print('************Validation set **************')
+y_score = clf.predict_proba(X_valid)[:,1]
+
+fpr, tpr, thresholds = roc_curve(y_valid, y_score)
+roc_auc = auc(fpr, tpr)
+
+y_score = np.round(y_score)
+precision, rec = precision_score(y_valid, y_score), recall_score(y_valid, y_score)
+
+
+print('QSAR roc AUC :', roc_auc)
+print('precision :', precision)
+print('recall :', rec)
+
+
+# Test metrics 
+print('*********** Test set **************')
+y_score = clf.predict_proba(X_test)[:,1]
+
+fpr, tpr, thresholds = roc_curve(y_test, y_score)
+roc_auc = auc(fpr, tpr)
+
+y_score = np.round(y_score)
+precision, rec = precision_score(y_test, y_score), recall_score(y_test, y_score)
+
+print('QSAR roc AUC :', roc_auc)
+print('precision :', precision)
+print('recall :', rec)
+
+
+
