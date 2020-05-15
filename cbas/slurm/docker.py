@@ -80,8 +80,11 @@ if __name__ == '__main__':
     parser.add_argument('--qed', action='store_true')
     args, _ = parser.parse_known_args()
 
-    proc_id, num_procs = int(sys.argv[1]), int(sys.argv[2])
-    # proc_id, num_procs = 205, 300
+    try:
+        proc_id, num_procs = int(sys.argv[1]), int(sys.argv[2])
+    except IndexError:
+        print('We are not using the args as usually in docker.py')
+        proc_id, num_procs = 2, 10
 
     # parse the docking task of the whole job array and split it
     dump_path = os.path.join(script_dir, 'results/docker_samples.p')

@@ -23,8 +23,8 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--prior_name', type=str, default='inference_default')  # the prior VAE (pretrained)
-    parser.add_argument('--search_name', type=str, default='search_vae')  # the prior VAE (pretrained)
-    parser.add_argument('--iters', type=int, default=5)  # Number of iterations
+    parser.add_argument('--search_name', type=str, default='search_vae')  # the name of the experiment
+    parser.add_argument('--iters', type=int, default=2)  # Number of iterations
 
     # SAMPLER
     parser.add_argument('--M', type=int, default=1000)  # Nbr of samples at each iter

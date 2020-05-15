@@ -91,7 +91,7 @@ if __name__ == '__main__':
     parser.add_argument('--iteration', type=int, default=0)
     parser.add_argument('--prior_name', type=str, default='inference_default')  # the prior VAE (pretrained)
     parser.add_argument('--search_name', type=str, default='search_vae')  # the experiment name
-    parser.add_argument('--quantile', type=int, default=0.5)
+    parser.add_argument('--quantile', type=float, default=0.6)  # quantile of scores accepted
     parser.add_argument('--qed', action='store_true')
 
     args, _ = parser.parse_known_args()
@@ -101,6 +101,7 @@ if __name__ == '__main__':
 
     # Memoization of the sampled compounds, if they are not qed scores
     if not args.qed:
+        print('doing memoization')
         whole_path = os.path.join(script_dir, '..', '..', 'data', 'drd3_scores.pickle')
         docking_whole_results = pickle.load(open(whole_path, 'rb'))
         docking_whole_results.update(score_dict)
