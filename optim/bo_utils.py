@@ -7,7 +7,8 @@ Created on Thu Jan 23 16:24:31 2020
 Optimize affinity with bayesian optimization 
 
 """
-import os, sys 
+import os
+import sys
 import numpy as np
 
 import torch

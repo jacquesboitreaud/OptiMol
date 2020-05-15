@@ -11,8 +11,8 @@ Dataset class for SMILES to graph
 import os
 import sys
 
+script_dir = os.path.dirname(os.path.realpath(__file__))
 if __name__ == "__main__":
-    script_dir = os.path.dirname(os.path.realpath(__file__))
     sys.path.append(os.path.join(script_dir, '..'))
 
 import torch

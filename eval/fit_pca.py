@@ -12,8 +12,9 @@ import os
 import sys
 import argparse
 
+script_dir = os.path.dirname(os.path.realpath(__file__))
+
 if __name__ == "__main__":
-    script_dir = os.path.dirname(os.path.realpath(__file__))
     sys.path.append(os.path.join(script_dir, '..'))
 
 import sys
@@ -38,7 +39,7 @@ from data_processing.rdkit_to_nx import smiles_to_nx
 from model import Model, model_from_json
 from eval.eval_utils import *
 from utils import *
-from dgl_utils import *
+from dgl_utils import send_graph_to_device
 
 
 parser = argparse.ArgumentParser()

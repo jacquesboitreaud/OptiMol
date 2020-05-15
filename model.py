@@ -13,7 +13,8 @@ https://docs.dgl.ai/tutorials/models/1_gnn/4_rgcn.html#sphx-glr-tutorials-models
 
 """
 
-import os, sys
+import os
+import sys
 import numpy as np
 from queue import PriorityQueue
 import json
@@ -34,7 +35,7 @@ from dgl.nn.pytorch.glob import SumPooling
 from dgl.nn.pytorch.conv import GATConv, RelGraphConv
 
 from utils import *
-from dgl_utils import *
+from dgl_utils import send_graph_to_device
 
 
 class MultiGRU(nn.Module):

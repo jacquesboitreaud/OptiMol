@@ -7,27 +7,24 @@ Created on Wed May  6 16:46:45 2020
 Function that trains a model on samples x_i, weights w_i and returns the decoder parameters phi. 
 """
 
-import os, sys
+import os
+import sys
 
 import torch
-from torch import nn, optim
+from torch import optim
 import torch.optim.lr_scheduler as lr_scheduler
-
 import torch.nn.utils.clip_grad as clip
-import torch.nn.functional as F
-from torch.utils.tensorboard import SummaryWriter
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader
+from selfies import decoder
 
 script_dir = os.path.dirname(os.path.realpath(__file__))
-sys.path.append(os.path.join(script_dir, '..'))
-sys.path.append(os.path.join(script_dir, '../eval'))
+if __name__ == '__main__':
+    sys.path.append(os.path.join(script_dir, '..'))
 
 from loss_func import CbASLoss
 from dataloaders.simple_loader import SimpleDataset, collate_block
-from utils import *
-from dgl_utils import *
-from eval.eval_utils import plot_kde
-from selfies import decoder
+from utils import soft_mkdir
+from dgl_utils import send_graph_to_device
 
 
 class GenTrain():
@@ -58,6 +55,8 @@ class GenTrain():
         self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr0)
         self.scheduler = lr_scheduler.ExponentialLR(self.optimizer, self.anneal_rate)
 
+        self.load_optim()
+
         # loader
         map_path = os.path.join(script_dir, '..', 'map_files')
         self.dataset = SimpleDataset(maps_path=map_path, vocab='selfies', debug=self.debug)
@@ -73,7 +72,7 @@ class GenTrain():
         elif input_type == 'selfies':
             self.dataset.pass_selfies_list(x, w)
 
-        train_loader = DataLoader(dataset=self.dataset, shuffle=True, batch_size=64,
+        train_loader = DataLoader(dataset=self.dataset, shuffle=True, batch_size=32,
                                   num_workers=self.processes, collate_fn=collate_block, drop_last=True)
         # Training loop
         total_steps = 0
@@ -123,7 +122,42 @@ class GenTrain():
         # Update weights at 'save_model_weights' : 
         print(f'Finished training after {total_steps} optimizer steps. Saving search model weights')
         self.model.cpu()
-        torch.save(self.model.state_dict(), os.path.join(self.savepath, "weights.pth"))
+        self.dump()
         self.model.to(self.device)
 
+    def dump(self):
+        """
+        Dumping and loading is a bit weird, as the models parameters are in the prior definition
+        :return:
+        """
+        weights_path = os.path.join(self.savepath, "weights.pth")
+        optim_path = os.path.join(self.savepath, "optim.pth")
+        torch.save(self.model.state_dict(), weights_path)
+        checkpoint = {'optimizer_state_dict': self.optimizer.state_dict(),
+                      'scheduler_state_dict': self.scheduler.state_dict()}
+        torch.save(checkpoint, optim_path)
 
+    def load_optim(self):
+        """
+        If first creation, this won't load anything
+        :return:
+        """
+        optim_path = os.path.join(self.savepath, "optim.pth")
+        try:
+            checkpoint = torch.load(optim_path)
+            self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+            self.scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
+
+        except FileNotFoundError:
+            print('No optimizer state was found')
+
+# def load_from_dir(dir):
+#     dumper = Dumper()
+#     params = dumper.load(os.path.join(dir, 'params_gentrain.json'))
+#     model = Model(**params)
+#     if load_weights:
+#         try:
+#             model.load(os.path.join(dir, "weights.pth"))
+#         except:
+#             print('Weights could not be loaded by the util functions')
+#     return model

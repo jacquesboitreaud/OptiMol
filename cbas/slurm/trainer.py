@@ -80,7 +80,7 @@ def process_samples(score_dict, samples, weights, quantile):
         filtered_weights.append(weight)
 
     print(f'{len(filtered_samples)}/{len(samples)} samples kept')
-    return samples, weights
+    return filtered_samples, filtered_weights
 
 
 if __name__ == '__main__':
@@ -93,7 +93,6 @@ if __name__ == '__main__':
     parser.add_argument('--iteration', type=int, default=0)  #
     parser.add_argument('--search_name', type=str, default='search_vae')  # the prior VAE (pretrained)
 
-    # =======
     args, _ = parser.parse_known_args()
 
     # Aggregate docking results

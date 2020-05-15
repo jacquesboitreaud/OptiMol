@@ -16,8 +16,8 @@ import os
 import sys
 import argparse
 
+script_dir = os.path.dirname(os.path.realpath(__file__))
 if __name__ == "__main__":
-    script_dir = os.path.dirname(os.path.realpath(__file__))
     sys.path.append(os.path.join(script_dir, '..'))
 
 import torch
@@ -55,7 +55,7 @@ if __name__ == "__main__":
 
     from eval.eval_utils import *
     from utils import *
-    from dgl_utils import *
+    from dgl_utils import send_graph_to_device
 
     # Should be same as for training
     properties = ['QED', 'logP', 'molWt']

@@ -1,12 +1,9 @@
-import subprocess
-
-# -*- coding: utf-8 -*-
 """
-Created on Wed May  6 17:10:04 2020
 
-@author: jacqu
+Slurm Master
 
-CbAS iterative procedure 
+Params to be blended/changed :
+
 
 """
 import os
@@ -15,8 +12,9 @@ import sys
 script_dir = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(script_dir, '..', '..'))
 
-import torch
 import argparse
+import subprocess
+import torch
 
 from utils import ModelDumper, soft_mkdir
 from model import model_from_json

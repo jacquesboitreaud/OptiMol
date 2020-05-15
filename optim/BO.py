@@ -20,8 +20,8 @@ import torch
 import numpy as np
 import pandas as pd 
 
+script_dir = os.path.dirname(os.path.realpath(__file__))
 if __name__ == "__main__":
-    script_dir = os.path.dirname(os.path.realpath(__file__))
     sys.path.append(os.path.join(script_dir, '..'))
 
 import pickle
@@ -49,7 +49,7 @@ if __name__ == "__main__":
     from dataloaders.molDataset import Loader
     from model import Model, model_from_json
     from utils import *
-    from dgl_utils import * 
+    from dgl_utils import send_graph_to_device
     from bo_utils import get_fitted_model
     from docking.docking import dock, set_path
 

@@ -11,10 +11,12 @@ import argparse
 from tqdm import tqdm
 from multiprocessing import Pool
 from rdkit import Chem
-import os, sys
+import os
+import sys
 
 script_dir = os.path.dirname(os.path.realpath(__file__))
-sys.path.append(os.path.join(script_dir, '..'))
+if __name__ == '__main__':
+    sys.path.append(os.path.join(script_dir, '..'))
 
 from selfies import encoder, decoder, selfies_alphabet
 

@@ -35,7 +35,7 @@ if __name__=='__main__':
     sys.path.append(script_dir)
 
 from utils import ModelDumper, disable_rdkit_logging, setup, log_reconstruction
-from dgl_utils import *
+from dgl_utils import send_graph_to_device
 from model import Model
 from loss_func import VAELoss, weightedPropsLoss, affsRegLoss, affsClassifLoss
 from dataloaders.molDataset import molDataset, Loader

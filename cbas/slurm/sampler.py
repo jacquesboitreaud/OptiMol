@@ -19,7 +19,6 @@ def get_samples(prior_model, search_model, max):
     weights = []
     sample_selfies_set = set()
     tries = 0
-    # TODO : RESET
     stop = 5
     batch_size = 100
 

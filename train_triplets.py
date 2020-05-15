@@ -33,7 +33,7 @@ from model import Model
 from loss_func import Loss, RecLoss, tripletLoss
 from dataloaders.tripletsDataset import Loader
 from utils import *
-from dgl_utils import *
+from dgl_utils import send_graph_to_device
 
 if __name__ == "__main__":
 

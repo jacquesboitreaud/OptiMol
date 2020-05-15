@@ -9,7 +9,8 @@ Generate e3fp for molecules
 
 import numpy 
 import pandas as pd 
-import os, sys
+import os
+import sys
 import pickle
 import argparse
 from e3fp.pipeline import fprints_from_mol, confs_from_smiles, fprints_from_smiles
@@ -19,8 +20,8 @@ from glob import glob
 from python_utilities.parallel import Parallelizer
 from e3fp.conformer.util import smiles_to_dict
 
+script_dir = os.path.dirname(os.path.realpath(__file__))
 if __name__ == "__main__":
-    script_dir = os.path.dirname(os.path.realpath(__file__))
     sys.path.append(os.path.join(script_dir, '..'))
 
 from rdkit import Chem 
