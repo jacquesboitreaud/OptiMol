@@ -12,6 +12,7 @@ from rdkit.Chem import QED
 
 import torch
 import numpy as np
+from scipy import stats
 
 
 def qed(smiles):
@@ -31,11 +32,11 @@ def isValid(smiles):
     return 1
 
 
-def normal_cdf_oracle(observed_x, var, gamma):
+def normal_cdf_oracle(observed_x, gamma, std=1):
     """
     Assuming x ~ N(observed_x, var), returns P(x<=gamma)
     """
-    raise NotImplementedError
+    return stats.norm.cdf(gamma, loc=observed_x, scale=std)
 
 
 def deterministic_cdf_oracle(observed_x, gamma):
@@ -48,5 +49,8 @@ def deterministic_cdf_oracle(observed_x, gamma):
     return w
 
 
-def deterministic_one(value, gamma):
-    return float(value <= gamma)
+def deterministic_one(observed_x, gamma):
+    """
+    Returns P(x<= gamma) assuming x is equal to observed_x with proba 1
+     """
+    return float(observed_x <= gamma)

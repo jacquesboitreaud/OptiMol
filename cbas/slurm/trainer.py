@@ -10,7 +10,7 @@ import pandas as pd
 import shutil
 
 from cbas.gen_train import GenTrain
-from cbas.oracles import deterministic_one
+from cbas.oracles import deterministic_one, normal_cdf_oracle
 from model import model_from_json
 from utils import *
 
@@ -44,7 +44,7 @@ def gather_scores(iteration, name):
     return dict(zip(molecules, scores))
 
 
-def process_samples(score_dict, samples, weights, quantile):
+def process_samples(score_dict, samples, weights, quantile, oracle='binary', threshold=0.05):
     """
     reweight samples using docking scores
     :return:
@@ -70,12 +70,19 @@ def process_samples(score_dict, samples, weights, quantile):
         if m is None:
             continue
 
-        # get rid of all samples with weight 0 (do not count in CbAS loss)
-        # TODO : add threshold
-        oracle_proba = deterministic_one(score, gamma)
-        if oracle_proba == 1:
-            continue
+        # Oracle proba is p(score<=gamma) so (1 - oracle_proba) =  p(score>gamma)
+        # Get rid of all samples with too small weight (do not count in CbAS loss)
+        # For a gaussian, default 0.05 is approx 1.6 stds so we take into account docking scores up until :
+        # (quantile - 1.6std) with weight 0.05
 
+        if oracle == 'binary':
+            oracle_proba = deterministic_one(score, gamma)
+        elif oracle == 'gaussian':
+            oracle_proba = normal_cdf_oracle(score, gamma)
+        else:
+            raise ValueError('wrong option')
+        if (1 - oracle_proba) < threshold:
+            continue
         weight = weights[i] * (1 - oracle_proba)
         filtered_samples.append(s)
         filtered_weights.append(weight)
@@ -84,9 +91,9 @@ def process_samples(score_dict, samples, weights, quantile):
     return filtered_samples, filtered_weights
 
 
-def main(iteration, quantile, prior_name, name, qed):
+def main(iteration, quantile, oracle, prior_name, name, qed):
     # Aggregate docking results
-    score_dict = gather_scores(iteration,name)
+    score_dict = gather_scores(iteration, name)
 
     # Memoization of the sampled compounds, if they are not qed scores
     if not qed:
@@ -99,7 +106,7 @@ def main(iteration, quantile, prior_name, name, qed):
     # Reweight and discard wrong samples
     dump_path = os.path.join(script_dir, 'results', name, 'samples.p')
     samples, weights = pickle.load(open(dump_path, 'rb'))
-    samples, weights = process_samples(score_dict, samples, weights, quantile=quantile)
+    samples, weights = process_samples(score_dict, samples, weights, oracle=oracle, quantile=quantile)
 
     # Load an instance of previous model
     search_model = model_from_json(prior_name)
@@ -125,12 +132,14 @@ if __name__ == '__main__':
     parser.add_argument('--prior_name', type=str, default='inference_default')  # the prior VAE (pretrained)
     parser.add_argument('--name', type=str, default='search_vae')  # the experiment name
     parser.add_argument('--quantile', type=float, default=0.6)  # quantile of scores accepted
+    parser.add_argument('--oracle', type=str, default='gaussian')  # the mode of the oracle
     parser.add_argument('--qed', action='store_true')
 
     args, _ = parser.parse_known_args()
 
     main(iteration=args.iteration,
          quantile=args.quantile,
+         oracle=args.oracle,
          prior_name=args.prior_name,
          name=args.name,
          qed=args.qed)

@@ -36,6 +36,8 @@ if __name__ == '__main__':
 
     # TRAINER
     parser.add_argument('--quantile', type=float, default=0.6)  # quantile of scores accepted
+    parser.add_argument('--oracle', type=str, default='gaussian')  # the mode of the oracle
+
 
     # GENTRAIN
     parser.add_argument('--procs', type=int, default=0)  # Number of processes for VAE dataloading
@@ -108,7 +110,7 @@ if __name__ == '__main__':
         # AGGREGATION AND TRAINING
         slurm_trainer_path = os.path.join(script_dir, 'slurm_trainer.sh')
         cmd = f'sbatch --depend=afterany:{id_dock} {slurm_trainer_path}'
-        extra_args = f' {args.prior_name} {args.name} {iteration} {args.quantile}'
+        extra_args = f' {args.prior_name} {args.name} {iteration} {args.quantile} {args.oracle}'
         cmd = cmd + extra_args
         if args.qed:
             cmd = cmd + ' --qed'
