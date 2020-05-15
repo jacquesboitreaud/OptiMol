@@ -92,17 +92,19 @@ if __name__ == '__main__':
     parser.add_argument('--prior_name', type=str, default='inference_default')  # the prior VAE (pretrained)
     parser.add_argument('--search_name', type=str, default='search_vae')  # the experiment name
     parser.add_argument('--quantile', type=int, default=0.5)
+    parser.add_argument('--qed', action='store_true')
 
     args, _ = parser.parse_known_args()
 
     # Aggregate docking results
     score_dict = gather_scores(args.iteration)
 
-    # Memoization of the sampled compounds
-    whole_path = os.path.join(script_dir, '..', '..', 'data', 'drd3_scores.pickle')
-    docking_whole_results = pickle.load(open(whole_path, 'rb'))
-    docking_whole_results.update(score_dict)
-    pickle.dump(docking_whole_results, open(whole_path, 'wb'))
+    # Memoization of the sampled compounds, if they are not qed scores
+    if not args.qed:
+        whole_path = os.path.join(script_dir, '..', '..', 'data', 'drd3_scores.pickle')
+        docking_whole_results = pickle.load(open(whole_path, 'rb'))
+        docking_whole_results.update(score_dict)
+        pickle.dump(docking_whole_results, open(whole_path, 'wb'))
 
     # Reweight and discard wrong samples
     dump_path = os.path.join(script_dir, 'results/samples.p')

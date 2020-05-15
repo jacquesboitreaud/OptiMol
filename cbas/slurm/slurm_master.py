@@ -97,17 +97,19 @@ if __name__ == '__main__':
         slurm_docker_path = os.path.join(script_dir, 'slurm_docker.sh')
         cmd = f'sbatch --depend=afterany:{id_sample} {slurm_docker_path}'
         extra_args = f' {args.server} {args.ex}'
+        cmd = cmd + extra_args
         if args.qed:
             cmd = cmd + ' --qed'
-        cmd = cmd + extra_args
         a = subprocess.run(cmd.split(), stdout=subprocess.PIPE).stdout.decode('utf-8')
         id_dock = a.split()[3]
 
         # AGGREGATION AND TRAINING
         slurm_trainer_path = os.path.join(script_dir, 'slurm_trainer.sh')
         cmd = f'sbatch --depend=afterany:{id_dock} {slurm_trainer_path}'
-        extra_args = f' {args.prior_name} {args.search_name} {args.iteration} {args.quantile}'
+        extra_args = f' {args.prior_name} {args.search_name} {iteration} {args.quantile}'
         cmd = cmd + extra_args
+        if args.qed:
+            cmd = cmd + ' --qed'
         a = subprocess.run(cmd.split(), stdout=subprocess.PIPE).stdout.decode('utf-8')
         id_train = a.split()[3]
 

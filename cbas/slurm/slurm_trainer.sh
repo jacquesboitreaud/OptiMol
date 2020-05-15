@@ -6,6 +6,6 @@
 source ~/anaconda3/etc/profile.d/conda.sh
 conda activate optimol_cpu
 
-python trainer.py --prior_name $1 --search_name $2 --iteration $3 --quantile $4
+python trainer.py --prior_name $1 --search_name $2 --iteration $3 --quantile $4 $5
 
 
