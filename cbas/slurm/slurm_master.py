@@ -66,7 +66,6 @@ if __name__ == '__main__':
     dumper = Dumper(dumping_path=os.path.join(savepath, 'experiments.json'), dic=args.__dict__)
     dumper.dump()
 
-
     params_gentrain = {'savepath': savepath,
                        'epochs': args.epochs,
                        'device': device,
@@ -89,26 +88,26 @@ if __name__ == '__main__':
             cmd = f'sbatch {slurm_sampler_path}'
         else:
             cmd = f'sbatch --depend=afterany:{id_train} {slurm_sampler_path}'
-        args = f' {args.prior_name} {args.search_name} {args.M}'
-        cmd = cmd + args
+        extra_args = f' {args.prior_name} {args.search_name} {args.M}'
+        cmd = cmd + extra_args
         a = subprocess.run(cmd.split(), stdout=subprocess.PIPE).stdout.decode('utf-8')
         id_sample = a.split()[3]
 
         # DOCKING
         slurm_docker_path = os.path.join(script_dir, 'slurm_docker.sh')
         cmd = f'sbatch --depend=afterany:{id_sample} {slurm_docker_path}'
-        args = f' {args.server} {args.ex}'
+        extra_args = f' {args.server} {args.ex}'
         if args.qed:
-            cmd.append(' --qed')
-        cmd = cmd + args
+            cmd = cmd + ' --qed'
+        cmd = cmd + extra_args
         a = subprocess.run(cmd.split(), stdout=subprocess.PIPE).stdout.decode('utf-8')
         id_dock = a.split()[3]
 
         # AGGREGATION AND TRAINING
         slurm_trainer_path = os.path.join(script_dir, 'slurm_trainer.sh')
         cmd = f'sbatch --depend=afterany:{id_dock} {slurm_trainer_path}'
-        args = f' {args.prior_name} {args.search_name} {args.iteration} {args.quantile}'
-        cmd = cmd + args
+        extra_args = f' {args.prior_name} {args.search_name} {args.iteration} {args.quantile}'
+        cmd = cmd + extra_args
         a = subprocess.run(cmd.split(), stdout=subprocess.PIPE).stdout.decode('utf-8')
         id_train = a.split()[3]
 
