@@ -4,6 +4,8 @@ Created on Fri May 15 15:27:41 2020
 
 @author: jacqu
 Selecting diverse molecules as initial samples; using rdkit MinMax sampler 
+
+For QED or docking scores (using the pickle with all previous docking scores)
 """
 
 import os, sys
@@ -12,11 +14,20 @@ import pandas as pd
 import csv 
 
 from rdkit import Chem 
+from rdkit.Chem import QED
 
 from rdkit.Chem.rdMolDescriptors import GetMorganFingerprint
 from rdkit import DataStructs
 from rdkit.SimDivFilters.rdSimDivPickers import MaxMinPicker
+import pickle
 
+
+
+
+METRIC = 'qed' # qed or aff 
+
+# save_csv 
+save_csv = f'../data/diverse_samples_{METRIC}.csv'
 
 # Load smiles 
 with open('../docking/drd3_scores.pickle', 'rb') as f:
@@ -39,6 +50,7 @@ pickIndices = picker.LazyPick(distij,Ntot,Npick,seed=23)
 pickIndices=list(pickIndices)
     
 smiles = [list(smiles)[i] for i in pickIndices]
+mols = [list(mols)[i] for i in pickIndices]
 fps = [fps[i] for i in pickIndices]
 
 # Compute pairwise tanimoto sim 
@@ -52,6 +64,24 @@ for i in range(Npick):
 print('Average tanim sim = ', sim/cpt)
 
 # Save smiles and their scores 
+if METRIC == 'aff':
+    scores = [scores[s] for s in smiles]
+else :
+    scores = [QED.qed(m) for m in mols]
+
+if METRIC =='aff':
+    header = ['smiles','drd3']
+else:
+    header = ['smiles','qed']
+with open(save_csv, 'w', newline='') as csvfile:
+    csv.writer(csvfile).writerow(header)
+    
+    for i in range(Npick):
+         csv.writer(csvfile).writerow([smiles[i], scores[i]])
+        
+        
+    
+    
 
 
 

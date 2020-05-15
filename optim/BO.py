@@ -67,7 +67,7 @@ if __name__ == "__main__":
     parser.add_argument('-o', '--objective', default='qed') # 'qed', 'aff', 'aff_pred'
     
     # initial samples to use 
-    parser.add_argument('--init_samples', default='2k_diverse_samples.csv') # samples to start with // random or excape data
+    parser.add_argument('--init_samples', default='diverse_samples.csv') # samples to start with // random or excape data
     parser.add_argument('--n_init', type = int ,  default=500) # Number of samples to start with 
     
     # docking specific params 
