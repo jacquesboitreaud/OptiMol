@@ -32,6 +32,7 @@ def one_slurm(list_smiles, server, unique_id, parallel=True, exhaustiveness=16, 
     :return:
     """
     pythonsh, vina = set_path(server)
+    dirname = os.path.join(script_dir, 'results', 'docking_small_results')
     dump_path = os.path.join(dirname, f"{unique_id}.csv")
 
     header = ['smile', 'score']
@@ -54,6 +55,7 @@ def one_slurm_qed(list_smiles, unique_id):
     :param unique_id:
     :return:
     """
+    dirname = os.path.join(script_dir, 'results', 'docking_small_results')
     dump_path = os.path.join(dirname, f"{unique_id}.csv")
 
     header = ['smile', 'score']
@@ -71,12 +73,39 @@ def one_slurm_qed(list_smiles, unique_id):
             csv.writer(csvfile).writerow(list_to_write)
 
 
+def main(proc_id, num_procs, server, exhaustiveness, qed):
+    # parse the docking task of the whole job array and split it
+    dump_path = os.path.join(script_dir, 'results/docker_samples.p')
+    list_smiles = pickle.load(open(dump_path, 'rb'))
+
+    N = len(list_smiles)
+    chunk_size, rab = N // num_procs, N % num_procs
+    chunk_min, chunk_max = proc_id * chunk_size, min((proc_id + 1) * chunk_size, N)
+    list_data = list_smiles[chunk_min:chunk_max]
+    # N = chunk_size*num_procs + rab
+    # Share rab between procs
+    if proc_id < rab:
+        list_data.append(list_smiles[-(proc_id + 1)])
+
+    # Just use qed
+    if qed:
+        one_slurm_qed(list_data, proc_id)
+    # Do the docking and dump results
+    else:
+        one_slurm(list_data,
+                  server=server,
+                  unique_id=proc_id,
+                  parallel=False,
+                  exhaustiveness=exhaustiveness,
+                  mean=True)
+
+
 if __name__ == '__main__':
     pass
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-s", "--server", default='mac', help="Server to run the docking on, for path and configs.")
-    parser.add_argument("-e", "--ex", default=64, help="exhaustiveness parameter for vina")
+    parser.add_argument("-ex", "--exhaustiveness", default=64, help="exhaustiveness parameter for vina")
     parser.add_argument('--qed', action='store_true')
     args, _ = parser.parse_known_args()
 
@@ -85,30 +114,12 @@ if __name__ == '__main__':
     except IndexError:
         print('We are not using the args as usually in docker.py')
         proc_id, num_procs = 2, 10
+    except ValueError:
+        print('We are not using the args as usually in docker.py')
+        proc_id, num_procs = 2, 10
 
-    # parse the docking task of the whole job array and split it
-    dump_path = os.path.join(script_dir, 'results/docker_samples.p')
-    list_smiles = pickle.load(open(dump_path, 'rb'))
-
-    N = len(list_smiles)
-    chunk_size, rab = N // (num_procs), N % num_procs
-    chunk_min, chunk_max = proc_id * chunk_size, min((proc_id + 1) * chunk_size, N)
-    list_data = list_smiles[chunk_min:chunk_max]
-    # N = chunk_size*num_procs + rab
-    # Share rab between procs
-    if proc_id < rab:
-        list_data.append(list_smiles[-(proc_id + 1)])
-
-    dirname = os.path.join(script_dir, 'results', 'docking_small_results')
-
-    # Just use qed
-    if args.qed:
-        one_slurm_qed(list_data, proc_id)
-    # Do the docking and dump results
-    else:
-        one_slurm(list_data,
-                  server=args.server,
-                  unique_id=proc_id,
-                  parallel=False,
-                  exhaustiveness=args.ex,
-                  mean=True)
+    main(proc_id=proc_id,
+         num_procs=num_procs,
+         server=args.server,
+         exhaustiveness=args.exhaustiveness,
+         qed=args.qed)

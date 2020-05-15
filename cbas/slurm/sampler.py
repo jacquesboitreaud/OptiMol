@@ -57,33 +57,21 @@ def get_samples(prior_model, search_model, max, stop_trying=10000):
     return sample_selfies, weights
 
 
-if __name__ == '__main__':
-    pass
-
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument('--prior_name', type=str, default='inference_default')  # the prior VAE (pretrained)
-    parser.add_argument('--search_name', type=str, default='search_vae')  # the prior VAE (pretrained)
-    parser.add_argument('--max', type=int, default=1000)  # the prior VAE (pretrained)
-
-    # =======
-
-    args, _ = parser.parse_known_args()
-    prior_model = model_from_json(args.prior_name)
+def main(prior_name, search_name, max_samples):
+    prior_model = model_from_json(prior_name)
 
     # We start by creating another prior instance, then replace it with the actual weights
     # name = search_vae
-    search_model = model_from_json(args.prior_name)
-    name = args.search_name
+    search_model = model_from_json(prior_name)
+    name = search_name
     model_weights_path = os.path.join(script_dir, 'results', 'models', name, 'weights.pth')
     search_model.load(model_weights_path)
 
-    samples, weights = get_samples(prior_model, search_model, max=args.max)
+    samples, weights = get_samples(prior_model, search_model, max=max_samples)
 
     # Memoization, we split the list into already docked ones and dump a simili-docking csv
     whole_path = os.path.join(script_dir, '..', '..', 'data', 'drd3_scores.pickle')
     docking_whole_results = pickle.load(open(whole_path, 'rb'))
-
     filtered_smiles = list()
     already_smiles = list()
     already_scores = list()
@@ -106,3 +94,21 @@ if __name__ == '__main__':
     # Dump for the trainer
     dump_path = os.path.join(script_dir, 'results', 'samples.p')
     pickle.dump((samples, weights), open(dump_path, 'wb'))
+
+
+if __name__ == '__main__':
+    pass
+
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('--prior_name', type=str, default='inference_default')  # the prior VAE (pretrained)
+    parser.add_argument('--search_name', type=str, default='search_vae')  # the prior VAE (pretrained)
+    parser.add_argument('--max_samples', type=int, default=1000)  # the prior VAE (pretrained)
+
+    # =======
+
+    args, _ = parser.parse_known_args()
+
+    main(prior_name=args.prior_name,
+         search_name=args.search_name,
+         max_samples=args.max_samples)

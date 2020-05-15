@@ -83,6 +83,38 @@ def process_samples(score_dict, samples, weights, quantile):
     return filtered_samples, filtered_weights
 
 
+def main(iteration, quantile, prior_name, search_name, qed):
+    # Aggregate docking results
+    score_dict = gather_scores(iteration)
+
+    # Memoization of the sampled compounds, if they are not qed scores
+    if not qed:
+        print('doing memoization')
+        whole_path = os.path.join(script_dir, '..', '..', 'data', 'drd3_scores.pickle')
+        docking_whole_results = pickle.load(open(whole_path, 'rb'))
+        docking_whole_results.update(score_dict)
+        pickle.dump(docking_whole_results, open(whole_path, 'wb'))
+
+    # Reweight and discard wrong samples
+    dump_path = os.path.join(script_dir, 'results/samples.p')
+    samples, weights = pickle.load(open(dump_path, 'rb'))
+    samples, weights = process_samples(score_dict, samples, weights, quantile=quantile)
+
+    # Load an instance of previous model
+    search_model = model_from_json(prior_name)
+
+    # Retrieve the gentrain object and feed it with updated model
+    dumper = ModelDumper(default_model=False)
+    json_path = os.path.join(script_dir, 'results', 'models', search_name, 'params_gentrain.json')
+    params = dumper.load(json_path)
+    savepath = os.path.join(params['savepath'], 'weights.pth')
+    search_model.load(savepath)
+
+    # Update search model
+    search_trainer = GenTrain(search_model, **params)
+    search_trainer.step('smiles', samples, weights)
+
+
 if __name__ == '__main__':
     pass
 
@@ -96,32 +128,8 @@ if __name__ == '__main__':
 
     args, _ = parser.parse_known_args()
 
-    # Aggregate docking results
-    score_dict = gather_scores(args.iteration)
-
-    # Memoization of the sampled compounds, if they are not qed scores
-    if not args.qed:
-        print('doing memoization')
-        whole_path = os.path.join(script_dir, '..', '..', 'data', 'drd3_scores.pickle')
-        docking_whole_results = pickle.load(open(whole_path, 'rb'))
-        docking_whole_results.update(score_dict)
-        pickle.dump(docking_whole_results, open(whole_path, 'wb'))
-
-    # Reweight and discard wrong samples
-    dump_path = os.path.join(script_dir, 'results/samples.p')
-    samples, weights = pickle.load(open(dump_path, 'rb'))
-    samples, weights = process_samples(score_dict, samples, weights, quantile=args.quantile)
-
-    # Load an instance of previous model
-    search_model = model_from_json(args.prior_name)
-
-    # Retrieve the gentrain object and feed it with updated model
-    dumper = ModelDumper(default_model=False)
-    json_path = os.path.join(script_dir, 'results', 'models', args.search_name, 'params_gentrain.json')
-    params = dumper.load(json_path)
-    savepath = os.path.join(params['savepath'], 'weights.pth')
-    search_model.load(savepath)
-
-    # Update search model
-    search_trainer = GenTrain(search_model, **params)
-    search_trainer.step('smiles', samples, weights)
+    main(iteration=args.iteration,
+         quantile=args.quantile,
+         prior_name=args.prior_name,
+         search_name=args.search_name,
+         qed=args.qed)

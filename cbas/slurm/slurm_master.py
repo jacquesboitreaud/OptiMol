@@ -27,7 +27,7 @@ if __name__ == '__main__':
     parser.add_argument('--iters', type=int, default=2)  # Number of iterations
 
     # SAMPLER
-    parser.add_argument('--M', type=int, default=1000)  # Nbr of samples at each iter
+    parser.add_argument('--max_samples', type=int, default=1000)  # Nbr of samples at each iter
 
     # DOCKER
     parser.add_argument('--qed', action='store_true')
@@ -88,7 +88,7 @@ if __name__ == '__main__':
             cmd = f'sbatch {slurm_sampler_path}'
         else:
             cmd = f'sbatch --depend=afterany:{id_train} {slurm_sampler_path}'
-        extra_args = f' {args.prior_name} {args.search_name} {args.M}'
+        extra_args = f' {args.prior_name} {args.search_name} {args.max_samples}'
         cmd = cmd + extra_args
         a = subprocess.run(cmd.split(), stdout=subprocess.PIPE).stdout.decode('utf-8')
         id_sample = a.split()[3]
