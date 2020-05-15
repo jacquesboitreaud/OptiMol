@@ -14,17 +14,24 @@ from model import model_from_json
 import pickle
 
 
-def get_samples(prior_model, search_model, max):
+def get_samples(prior_model, search_model, max, stop_trying=10000):
+    """
+    Take initial samples from a prior model. Computes importance sampling weights
+    This will try to produce new ones up until a certain limit of tries is reached
+    :param prior_model:
+    :param search_model:
+    :param max:
+    :return:
+    """
     sample_selfies = []
     weights = []
     sample_selfies_set = set()
     tries = 0
-    stop = 5
     batch_size = 100
 
     # Importance weights
-    while tries < stop and len(sample_selfies) < max:
-        new_ones = 0
+    while tries < stop_trying and len(sample_selfies) < max:
+        tries += batch_size
 
         # Get raw samples
         samples_z = search_model.sample_z_prior(n_mols=batch_size)
@@ -36,6 +43,7 @@ def get_samples(prior_model, search_model, max):
                         GenProb(sample_indices, samples_z, search_model)
 
         # Check the novelty
+        new_ones = 0
         batch_selfies = search_model.indices_to_smiles(sample_indices)
         for i, s in enumerate(batch_selfies):
             new_selfie = decoder(s)
@@ -44,7 +52,6 @@ def get_samples(prior_model, search_model, max):
                 sample_selfies_set.add(new_selfie)
                 sample_selfies.append(new_selfie)
                 weights.append(batch_weights[i])
-        tries += 1
 
         print(f'{new_ones}/{batch_size} unique smiles sampled')
     return sample_selfies, weights

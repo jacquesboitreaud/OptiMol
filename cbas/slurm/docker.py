@@ -8,6 +8,8 @@ import argparse
 import pandas as pd
 import csv
 import pickle
+from rdkit import Chem
+from rdkit.Chem import QED
 
 script_dir = os.path.dirname(os.path.realpath(__file__))
 if __name__ == '__main__':
@@ -16,16 +18,22 @@ if __name__ == '__main__':
 from docking.docking import dock, set_path
 
 
-def one_slurm(list_smiles, dump_path, pythonsh, vina, unique_id, parallel=True, exhaustiveness=16, mean=False,
+def one_slurm(list_smiles, server, unique_id, parallel=True, exhaustiveness=16, mean=False,
               load=False):
     """
 
-    :param dump_path:
+    :param list_smiles:
+    :param server:
+    :param unique_id:
     :param parallel:
     :param exhaustiveness:
     :param mean:
+    :param load:
     :return:
     """
+    pythonsh, vina = set_path(server)
+    dump_path = os.path.join(dirname, f"{unique_id}.csv")
+
     header = ['smile', 'score']
     with open(dump_path, 'w', newline='') as csvfile:
         csv.writer(csvfile).writerow(header)
@@ -39,26 +47,41 @@ def one_slurm(list_smiles, dump_path, pythonsh, vina, unique_id, parallel=True, 
             csv.writer(csvfile).writerow(list_to_write)
 
 
+def one_slurm_qed(list_smiles, unique_id):
+    """
+
+    :param list_smiles:
+    :param unique_id:
+    :return:
+    """
+    dump_path = os.path.join(dirname, f"{unique_id}.csv")
+
+    header = ['smile', 'score']
+    with open(dump_path, 'w', newline='') as csvfile:
+        csv.writer(csvfile).writerow(header)
+
+    for smile in list_smiles:
+        m = Chem.MolFromSmiles(smile)
+        if m is not None:
+            score_smile = QED.qed(m)
+        else:
+            score_smile = 0
+        with open(dump_path, 'a', newline='') as csvfile:
+            list_to_write = [smile, score_smile]
+            csv.writer(csvfile).writerow(list_to_write)
+
+
 if __name__ == '__main__':
     pass
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-s", "--server", default='mac', help="Server to run the docking on, for path and configs.")
     parser.add_argument("-e", "--ex", default=64, help="exhaustiveness parameter for vina")
+    parser.add_argument('--qed', action='store_true')
     args, _ = parser.parse_known_args()
 
-    PYTHONSH, VINA = set_path(args.server)
-
-    # ========== SLURM =============
     proc_id, num_procs = int(sys.argv[1]), int(sys.argv[2])
     # proc_id, num_procs = 205, 300
-
-    dirname = os.path.join(script_dir, 'results', 'docking_small_results')
-    if not os.path.isdir(dirname):
-        try:
-            os.mkdir(dirname)
-        except:
-            pass
 
     # parse the docking task of the whole job array and split it
     dump_path = os.path.join(script_dir, 'results/docker_samples.p')
@@ -73,12 +96,16 @@ if __name__ == '__main__':
     if proc_id < rab:
         list_data.append(list_smiles[-(proc_id + 1)])
 
+    dirname = os.path.join(script_dir, 'results', 'docking_small_results')
+
+    # Just use qed
+    if args.qed:
+        one_slurm_qed(list_data, proc_id)
     # Do the docking and dump results
-    one_slurm(list_data,
-              pythonsh=PYTHONSH,
-              vina=VINA,
-              dump_path=os.path.join(dirname, f"{proc_id}.csv"),
-              unique_id=proc_id,
-              parallel=False,
-              exhaustiveness=args.ex,
-              mean=True)
+    else:
+        one_slurm(list_data,
+                  server=args.server,
+                  unique_id=proc_id,
+                  parallel=False,
+                  exhaustiveness=args.ex,
+                  mean=True)

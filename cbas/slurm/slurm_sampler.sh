@@ -6,5 +6,6 @@
 source ~/anaconda3/etc/profile.d/conda.sh
 conda activate optimol_cpu
 
-python sampler.py
+python sampler.py --prior_name $1 --search_name $2 --max $3
+
 

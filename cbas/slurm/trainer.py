@@ -88,10 +88,10 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
 
+    parser.add_argument('--iteration', type=int, default=0)
     parser.add_argument('--prior_name', type=str, default='inference_default')  # the prior VAE (pretrained)
-    parser.add_argument('--json_path', type=str)  # the gentrain model
-    parser.add_argument('--iteration', type=int, default=0)  #
-    parser.add_argument('--search_name', type=str, default='search_vae')  # the prior VAE (pretrained)
+    parser.add_argument('--search_name', type=str, default='search_vae')  # the experiment name
+    parser.add_argument('--quantile', type=int, default=0.5)
 
     args, _ = parser.parse_known_args()
 
@@ -107,7 +107,7 @@ if __name__ == '__main__':
     # Reweight and discard wrong samples
     dump_path = os.path.join(script_dir, 'results/samples.p')
     samples, weights = pickle.load(open(dump_path, 'rb'))
-    samples, weights = process_samples(score_dict, samples, weights, quantile=0.5)
+    samples, weights = process_samples(score_dict, samples, weights, quantile=args.quantile)
 
     # Load an instance of previous model
     search_model = model_from_json(args.prior_name)

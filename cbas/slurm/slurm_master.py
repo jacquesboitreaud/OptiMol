@@ -16,22 +16,29 @@ import argparse
 import subprocess
 import torch
 
-from utils import ModelDumper, soft_mkdir
+from utils import Dumper, soft_mkdir
 from model import model_from_json
 
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-
     parser.add_argument('--prior_name', type=str, default='inference_default')  # the prior VAE (pretrained)
     parser.add_argument('--search_name', type=str, default='search_vae')  # the prior VAE (pretrained)
-
-    parser.add_argument('--procs', type=int, default=0)  # Number of processes for VAE dataloading
     parser.add_argument('--iters', type=int, default=5)  # Number of iterations
-    parser.add_argument('--Q', type=float, default=0.6)  # quantile of scores accepted
+
+    # SAMPLER
     parser.add_argument('--M', type=int, default=1000)  # Nbr of samples at each iter
 
-    # Params of the search-model finetuning (seems sensitive)
+    # DOCKER
+    parser.add_argument('--qed', action='store_true')
+    parser.add_argument('--server', type=str, default='pasteur', help='server to run on')  # the prior VAE (pretrained)
+    parser.add_argument('--ex', type=int, default=16)  # Nbr of samples at each iter
+
+    # TRAINER
+    parser.add_argument('--quantile', type=float, default=0.6)  # quantile of scores accepted
+
+    # GENTRAIN
+    parser.add_argument('--procs', type=int, default=0)  # Number of processes for VAE dataloading
     parser.add_argument('--epochs', type=int, default=5)  # Number of iterations
     parser.add_argument('--learning_rate', type=float, default=1e-4)  # Number of iterations
     parser.add_argument('--beta', type=float, default=0.2)  # KL weight in loss function
@@ -40,7 +47,6 @@ if __name__ == '__main__':
     # =======
 
     args, _ = parser.parse_known_args()
-
     device = 'cpu'  # 'cuda' if torch.cuda.is_available() else 'cpu'
 
 
@@ -53,20 +59,23 @@ if __name__ == '__main__':
 
 
     setup()
-
     savepath = os.path.join(script_dir, 'results', 'models', args.search_name)
     soft_mkdir(savepath)
 
-    params = {'savepath': savepath,
-              'epochs': args.epochs,
-              'device': device,
-              'lr': args.learning_rate,
-              'clip_grad': args.clip_grad_norm,
-              'beta': args.beta,
-              'processes': args.procs,
-              'DEBUG': True}
-    dumper = ModelDumper(dumping_path=os.path.join(savepath, 'params_gentrain.json'), default_model=False)
-    dumper.dic.update(params)
+    # Save experiment parameters
+    dumper = Dumper(dumping_path=os.path.join(savepath, 'experiments.json'), dic=args.__dict__)
+    dumper.dump()
+
+
+    params_gentrain = {'savepath': savepath,
+                       'epochs': args.epochs,
+                       'device': device,
+                       'lr': args.learning_rate,
+                       'clip_grad': args.clip_grad_norm,
+                       'beta': args.beta,
+                       'processes': args.procs,
+                       'DEBUG': True}
+    dumper = Dumper(dumping_path=os.path.join(savepath, 'params_gentrain.json'), dic=params_gentrain)
     dumper.dump()
 
     prior_model_init = model_from_json(args.prior_name)
@@ -80,18 +89,26 @@ if __name__ == '__main__':
             cmd = f'sbatch {slurm_sampler_path}'
         else:
             cmd = f'sbatch --depend=afterany:{id_train} {slurm_sampler_path}'
+        args = f' {args.prior_name} {args.search_name} {args.M}'
+        cmd = cmd + args
         a = subprocess.run(cmd.split(), stdout=subprocess.PIPE).stdout.decode('utf-8')
         id_sample = a.split()[3]
 
         # DOCKING
         slurm_docker_path = os.path.join(script_dir, 'slurm_docker.sh')
         cmd = f'sbatch --depend=afterany:{id_sample} {slurm_docker_path}'
+        args = f' {args.server} {args.ex}'
+        if args.qed:
+            cmd.append(' --qed')
+        cmd = cmd + args
         a = subprocess.run(cmd.split(), stdout=subprocess.PIPE).stdout.decode('utf-8')
         id_dock = a.split()[3]
 
         # AGGREGATION AND TRAINING
         slurm_trainer_path = os.path.join(script_dir, 'slurm_trainer.sh')
-        cmd = f'sbatch --depend=afterany:{id_dock} {slurm_trainer_path} {iteration}'
+        cmd = f'sbatch --depend=afterany:{id_dock} {slurm_trainer_path}'
+        args = f' {args.prior_name} {args.search_name} {args.iteration} {args.quantile}'
+        cmd = cmd + args
         a = subprocess.run(cmd.split(), stdout=subprocess.PIPE).stdout.decode('utf-8')
         id_train = a.split()[3]
 

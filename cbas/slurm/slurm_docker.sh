@@ -9,4 +9,4 @@
 source ~/anaconda3/etc/profile.d/conda.sh
 conda activate optimol_cpu
 
-python docker.py $SLURM_ARRAY_TASK_ID 60 -s pasteur
+python docker.py $SLURM_ARRAY_TASK_ID 60 --server $1 --ex $2 $3
