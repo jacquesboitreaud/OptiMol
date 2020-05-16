@@ -8,8 +8,6 @@ Optimize affinity with bayesian optimization.
 
 Following tutorial at https://botorch.org/tutorials/vae_mnist
 
-****Logging and list of already scored molecules to implement 
-
 
 
 """
@@ -20,6 +18,7 @@ import torch
 import numpy as np
 import pandas as pd 
 import csv 
+from multiprocessing import Pool
 
 script_dir = os.path.dirname(os.path.realpath(__file__))
 if __name__ == "__main__":
@@ -43,6 +42,7 @@ from botorch import fit_gpytorch_model
 from botorch.acquisition.monte_carlo import qExpectedImprovement
 from botorch.sampling.samplers import SobolQMCNormalSampler
 
+from datetime import datetime
 
 
 if __name__ == "__main__":
@@ -51,18 +51,18 @@ if __name__ == "__main__":
     from model import Model, model_from_json
     from utils import *
     from dgl_utils import send_graph_to_device
-    from bo_utils import get_fitted_model
+    from bo_utils import get_fitted_model, qed_one #dock_one
     from docking.docking import dock, set_path
 
     parser = argparse.ArgumentParser()
     
     parser.add_argument( '--bo_name', help="Name for BO results subdir ",
-                        default='qed_4')
+                        default='qed')
     
     parser.add_argument( '--name', help="saved model weights fname. Located in saved_models subdir",
                         default='inference_default')
     
-    parser.add_argument('-n', "--n_steps", help="Nbr of optim steps", type=int, default=100)
+    parser.add_argument('-n', "--n_steps", help="Nbr of optim steps", type=int, default=200)
     parser.add_argument('-q', "--n_queries", help="Nbr of queries per step", type=int, default=50)
     parser.add_argument('-o', '--objective', default='qed') # 'qed', 'aff', 'aff_pred'
     
@@ -84,10 +84,14 @@ if __name__ == "__main__":
         load_dict = pickle.load(f)
     print(f'Preloaded {len(load_dict)} docking scores')
     
-    soft_mkdir('bo_results')
-    os.mkdir(os.path.join('bo_results',args.bo_name)) # not soft to not overwrite a previous experiment 
+    time_id = datetime.now()
+    time_id = time_id.strftime("_%d_%H%M")
+
+    out_dir = os.path.join(script_dir,'..','results/bo', args.bo_name+time_id)
+    soft_mkdir(os.path.join(script_dir,'..','results/bo'))
+    os.mkdir(out_dir) # not soft to not overwrite a previous experiment 
     
-    save_csv = os.path.join(script_dir, 'bo_results', args.bo_name, 'samples.csv') # csv to write samples and their score 
+    save_csv = os.path.join(out_dir, 'samples.csv') # csv to write samples and their score 
     header = ['smiles',args.objective, 'step']
     with open(save_csv, 'w', newline='') as csvfile:
         csv.writer(csvfile).writerow(header)
@@ -103,7 +107,7 @@ if __name__ == "__main__":
 
     # Load model (on gpu if available)
     device = 'cuda' if torch.cuda.is_available() else 'cpu' # the model device 
-    gp_device = 'cuda' if torch.cuda.is_available() else 'cpu' # gaussian process device 
+    gp_device = 'cpu'#'cuda' if torch.cuda.is_available() else 'cpu' # gaussian process device 
     model = model_from_json(args.name)
     model.to(device)
     model.eval()
@@ -150,6 +154,11 @@ if __name__ == "__main__":
 
     
     # Acquisition function 
+    def dock_one(enum_tuple):
+        """ Docks one smiles. Input = tuple from enumerate iterator"""
+        identifier, smiles = enum_tuple
+        return dock(smiles, identifier, PYTHONSH, VINA, parallel=False, exhaustiveness = args.ex)
+    
     def optimize_acqf_and_get_observation(acq_func, device, gp_device):
         """Optimizes the acquisition function, and returns a new candidate and a noisy observation"""
         
@@ -187,15 +196,25 @@ if __name__ == "__main__":
             
             if args.objective == 'aff':
                 new_scores = torch.zeros((BO_BATCH_SIZE,1), dtype=torch.float)
-                for i in range(len(smiles)):
-                    sc = dock(smiles[i], i, PYTHONSH, VINA, exhaustiveness = args.ex, load = False )
-                    new_scores[i,0]=sc
-                    # Update dict with scores 
-                    if smiles[i] not in load_dict and sc < 0 :
-                        load_dict[smiles[i]]= sc
-                    
-                new_scores = -1* new_scores
                 
+                # Multiprocessing
+                pool = Pool()
+                done = np.array([bool(s in load_dict) for s in smiles])
+                done, todo = np.where(done ==True)[0], np.where(done==False)[0]
+                done_smiles = [smiles[i] for i in done]
+                todo_smiles = [smiles[i] for i in todo]
+                
+                smiles = done_smiles+todo_smiles #reorder
+                new_scores = pool.map(dock_one, enumerate(todo_smiles))
+                new_scores+= [load_dict[s] for s in done_smiles]
+                
+                """
+                # Update dict with scores 
+                if smiles[i] not in load_dict and sc < 0 :
+                    load_dict[smiles[i]]= sc
+                """
+                    
+                new_scores = -1* torch.tensor(new_scores, dtype=torch.float).unsqueeze(-1) # new scores must be (N*1)
                 
                 
             elif args.objective == 'aff_pred':
@@ -206,18 +225,18 @@ if __name__ == "__main__":
                             new_scores[i,0]=0.0 # assigning 0 score to invalid molecules for realistic oracle 
                 
             elif args.objective =='qed':
-                mols = [Chem.MolFromSmiles(s) for s in smiles ]
-                new_scores = torch.zeros(len(smiles), dtype = torch.float)
-                for i,m in enumerate(mols):
-                    if m!=None:
-                        new_scores[i]=Chem.QED.qed(m)
+                
+                # Multiprocessing
+                pool = Pool()
+                new_scores = pool.map(qed_one, enumerate(smiles))
+                new_scores = torch.tensor(new_scores, dtype = torch.float)
+                
                 new_scores = new_scores.unsqueeze(-1)  # new scores must be (N*1)
                 
             return smiles, new_z, new_scores
         
         else: #query an individual smiles 
             raise NotImplementedError
-    
     
     # ========================================================================
     # run N_BATCH rounds of BayesOpt after the initial random batch
@@ -227,6 +246,9 @@ if __name__ == "__main__":
     
     for iteration in range(1,N_STEPS+1):    
         print(f'Iter [{iteration}/{N_STEPS}]')
+        
+        #debug_memory()
+        
         # fit the model
         train_z =train_z.to(gp_device)
         train_obj=train_obj.to(gp_device)
@@ -261,6 +283,7 @@ if __name__ == "__main__":
         train_z = torch.cat((train_z, new_z.to(gp_device)), dim=0)
         train_obj = torch.cat((train_obj, new_score.to(gp_device)), dim=0)
         state_dict = GP_model.state_dict()
+        
     
         # update progress
         avg_score = torch.mean(new_score).item()
@@ -278,11 +301,15 @@ if __name__ == "__main__":
         # Update file with top 100 samples discovered 
         train_obj_flat=train_obj.cpu().numpy().flatten()
         idces = np.argsort(train_obj_flat)
-        idces=idces[-100:] # top 100
+        idx=idces[-100] # top 100
+        print('100 mols with score better than ', train_obj_flat[idx].item())
+        
+        """
         with open(os.path.join('bo_results',args.bo_name,f'top_samples_{iteration}.txt'), 'w') as f :
             for i in idces :
                 f.write(train_smiles[i] +',  ' + str(train_obj_flat[i].item())+'\n' )
         print('wrote top samples and scores to txt. ')
+        """
         
         # Save updated dict with docking scores 
         if args.objective =='aff':

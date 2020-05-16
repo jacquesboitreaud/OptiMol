@@ -30,10 +30,16 @@ METRIC = 'qed' # qed or aff
 save_csv = f'../data/diverse_samples_{METRIC}.csv'
 
 # Load smiles 
-with open('../docking/drd3_scores.pickle', 'rb') as f:
-    scores = pickle.load(f)
+df=pd.read_csv('../data/moses_scored.csv')
+smiles = df.smiles
+drd3= df.drd3
+scores = {}
+for i,s in enumerate(smiles) :
+    scores[s] = drd3[i]
     
-smiles = scores.keys()
+smiles = list(scores.keys())
+smiles = [s for s in smiles if len(s)>=8 and scores[s]!=0] # toa avoid non representative and null molecules
+
 print(len(smiles))
 
 mols = [Chem.MolFromSmiles(s) for s in smiles]
