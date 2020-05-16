@@ -12,6 +12,7 @@ import os, sys
 import numpy as np
 import pandas as pd 
 import csv 
+import argparse
 
 from rdkit import Chem 
 from rdkit.Chem import QED
@@ -21,13 +22,18 @@ from rdkit import DataStructs
 from rdkit.SimDivFilters.rdSimDivPickers import MaxMinPicker
 import pickle
 
+parser = argparse.ArgumentParser()
+
+parser.add_argument('-n', "--n_mols", help="Nbr of molecules", type=int, default=500)
+
+args, _ = parser.parse_known_args()
+
+# ======================================
 
 
-
-METRIC = 'qed' # qed or aff 
 
 # save_csv 
-save_csv = f'../data/diverse_samples_{METRIC}.csv'
+save_csv = f'../data/diverse_samples.csv'
 
 # Load smiles 
 df=pd.read_csv('../data/moses_scored.csv')
@@ -46,7 +52,7 @@ mols = [Chem.MolFromSmiles(s) for s in smiles]
 fps = [GetMorganFingerprint(x,3) for x in mols]
 
 Ntot = len(fps)
-Npick = 500
+Npick = args.n_mols
 
 def distij(i,j,fps=fps):
     return 1-DataStructs.TanimotoSimilarity(fps[i],fps[j])
@@ -70,20 +76,16 @@ for i in range(Npick):
 print('Average tanim sim = ', sim/cpt)
 
 # Save smiles and their scores 
-if METRIC == 'aff':
-    scores = [scores[s] for s in smiles]
-else :
-    scores = [QED.qed(m) for m in mols]
+affs = [scores[s] for s in smiles]
+qed = [QED.qed(m) for m in mols]
 
-if METRIC =='aff':
-    header = ['smiles','drd3']
-else:
-    header = ['smiles','qed']
+header = ['smiles','drd3', 'qed']
+
 with open(save_csv, 'w', newline='') as csvfile:
     csv.writer(csvfile).writerow(header)
     
     for i in range(Npick):
-         csv.writer(csvfile).writerow([smiles[i], scores[i]])
+         csv.writer(csvfile).writerow([smiles[i], affs[i], qed[i]])
         
         
     

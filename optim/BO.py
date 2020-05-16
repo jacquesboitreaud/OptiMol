@@ -57,12 +57,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     
     parser.add_argument( '--bo_name', help="Name for BO results subdir ",
-                        default='qed')
+                        default='aff')
     
     parser.add_argument( '--name', help="saved model weights fname. Located in saved_models subdir",
                         default='inference_default')
     
-    parser.add_argument('-n', "--n_steps", help="Nbr of optim steps", type=int, default=200)
+    parser.add_argument('-n', "--n_steps", help="Nbr of optim steps", type=int, default=100)
     parser.add_argument('-q', "--n_queries", help="Nbr of queries per step", type=int, default=50)
     parser.add_argument('-o', '--objective', default='qed') # 'qed', 'aff', 'aff_pred'
     
@@ -208,12 +208,11 @@ if __name__ == "__main__":
                 new_scores = pool.map(dock_one, enumerate(todo_smiles))
                 new_scores+= [load_dict[s] for s in done_smiles]
                 
-                """
+                
                 # Update dict with scores 
-                if smiles[i] not in load_dict and sc < 0 :
-                    load_dict[smiles[i]]= sc
-                """
-                    
+                for i,s in enumerate(todo_smiles):
+                    load_dict[todo_smiles[i]]= new_scores[i]
+                
                 new_scores = -1* torch.tensor(new_scores, dtype=torch.float).unsqueeze(-1) # new scores must be (N*1)
                 
                 
