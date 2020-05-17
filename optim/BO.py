@@ -238,9 +238,9 @@ if __name__ == "__main__":
                 
                 # Get scores in the right order 
                 new_scores = torch.zeros((BO_BATCH_SIZE), dtype=torch.float)
-                for i, i_glob in todo:
+                for i, i_glob in enumerate(todo):
                     new_scores[i_glob]=new_docking[i]
-                for i, i_glob in done :
+                for i, i_glob in enumerate(done) :
                     new_scores[i_glob]=load_dict[done_smiles[i]] # lookup corresponding smiles in dict 
                     
                 
