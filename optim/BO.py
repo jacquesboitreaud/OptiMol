@@ -248,7 +248,7 @@ if __name__ == "__main__":
                 for i,s in enumerate(todo_smiles):
                     load_dict[todo_smiles[i]]= new_docking[i]
                 
-                new_scores = -1* torch.tensor(new_scores, dtype=torch.float).unsqueeze(-1) # new scores must be (N*1)
+                new_scores = -1* new_scores.unsqueeze(-1) # new scores must be (N*1)
                 
                 
             elif args.objective == 'aff_pred':
