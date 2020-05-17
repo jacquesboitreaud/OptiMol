@@ -12,6 +12,9 @@ import seaborn as sns
 import os, sys
 import pandas as pd
 
+from rdkit import Chem 
+from rdkit.Chem import Draw
+
 
 name = 'qed'
 
@@ -20,7 +23,7 @@ threshold = 0.9
 
 for i in idces :
     
-    samples=pd.read_csv(f'{name}/qed_{i}/samples.csv') 
+    samples=pd.read_csv(f'../../results/bo/{name}/qed_{i}/samples.csv') 
     
     Nsteps = np.max(samples['step'])
     
@@ -47,3 +50,11 @@ for i in idces :
     plt.title(f'Number of samples better than threshold ({threshold}) at each step. run {i}')
     
     print(f'Run {i}: step 0 contains {n_init_samples} initial samples (random from zinc and excape)')
+    
+"""
+for s in stepsamp.smiles:
+    m = Chem.MolFromSmiles(s)
+    img=Draw.MolToMPL(m, size = (150,150))
+    img
+"""
+    

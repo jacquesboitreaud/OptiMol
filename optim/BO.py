@@ -32,6 +32,7 @@ import torch.nn.functional as F
 
 from selfies import decoder
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 from botorch.models import SingleTaskGP
 from gpytorch.mlls.exact_marginal_log_likelihood import ExactMarginalLogLikelihood
@@ -41,6 +42,8 @@ from botorch.optim import optimize_acqf
 from botorch import fit_gpytorch_model
 from botorch.acquisition.monte_carlo import qExpectedImprovement
 from botorch.sampling.samplers import SobolQMCNormalSampler
+
+from sklearn.svm import SVC
 
 from datetime import datetime
 
@@ -56,15 +59,16 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     
+    parser.add_argument('-o', '--objective', default='qsar') # 'qed', 'aff', 'aff_pred' or 'qsar'
+    
     parser.add_argument( '--bo_name', help="Name for BO results subdir ",
-                        default='aff')
+                        default='bo_run')
     
     parser.add_argument( '--name', help="saved model weights fname. Located in saved_models subdir",
                         default='inference_default')
     
     parser.add_argument('-n', "--n_steps", help="Nbr of optim steps", type=int, default=100)
     parser.add_argument('-q', "--n_queries", help="Nbr of queries per step", type=int, default=50)
-    parser.add_argument('-o', '--objective', default='aff') # 'qed', 'aff', 'aff_pred'
     
     # initial samples to use 
     parser.add_argument('--init_samples', default='diverse_samples.csv') # samples to start with // random or excape data
@@ -75,14 +79,19 @@ if __name__ == "__main__":
     parser.add_argument('-s', "--server", help="COmputer used, to set paths for vina", type=str, default='rup')
     parser.add_argument( '--load', default='drd3_scores.pickle') # Pickle file with dict of already docked molecules // keyed by kekuleSMiles
     
+    # qsar model path 
+    parser.add_argument("--qsar", help="Path to pickle svm, from repo root", type=str, default='results/saved_models/qsar_svm.pickle')
+    
+    
     parser.add_argument('-v', "--verbose", help="print new scores at each iter", action = 'store_true', default=False)
     args, _ = parser.parse_known_args()
 
     # ==============
     
-    with open(os.path.join(script_dir,'..', 'docking', args.load), 'rb') as f:
-        load_dict = pickle.load(f)
-    print(f'Preloaded {len(load_dict)} docking scores')
+    if args.objective == 'aff':
+        with open(os.path.join(script_dir,'..', 'docking', args.load), 'rb') as f:
+            load_dict = pickle.load(f)
+        print(f'Preloaded {len(load_dict)} docking scores')
     
     time_id = datetime.now()
     time_id = time_id.strftime("_%d_%H%M")
@@ -107,7 +116,7 @@ if __name__ == "__main__":
 
     # Load model (on gpu if available)
     device = 'cuda' if torch.cuda.is_available() else 'cpu' # the model device 
-    gp_device = 'cpu'#'cuda' if torch.cuda.is_available() else 'cpu' # gaussian process device 
+    gp_device =  'cpu' #'cuda' if torch.cuda.is_available() else 'cpu' # gaussian process device 
     model = model_from_json(args.name)
     model.to(device)
     model.eval()
@@ -139,6 +148,17 @@ if __name__ == "__main__":
     elif args.objective == 'aff' : 
         PYTHONSH, VINA = set_path(args.server)
         scores_init = -1* torch.tensor(df.drd3).view(-1,1).cpu() # careful, maximize -aff <=> minimize binding energy (negative value)
+    elif args.objective == 'qsar':
+        with open(os.path.join(script_dir, '..', args.qsar), 'rb') as f :
+            clf = pickle.load(f)
+            print('-> Loaded qsar svm')
+            fps=[]
+            for s in df.smiles:
+                m = Chem.MolFromSmiles(s)
+                fps.append(np.array(AllChem.GetMorganFingerprintAsBitVect(m , 3, nBits=2048)).reshape(1,-1))
+            fps = np.vstack(fps)
+            scores_init = torch.from_numpy(clf.predict_proba(fps)[:,1]).view(-1,1)
+            
     
     # Tracing results
     sc_dict = {}
@@ -158,6 +178,15 @@ if __name__ == "__main__":
         """ Docks one smiles. Input = tuple from enumerate iterator"""
         identifier, smiles = enum_tuple
         return dock(smiles, identifier, PYTHONSH, VINA, parallel=False, exhaustiveness = args.ex)
+    
+    def qsar_predict_one(smi):
+        m=Chem.MolFromSmiles(smi)
+        if m==None:
+            return 0.0
+        else:
+            fp = np.array(AllChem.GetMorganFingerprintAsBitVect(m , 3, nBits=2048))
+            sc = clf.predict_proba(fp.reshape(1,-1))
+            return sc 
     
     def optimize_acqf_and_get_observation(acq_func, device, gp_device):
         """Optimizes the acquisition function, and returns a new candidate and a noisy observation"""
@@ -195,24 +224,29 @@ if __name__ == "__main__":
         if BO_BATCH_SIZE > 1 : # query a batch of smiles 
             
             if args.objective == 'aff':
-                new_scores = torch.zeros((BO_BATCH_SIZE,1), dtype=torch.float)
                 
                 # Multiprocessing
                 pool = Pool()
                 done = np.array([bool(s in load_dict) for s in smiles])
                 done, todo = np.where(done ==True)[0], np.where(done==False)[0]
+                
                 done_smiles = [smiles[i] for i in done]
                 todo_smiles = [smiles[i] for i in todo]
                 
-                smiles = done_smiles+todo_smiles #reorder
-                new_scores = pool.map(dock_one, enumerate(todo_smiles))
+                new_docking = pool.map(dock_one, enumerate(todo_smiles))
                 pool.close()
-                new_scores+= [load_dict[s] for s in done_smiles]
                 
+                # Get scores in the right order 
+                new_scores = torch.zeros((BO_BATCH_SIZE), dtype=torch.float)
+                for i, i_glob in todo:
+                    new_scores[i_glob]=new_docking[i]
+                for i, i_glob in done :
+                    new_scores[i_glob]=load_dict[done_smiles[i]] # lookup corresponding smiles in dict 
+                    
                 
                 # Update dict with scores 
                 for i,s in enumerate(todo_smiles):
-                    load_dict[todo_smiles[i]]= new_scores[i]
+                    load_dict[todo_smiles[i]]= new_docking[i]
                 
                 new_scores = -1* torch.tensor(new_scores, dtype=torch.float).unsqueeze(-1) # new scores must be (N*1)
                 
@@ -231,8 +265,23 @@ if __name__ == "__main__":
                 new_scores = pool.map(qed_one, enumerate(smiles))
                 pool.close()
                 new_scores = torch.tensor(new_scores, dtype = torch.float)
-                
                 new_scores = new_scores.unsqueeze(-1)  # new scores must be (N*1)
+                
+            elif args.objective == 'qsar':
+                
+                fps=[]
+                bads = []
+                for i, s in enumerate(smiles):
+                    m = Chem.MolFromSmiles(s)
+                    if m==None:
+                        bads.append(i)
+                        fps.append(np.zeros((1,2048), dtype=np.float32))
+                    else:
+                        fps.append(np.array(AllChem.GetMorganFingerprintAsBitVect(m , 3, nBits=2048)).reshape(1,-1))
+            fps = np.vstack(fps)
+            new_scores = torch.from_numpy(clf.predict_proba(fps)[:,1]).view(-1,1) # new scores must be (N*1) 
+            for i in bads :
+                new_scores[i,0]=0.0
                 
             return smiles, new_z, new_scores
         
