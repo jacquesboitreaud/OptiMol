@@ -278,10 +278,11 @@ if __name__ == "__main__":
                         fps.append(np.zeros((1,2048), dtype=np.float32))
                     else:
                         fps.append(np.array(AllChem.GetMorganFingerprintAsBitVect(m , 3, nBits=2048)).reshape(1,-1))
-            fps = np.vstack(fps)
-            new_scores = torch.from_numpy(clf.predict_proba(fps)[:,1]).view(-1,1) # new scores must be (N*1) 
-            for i in bads :
-                new_scores[i,0]=0.0
+                        
+                fps = np.vstack(fps)
+                new_scores = torch.from_numpy(clf.predict_proba(fps)[:,1]).view(-1,1) # new scores must be (N*1) 
+                for i in bads :
+                    new_scores[i,0]=0.0
                 
             return smiles, new_z, new_scores
         
