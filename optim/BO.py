@@ -64,7 +64,7 @@ if __name__ == "__main__":
     
     parser.add_argument('-n', "--n_steps", help="Nbr of optim steps", type=int, default=100)
     parser.add_argument('-q', "--n_queries", help="Nbr of queries per step", type=int, default=50)
-    parser.add_argument('-o', '--objective', default='qed') # 'qed', 'aff', 'aff_pred'
+    parser.add_argument('-o', '--objective', default='aff') # 'qed', 'aff', 'aff_pred'
     
     # initial samples to use 
     parser.add_argument('--init_samples', default='diverse_samples.csv') # samples to start with // random or excape data
@@ -206,6 +206,7 @@ if __name__ == "__main__":
                 
                 smiles = done_smiles+todo_smiles #reorder
                 new_scores = pool.map(dock_one, enumerate(todo_smiles))
+                pool.close()
                 new_scores+= [load_dict[s] for s in done_smiles]
                 
                 
@@ -228,6 +229,7 @@ if __name__ == "__main__":
                 # Multiprocessing
                 pool = Pool()
                 new_scores = pool.map(qed_one, enumerate(smiles))
+                pool.close()
                 new_scores = torch.tensor(new_scores, dtype = torch.float)
                 
                 new_scores = new_scores.unsqueeze(-1)  # new scores must be (N*1)
