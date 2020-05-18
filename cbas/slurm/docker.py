@@ -10,6 +10,7 @@ import csv
 import pickle
 from rdkit import Chem
 from rdkit.Chem import QED
+from functools import partial
 
 script_dir = os.path.dirname(os.path.realpath(__file__))
 if __name__ == '__main__':
@@ -101,6 +102,43 @@ def main(proc_id, num_procs, server, exhaustiveness, name, qed):
                   parallel=False,
                   exhaustiveness=exhaustiveness,
                   mean=True)
+
+
+def one_dock(smile, server, parallel=False, exhaustiveness=16, mean=False, load=False):
+    pythonsh, vina = set_path(server)
+    score_smile = dock(smile, unique_id=smile, parallel=parallel, exhaustiveness=exhaustiveness, mean=mean,
+                       pythonsh=pythonsh, vina=vina, load=load)
+
+    return score_smile
+
+
+def one_qed(smile):
+    m = Chem.MolFromSmiles(smile)
+    return 0 if m is None else QED.qed(m)
+
+
+def one_node_main(server, exhaustiveness, name, qed):
+    from multiprocessing import Pool
+
+    # parse the docking task of the whole job array and split it
+    load_path = os.path.join(script_dir, 'results', name, 'docker_samples.p')
+    list_smiles = pickle.load(open(load_path, 'rb'))
+
+    p = Pool(20)
+    # Just use qed
+    if qed:
+        list_results = p.map(one_qed, list_smiles)
+    else:
+        list_results = p.map(partial(one_dock,
+                                     server=server,
+                                     parallel=False,
+                                     exhaustiveness=exhaustiveness,
+                                     mean=True,
+                                     load=False), list_smiles)
+
+    dump_path = os.path.join(script_dir, 'results', name, 'docking_small_results', '0.csv')
+    df = pd.from_dict({'smile': list_smiles, 'score': list_results})
+    df.to_csv(dump_path)
 
 
 if __name__ == '__main__':

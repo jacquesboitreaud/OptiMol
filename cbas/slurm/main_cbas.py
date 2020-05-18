@@ -1,7 +1,6 @@
 """
 
-Slurm Master
-
+Same as slurm master but directly packaged as a python script to be run from one node
 Params to be blended/changed :
 
 
@@ -13,11 +12,14 @@ script_dir = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(script_dir, '..', '..'))
 
 import argparse
-import subprocess
 import torch
 
 from utils import Dumper, soft_mkdir
 from model import model_from_json
+
+from cbas.slurm.sampler import main as sampler_main
+from cbas.slurm.docker import one_node_main as docker_main
+from cbas.slurm.trainer import main as trainer_main
 
 if __name__ == '__main__':
 
@@ -38,7 +40,6 @@ if __name__ == '__main__':
     parser.add_argument('--quantile', type=float, default=0.6)  # quantile of scores accepted
     parser.add_argument('--oracle', type=str, default='gaussian')  # the mode of the oracle
 
-
     # GENTRAIN
     parser.add_argument('--procs', type=int, default=0)  # Number of processes for VAE dataloading
     parser.add_argument('--epochs', type=int, default=5)  # Number of iterations
@@ -49,7 +50,7 @@ if __name__ == '__main__':
     # =======
 
     args, _ = parser.parse_known_args()
-    device = 'cpu'  # 'cuda' if torch.cuda.is_available() else 'cpu'
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 
     def setup():
@@ -81,40 +82,24 @@ if __name__ == '__main__':
 
     prior_model_init = model_from_json(args.prior_name)
     torch.save(prior_model_init.state_dict(), os.path.join(savepath, "weights.pth"))
-    id_train = None
 
     for iteration in range(1, args.iters + 1):
         # SAMPLING
-        slurm_sampler_path = os.path.join(script_dir, 'slurm_sampler.sh')
-        if id_train is None:
-            cmd = f'sbatch {slurm_sampler_path}'
-        else:
-            cmd = f'sbatch --depend=afterany:{id_train} {slurm_sampler_path}'
-        extra_args = f' {args.prior_name} {args.name} {args.max_samples}'
-        cmd = cmd + extra_args
-        if args.qed:
-            cmd = cmd + ' --qed'
-        a = subprocess.run(cmd.split(), stdout=subprocess.PIPE).stdout.decode('utf-8')
-        id_sample = a.split()[3]
+        sampler_main(prior_name=args.prior_name,
+                     name=args.name,
+                     max_samples=args.max_samples,
+                     qed=args.qed)
 
         # DOCKING
-        slurm_docker_path = os.path.join(script_dir, 'slurm_docker.sh')
-        cmd = f'sbatch --depend=afterany:{id_sample} {slurm_docker_path}'
-        extra_args = f' {args.server} {args.ex} {args.name}'
-        cmd = cmd + extra_args
-        if args.qed:
-            cmd = cmd + ' --qed'
-        a = subprocess.run(cmd.split(), stdout=subprocess.PIPE).stdout.decode('utf-8')
-        id_dock = a.split()[3]
+        docker_main(server=args.server,
+                    exhaustiveness=args.ex,
+                    name=args.name,
+                    qed=args.qed)
 
         # AGGREGATION AND TRAINING
-        slurm_trainer_path = os.path.join(script_dir, 'slurm_trainer.sh')
-        cmd = f'sbatch --depend=afterany:{id_dock} {slurm_trainer_path}'
-        extra_args = f' {args.prior_name} {args.name} {iteration} {args.quantile} {args.oracle}'
-        cmd = cmd + extra_args
-        if args.qed:
-            cmd = cmd + ' --qed'
-        a = subprocess.run(cmd.split(), stdout=subprocess.PIPE).stdout.decode('utf-8')
-        id_train = a.split()[3]
-
-        print(f'launched iteration {iteration}')
+        trainer_main(prior_name=args.prior_name,
+                     name=args.name,
+                     iteration=iteration,
+                     quantile=args.quantile,
+                     oracle=args.oracle,
+                     qed=args.qed)

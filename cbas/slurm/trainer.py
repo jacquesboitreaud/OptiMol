@@ -147,9 +147,9 @@ if __name__ == '__main__':
 
     args, _ = parser.parse_known_args()
 
-    main(iteration=args.iteration,
+    main(prior_name=args.prior_name,
+         name=args.name,
+         iteration=args.iteration,
          quantile=args.quantile,
          oracle=args.oracle,
-         prior_name=args.prior_name,
-         name=args.name,
          qed=args.qed)
