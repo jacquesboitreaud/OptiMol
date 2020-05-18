@@ -44,12 +44,15 @@ def gather_scores(iteration, name):
     return dict(zip(molecules, scores))
 
 
-def process_samples(score_dict, samples, weights, quantile, oracle='binary', threshold=0.05):
+def process_samples(score_dict, samples, weights, quantile, oracle='binary', threshold=0.05, qed=False):
     """
     reweight samples using docking scores
     :return:
     """
-
+    # We maximize an objective but cbas actually minimizes things
+    if not qed:
+        for key, value in score_dict.items():
+            score_dict[key] = -value
     sorted_sc = sorted(score_dict.values())
     gamma = np.quantile(sorted_sc, quantile)
     print(f" gamma = {gamma}")
@@ -81,6 +84,7 @@ def process_samples(score_dict, samples, weights, quantile, oracle='binary', thr
             oracle_proba = normal_cdf_oracle(score, gamma)
         else:
             raise ValueError('wrong option')
+        # print(f'p(score>gamma = {(1 - oracle_proba)}, and threshold is {threshold}')
         if (1 - oracle_proba) < threshold:
             continue
         weight = weights[i] * (1 - oracle_proba)
@@ -106,7 +110,7 @@ def main(iteration, quantile, oracle, prior_name, name, qed):
     # Reweight and discard wrong samples
     dump_path = os.path.join(script_dir, 'results', name, 'samples.p')
     samples, weights = pickle.load(open(dump_path, 'rb'))
-    samples, weights = process_samples(score_dict, samples, weights, oracle=oracle, quantile=quantile)
+    samples, weights = process_samples(score_dict, samples, weights, oracle=oracle, quantile=quantile, qed=qed)
 
     # Load an instance of previous model
     search_model = model_from_json(prior_name)
