@@ -171,7 +171,7 @@ def QED_oracle(smiles):
     t = torch.zeros(len(smiles))
     for i, s in enumerate(smiles):
         m = Chem.MolFromSmiles(s)
-        if (m != None):
+        if m is not None:
             t[i] = QED.qed(m)
     return t
 
@@ -242,7 +242,7 @@ def log_smiles_from_indices(true_idces, out_idces, idx_to_char):
         idx_to_char : dict with idx to char mapping 
     """
     N, seq_len = out_idces.shape
-    if (type(true_idces) == np.ndarray):
+    if type(true_idces) == np.ndarray:
         print('shape of true indices array: ', true_idces.shape)
         input_provided = True
     else:
@@ -252,16 +252,16 @@ def log_smiles_from_indices(true_idces, out_idces, idx_to_char):
     in_smiles, out_smiles = [], []
     identical = 0
     for i in range(N):
-        if (input_provided):
+        if input_provided:
             out_smiles.append(''.join([idx_to_char[idx] for idx in out_idces[i]]))
             in_smiles.append(''.join([idx_to_char[idx] for idx in true_idces[i]]))
-            if (in_smiles == out_smiles):
+            if in_smiles == out_smiles:
                 identical += 1
         else:  # Consider only valid smiles
             out = ''.join([idx_to_char[idx] for idx in out_idces[i]])
-            if (Chem.MolFromSmiles(out.rstrip('\n')) != None):
+            if Chem.MolFromSmiles(out.rstrip('\n')) is not None:
                 out_smiles.append(out)
-    if (input_provided):
+    if input_provided:
         d = {'input smiles': in_smiles,
              'output smiles': out_smiles}
         valid = [Chem.MolFromSmiles(o.rstrip('\n')) for o in out_smiles]

@@ -14,7 +14,7 @@ from model import model_from_json
 import pickle
 
 
-def get_samples(prior_model, search_model, max, stop_trying=10000):
+def get_samples(prior_model, search_model, max):
     """
     Take initial samples from a prior model. Computes importance sampling weights
     This will try to produce new ones up until a certain limit of tries is reached
@@ -29,9 +29,13 @@ def get_samples(prior_model, search_model, max, stop_trying=10000):
     tries = 0
     batch_size = 100
 
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    search_model.to(device)
+    prior_model.to(device)
+
     # Importance weights
-    while tries < stop_trying and len(sample_selfies) < max:
-        tries += batch_size
+    while (tries * batch_size) < (10 * max) and len(sample_selfies) < max:
+        tries += 1
 
         # Get raw samples
         samples_z = search_model.sample_z_prior(n_mols=batch_size)
@@ -53,7 +57,7 @@ def get_samples(prior_model, search_model, max, stop_trying=10000):
                 sample_selfies.append(new_selfie)
                 weights.append(batch_weights[i])
 
-        print(f'{new_ones}/{batch_size} unique smiles sampled')
+        print(f'{tries} : {new_ones}/{batch_size} unique smiles sampled')
     return sample_selfies, weights
 
 

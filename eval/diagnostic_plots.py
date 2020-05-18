@@ -244,7 +244,7 @@ if __name__ == "__main__":
         print(f'Number unique smiles in {Nsamples}: {N_uniques}')
 
         mols = [Chem.MolFromSmiles(smi) for smi in u]
-        mols = [m for m in mols if m != None]
+        mols = [m for m in mols if m is not None]
         qed = [Chem.QED.qed(m) for m in mols]
         fps = [Chem.RDKFingerprint(x) for x in mols]
 
@@ -261,7 +261,7 @@ if __name__ == "__main__":
         for i in range(len(fps)):
             sim = DataStructs.FingerprintSimilarity(fps[i1], fps[i], metric=DataStructs.TanimotoSimilarity)
             cpt += sim
-            if (sim > 0.8):
+            if sim > 0.8:
                 cpt_similar += 1
         print(f'{cpt_similar} molecules with Tanimoto sim > 0.8 to mol n°{i1}')
         print(f'{cpt / len(mols)} average similarity to seed molecule')

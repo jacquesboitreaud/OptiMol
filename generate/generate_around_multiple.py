@@ -34,6 +34,7 @@ if __name__ == "__main__":
     from dataloaders.molDataset import molDataset
     from model import Model
     from utils import *
+    from dgl_utils import send_graph_to_device
 
     parser = argparse.ArgumentParser()
 
@@ -89,7 +90,7 @@ if __name__ == "__main__":
                                                     aff=False)  # props & affs returned in _
     
         # Sequence to smiles 
-        if (not args.use_beam):
+        if not args.use_beam:
             smiles = model.probas_to_smiles(gen_seq)
         else:
             smiles = model.beam_out_to_smiles(gen_seq)
@@ -99,15 +100,13 @@ if __name__ == "__main__":
         unique = list(np.unique(compounds))
         nbr_out = 0
         
-        if(args.use_beam):
-            output_filepath = f'samp/{args.output_prefix}.txt'
-        else:
-            output_filepath = f'samp/{args.output_prefix}.txt'
+        output_filepath = f'samp/{args.output_prefix}.txt'
+
         with open(output_filepath, 'a') as f:
             SIM = 0
             cpt=0
             for s in unique:
-                if('CCCCCCCCCCC' in s or 'ccccccccc' in s):
+                if 'CCCCCCCCCCC' in s or 'ccccccccc' in s:
                     pass
                 else:
                     try:

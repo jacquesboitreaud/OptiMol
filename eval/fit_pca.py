@@ -82,7 +82,7 @@ z_all = np.zeros((loaders.dataset.n, model.l_size))
 
 with torch.no_grad():
     for batch_idx, (graph, smiles, p_target, a_target) in enumerate(test_loader):
-        if (batch_idx % 100 == 0):
+        if batch_idx % 100 == 0:
             print(f'{batch_idx*batch_size}/{loaders.dataset.n} molecules passed' )
 
         graph = send_graph_to_device(graph, device)

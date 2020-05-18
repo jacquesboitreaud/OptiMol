@@ -61,7 +61,7 @@ if __name__ == '__main__':
     model.eval()
 
     # Load dataframe with mols to embed
-    if (args.cutoff > 0):
+    if args.cutoff > 0:
         smiles_df = pd.read_csv(args.input, index_col=0, nrows=args.cutoff)  # cutoff csv at nrows
     else:
         smiles_df = pd.read_csv(args.input, index_col=0)

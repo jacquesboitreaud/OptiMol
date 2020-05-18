@@ -93,7 +93,7 @@ class GenTrain():
 
                 # Compute CbAS loss with samples weights 
                 loss = CbASLoss(out_smi, smiles, mu, logv, w_i, self.beta)
-                if (batch_idx == 0):
+                if batch_idx == 0:
                     _, out_chars = torch.max(out_smi.detach(), dim=1)
                     print(f'CbAS Loss at batch 0 : {loss.item()}')
 

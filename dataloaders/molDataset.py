@@ -72,14 +72,14 @@ class molDataset(Dataset):
         
         self.graph_only=graph_only
         # 0/ two options: empty loader or csv path given 
-        if (csv_path is None):
+        if csv_path is None:
             print("Empty dataset initialized. Use pass_dataset or pass_dataset_path to add molecules.")
             self.df = None
             self.n = 0
 
         else:
             # Cutoff number of molecules 
-            if (n_mols != -1):
+            if n_mols != -1:
                 self.df = pd.read_csv(csv_path, nrows=n_mols)
                 self.n = n_mols
                 print('Dataset columns:', self.df.columns)
@@ -91,7 +91,7 @@ class molDataset(Dataset):
         # 1/ ============== Properties & Targets handling: ================
 
         self.targets = targets
-        if(len(targets)>0):
+        if len(targets)>0:
             self.binned_scores = bool('binned' in targets[0]) # whether we use binned affs or true values;
         else:
             self.binned_scores = False
@@ -114,14 +114,14 @@ class molDataset(Dataset):
         
         self.language = vocab # smiles or selfies 
         
-        if( build_alphabet): # Parsing dataset to build custom alphabets 
+        if build_alphabet: # Parsing dataset to build custom alphabets
             print('!! Building custom alphabet for dataset. Set build_alphabet=True to use params.json moses alphabet.')
             selfies_a , len_selfies, smiles_a, len_smiles = self._get_selfie_and_smiles_alphabets()
-            if(self.language == 'smiles'):
+            if self.language == 'smiles':
                 self.max_len = len_smiles
                 self.alphabet = smiles_a
                 
-            elif(self.language=='selfies'):
+            elif self.language=='selfies':
                 self.max_len = len_selfies
                 self.alphabet = selfies_a
             
@@ -130,11 +130,11 @@ class molDataset(Dataset):
             with open(os.path.join(maps_path, 'predefined_alphabets.pickle'), 'rb') as f :
                 alphabets_dict = pickle.load(f)
                 
-            if(self.language == 'smiles'):
+            if self.language == 'smiles':
                 self.alphabet = alphabets_dict['smiles_alphabet']
                 self.max_len = alphabets_dict['largest_smiles_len']
                 
-            elif(self.language=='selfies'):
+            elif self.language=='selfies':
                 self.alphabet = alphabets_dict['selfies_alphabet']
                 self.max_len = alphabets_dict['largest_selfies_len']
                 
@@ -296,7 +296,7 @@ class molDataset(Dataset):
 
         g_dgl.ndata['h'] = torch.cat([g_dgl.ndata[f].view(N,-1) for f in node_features], dim=1)
         
-        if(self.graph_only): # give only the graph (to encode in latent space)
+        if self.graph_only: # give only the graph (to encode in latent space)
             return g_dgl, 0,0,0
 
         # 2 - Smiles / selfies to integer indices array
@@ -387,7 +387,7 @@ class Loader():
         
         indices = list(range(n))
         np.random.shuffle(indices)
-        if (not self.test_only): # 90% train ; 10 % valid
+        if not self.test_only: # 90% train ; 10 % valid
             split_train, split_valid = 0.9, 0.9
             train_index, valid_index = int(split_train * n), int(split_valid * n)
 
@@ -406,7 +406,7 @@ class Loader():
         print(f"Train subset contains {len(train_set)} samples")
         print(f"Test subset contains {len(test_set)} samples")
 
-        if (not self.test_only):
+        if not self.test_only:
             train_loader = DataLoader(dataset=train_set, shuffle=True, batch_size=self.batch_size,
                                       num_workers=self.num_workers, collate_fn=collate_block, drop_last=True)
 
@@ -415,7 +415,7 @@ class Loader():
                                  num_workers=self.num_workers, collate_fn=collate_block, drop_last=False)
 
         # return train_loader, valid_loader, test_loader
-        if (not self.test_only):
+        if not self.test_only:
             return train_loader, 0, test_loader
         else:
             return 0, 0, test_loader

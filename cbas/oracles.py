@@ -20,7 +20,7 @@ def qed(smiles):
     t = torch.zeros(len(smiles))
     for i, s in enumerate(smiles):
         m = Chem.MolFromSmiles(s)
-        if (m != None):
+        if m is not None:
             t[i] = QED.qed(m)
     return t
 
@@ -32,7 +32,7 @@ def isValid(smiles):
     return 1
 
 
-def normal_cdf_oracle(observed_x, gamma, std=1):
+def normal_cdf_oracle(observed_x, gamma, std=0.1):
     """
     Assuming x ~ N(observed_x, var), returns P(x<=gamma)
     """

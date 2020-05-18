@@ -8,8 +8,8 @@ Created on Wed May  6 17:08:41 2020
 Proba to generate a sample given a model 
 """
 
-from torch import nn
 import torch
+from torch import nn
 
 
 def GenProb(x, z, model):

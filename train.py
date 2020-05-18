@@ -173,7 +173,7 @@ if __name__ == "__main__":
 
     # Train & test
 
-    if (args.load_model):
+    if args.load_model:
         total_steps = args.load_iter
     else:
         total_steps = 0
