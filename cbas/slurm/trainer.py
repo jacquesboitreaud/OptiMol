@@ -121,9 +121,15 @@ def main(iteration, quantile, oracle, prior_name, name, qed):
     params = dumper.load(json_path)
     savepath = os.path.join(params['savepath'], 'weights.pth')
     search_model.load(savepath)
+    search_trainer = GenTrain(search_model, **params)
+
+    # send to device
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    search_model.to(device)
+    search_trainer.device = device
+    search_trainer.load_optim()
 
     # Update search model
-    search_trainer = GenTrain(search_model, **params)
     search_trainer.step('smiles', samples, weights)
 
 

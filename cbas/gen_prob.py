@@ -9,7 +9,6 @@ Proba to generate a sample given a model
 """
 
 from torch import nn
-import torch
 
 
 def GenProb(x, z, model):

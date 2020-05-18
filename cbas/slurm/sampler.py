@@ -29,6 +29,10 @@ def get_samples(prior_model, search_model, max):
     tries = 0
     batch_size = 100
 
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    search_model.to(device)
+    prior_model.to(device)
+
     # Importance weights
     while (tries * batch_size) < (10 * max) and len(sample_selfies) < max:
         tries += 1
