@@ -8,6 +8,7 @@ Created on Wed May  6 17:08:41 2020
 Proba to generate a sample given a model 
 """
 
+import torch
 from torch import nn
 
 
