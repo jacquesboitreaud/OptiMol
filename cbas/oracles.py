@@ -32,7 +32,7 @@ def isValid(smiles):
     return 1
 
 
-def normal_cdf_oracle(observed_x, gamma, std=1):
+def normal_cdf_oracle(observed_x, gamma, std=0.1):
     """
     Assuming x ~ N(observed_x, var), returns P(x<=gamma)
     """
