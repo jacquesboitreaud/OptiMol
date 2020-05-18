@@ -9,9 +9,10 @@ import matplotlib.pyplot as plt
 import numpy as np 
 import pickle
 import seaborn as sns
+import pandas as pd
 
 
-name = 'aff_1'
+name = 'docking_100'
 
 df= pd.read_csv(f'../../results/bo/{name}/samples.csv')
     
@@ -21,17 +22,17 @@ with open(f'../../data/drd3_scores.pickle', 'rb') as f:
     zinc_scores = pickle.load(f)
 zinc_scores = np.array(list(zinc_scores.values()))
     
-N = len(scores)
+N = np.max(df.step)
 means = []
 good_samples = []
 
 for i in range(N):
     
-    scores = df[df['step']==i].drd3
+    scores = df[df['step']==i].aff
     mu = np.mean(scores)
     means.append(mu)
     
-    idces = np.where(scores.flatten()>=10.0)
+    idces = np.where(np.array(scores).flatten()>=10.0)
     N_good = idces[0].shape[0]
     good_samples.append(N_good)
     
