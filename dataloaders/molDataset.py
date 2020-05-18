@@ -245,9 +245,13 @@ class molDataset(Dataset):
         row = self.df.iloc[idx,:]
         
         smiles = row.smiles # needed anyway to build graph 
+        m=Chem.MolFromSmiles(smiles)
         
         # 1 - Graph building
-        graph = smiles_to_nx(smiles)
+        if m!=None:
+            graph = smiles_to_nx(smiles)
+        else:
+            return None, 0,0,0
 
         one_hot = {edge: torch.tensor(self.edge_map[label]) for edge, label in
                    (nx.get_edge_attributes(graph, 'bond_type')).items()}

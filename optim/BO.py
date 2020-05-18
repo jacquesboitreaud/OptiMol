@@ -67,11 +67,11 @@ if __name__ == "__main__":
     parser.add_argument( '--name', help="saved model weights fname. Located in saved_models subdir",
                         default='inference_default')
     
-    parser.add_argument('-n', "--n_steps", help="Nbr of optim steps", type=int, default=100)
+    parser.add_argument('-n', "--n_steps", help="Nbr of optim steps", type=int, default=300)
     parser.add_argument('-q', "--n_queries", help="Nbr of queries per step", type=int, default=50)
     
     # initial samples to use 
-    parser.add_argument('--init_samples', default='diverse_samples.csv') # samples to start with // random or excape data
+    parser.add_argument('--init_samples', default='qsar/actives_clean.csv') # samples to start with // random or excape data
     parser.add_argument('--n_init', type = int ,  default=500) # Number of samples to start with 
     
     # docking specific params 
@@ -95,15 +95,6 @@ if __name__ == "__main__":
     
     time_id = datetime.now()
     time_id = time_id.strftime("_%d_%H%M")
-
-    out_dir = os.path.join(script_dir,'..','results/bo', args.bo_name+time_id)
-    soft_mkdir(os.path.join(script_dir,'..','results/bo'))
-    os.mkdir(out_dir) # not soft to not overwrite a previous experiment 
-    
-    save_csv = os.path.join(out_dir, 'samples.csv') # csv to write samples and their score 
-    header = ['smiles',args.objective, 'step']
-    with open(save_csv, 'w', newline='') as csvfile:
-        csv.writer(csvfile).writerow(header)
 
     vocab = 'selfies'
     # Loader for initial sample
@@ -136,12 +127,13 @@ if __name__ == "__main__":
     
     # Generate initial data 
     df = pd.read_csv(os.path.join(script_dir,'..','data',args.init_samples), nrows = args.n_init) # n_init Initial samples 
+    smiles = [s for s in df.smiles if Chem.MolFromSmiles(s)!=None]
     
     loader.graph_only=True
     train_z = torch.tensor(model.embed( loader, df)) # z has shape (N_molecules, latent_size)
     
     if args.objective == 'qed':
-        scores_init = torch.tensor([Chem.QED.qed(Chem.MolFromSmiles(s)) for s in df.smiles]).view(-1,1).to(device)
+        scores_init = torch.tensor([Chem.QED.qed(Chem.MolFromSmiles(s)) for s in smiles]).view(-1,1).to(device)
     elif args.objective == 'aff_pred':
         with torch.no_grad():
             scores_init = -1* model.affs(train_z.to(device)).cpu() # careful, maximize -aff <=> minimize binding energy (negative value)
@@ -153,23 +145,32 @@ if __name__ == "__main__":
             clf = pickle.load(f)
             print('-> Loaded qsar svm')
             fps=[]
-            for s in df.smiles:
+            for s in smiles:
                 m = Chem.MolFromSmiles(s)
                 fps.append(np.array(AllChem.GetMorganFingerprintAsBitVect(m , 3, nBits=2048)).reshape(1,-1))
             fps = np.vstack(fps)
             scores_init = torch.from_numpy(clf.predict_proba(fps)[:,1]).view(-1,1)
             
     
-    # Tracing results
+    # Tracing results logging
     sc_dict = {}
     best_value = torch.max(scores_init).item()
     best_observed.append(best_value)
     train_obj = scores_init
-    train_smiles = list(df.smiles)
+    train_smiles = list(smiles)
     print(f'-> Best value observed in initial samples : {best_value}')
     
+    out_dir = os.path.join(script_dir,'..','results/bo', args.bo_name+time_id)
+    soft_mkdir(os.path.join(script_dir,'..','results/bo'))
+    os.mkdir(out_dir) # not soft to not overwrite a previous experiment 
+    
+    save_csv = os.path.join(out_dir, 'samples.csv') # csv to write samples and their score 
+    header = ['smiles',args.objective, 'step']
+    with open(save_csv, 'w', newline='') as csvfile:
+        csv.writer(csvfile).writerow(header)
+    
     with open(save_csv, 'a', newline='') as csvfile:
-        for i,s in enumerate(df.smiles):
+        for i,s in enumerate(smiles):
             csv.writer(csvfile).writerow([s, scores_init[i,0].item(), 0])
 
     
@@ -215,8 +216,11 @@ if __name__ == "__main__":
             for s in smiles :
                 s = decoder(s)
                 m = Chem.MolFromSmiles(s)
-                Chem.Kekulize(m)
-                s= Chem.MolToSmiles(m, kekuleSmiles = True)
+                try:
+                    Chem.Kekulize(m)
+                    s= Chem.MolToSmiles(m, kekuleSmiles = True)
+                except:
+                    pass
                 k.append(s)
             smiles = k 
             
