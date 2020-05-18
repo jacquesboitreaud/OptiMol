@@ -134,7 +134,7 @@ for i in range(args.steps):
     g = torch.autograd.grad(epsilon, z)
     with torch.no_grad():  # Gradient descent, don't track
         z = z + lr * g[0]
-        if (i % 20 == 0):
+        if i % 20 == 0:
             lr = 0.9 * lr
 
         out = model.decode(z)

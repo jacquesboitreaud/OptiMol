@@ -43,7 +43,7 @@ def smiles_to_nx(smiles, validate=False):
 
 
 def nx_to_mol(G, edge_map, at_map, chi_map, charge_map):
-    if (type(G) != nx.classes.graph.Graph):
+    if type(G) != nx.classes.graph.Graph:
         G = G.to_networkx(node_attrs=['atomic_num', 'chiral_tag', 'formal_charge', 'num_explicit_hs', 'is_aromatic'],
                           edge_attrs=['one_hot'])
         G = G.to_undirected()

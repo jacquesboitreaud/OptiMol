@@ -323,7 +323,7 @@ if __name__ == "__main__":
                 csv.writer(csvfile).writerow([s, new_score[i,0].item(), iteration])
         
         # save acquired scores for next time 
-        if(args.verbose):
+        if args.verbose:
             print(' oracle outputs:')
             print(new_score.numpy())
         sc_dict[iteration]=new_score.numpy()

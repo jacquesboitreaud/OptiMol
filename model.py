@@ -266,7 +266,7 @@ class Model(nn.Module):
             out, h = self.decoder(rnn_in, h)
             gen_seq[:, :, step] = out
 
-            if (teacher_forced > 0.0 and np.random.rand() < teacher_forced):  # proba of teacher forcing
+            if teacher_forced > 0.0 and np.random.rand() < teacher_forced:  # proba of teacher forcing
                 indices = x_true[:, step]
             else:
                 v, indices = torch.max(gen_seq[:, :, step], dim=1)  # get char indices with max probability
@@ -322,7 +322,7 @@ class Model(nn.Module):
             a list of lists of k best sequences for each molecule.
         """
         N = z.shape[0]
-        if (cutoff_mols != None):
+        if cutoff_mols != None:
             N = cutoff_mols
             print(f'Decoding will stop after {N} mols')
         sequences = []
@@ -375,22 +375,22 @@ class Model(nn.Module):
             sp = mu + noise
             tensors_list.append(sp)
 
-        if (attempts > 1):
+        if attempts > 1:
             samples = torch.stack(tensors_list, dim=0)
             samples = torch.squeeze(samples)
         else:
             samples = sp
 
-        if (beam_search):
+        if beam_search:
             dec = self.decode_beam(samples)
         else:
             dec = self.decode(samples)
 
         # props ad affinity if requested 
         p, a = 0, 0
-        if (props):
+        if props:
             p = self.props(samples)
-        if (aff):
+        if aff:
             a = self.aff(samples)
 
         return dec, p, a
@@ -408,7 +408,7 @@ class Model(nn.Module):
             sp = z + noise
             tensors_list.append(sp)
 
-        if (attempts > 1):
+        if attempts > 1:
             samples = torch.stack(tensors_list, dim=0)
             samples = torch.squeeze(samples)
         else:

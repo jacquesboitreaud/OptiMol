@@ -72,7 +72,7 @@ if __name__ == "__main__":
                                                 aff=False)  # props & affs returned in _
 
     # Sequence to smiles 
-    if (not args.use_beam):
+    if not args.use_beam:
         smiles = model.probas_to_smiles(gen_seq)
     else:
         smiles = model.beam_out_to_smiles(gen_seq)

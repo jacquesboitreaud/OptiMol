@@ -49,7 +49,7 @@ def process_samples(score_dict, samples, weights, quantile, oracle='binary', thr
     reweight samples using docking scores
     :return:
     """
-    # We maximize an objective but cbas actually minimizes things
+    # We maximize an objective but for docking we actually need to minimize things
     if not qed:
         for key, value in score_dict.items():
             score_dict[key] = -value

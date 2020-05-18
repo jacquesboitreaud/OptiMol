@@ -201,7 +201,7 @@ if __name__ == "__main__":
                 print('epoch {}, opt. step n°{}, rec_loss {:.2f}, properties mse_loss {:.2f}, \
 contrast. Loss {:.2f}'.format(epoch, total_steps, rec.item(), pmse.item(), simLoss.item()))
 
-            if (total_steps % args.print_smiles_iter == 0):
+            if total_steps % args.print_smiles_iter == 0:
                 reconstruction_dataframe, frac_valid = log_smiles(s_i, out_smi_i.detach(),
                                                                   loaders.t1_actives.index_to_char)
                 print(reconstruction_dataframe)

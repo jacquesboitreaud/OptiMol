@@ -59,15 +59,15 @@ if __name__ == '__main__':
     for s in tqdm(smiles):
         graph = smiles_to_nx(s)
         for _, _, e_dict in graph.edges(data=True):
-            if (e_dict['bond_type'] not in edge_types):
+            if e_dict['bond_type'] not in edge_types:
                 edge_types.add(e_dict['bond_type'])
 
         for n, n_dict in graph.nodes(data=True):
-            if (n_dict['chiral_tag'] not in chiral_types):
+            if n_dict['chiral_tag'] not in chiral_types:
                 chiral_types.add(n_dict['chiral_tag'])
-            if (n_dict['atomic_num'] not in atom_types):
+            if n_dict['atomic_num'] not in atom_types:
                 atom_types.add(n_dict['atomic_num'])
-            if (n_dict['formal_charge'] not in formal_charges):
+            if n_dict['formal_charge'] not in formal_charges:
                 formal_charges.add(n_dict['formal_charge'])
 
     print('Edge types found: \n', edge_types)

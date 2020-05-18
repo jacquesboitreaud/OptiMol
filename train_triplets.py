@@ -116,11 +116,11 @@ if __name__ == "__main__":
     pickle.dump(params, open('saved_models/params.pickle', 'wb'))
 
     model = Model(**params).to(device)
-    if (args.load_model):
+    if args.load_model:
         print('Loading pretrained model')
         model.load_state_dict(torch.load(model_path))
 
-    if (parallel):  # torch.cuda.device_count() > 1 and
+    if parallel:  # torch.cuda.device_count() > 1 and
         print("Start training using ", torch.cuda.device_count(), "GPUs!")
         model = nn.DataParallel(model)
 
@@ -212,7 +212,7 @@ if __name__ == "__main__":
                 print('epoch {}, opt. step n°{}, rec_loss {:.2f}, properties mse_loss {:.2f}, \
 tripletLoss {:.2f}'.format(epoch, total_steps, rec.item(), pmse.item(), simLoss.item()))
 
-            if (total_steps % args.print_smiles_iter == 0):
+            if total_steps % args.print_smiles_iter == 0:
                 reconstruction_dataframe, frac_valid = log_smiles(s_i, out_smi_i.detach(),
                                                                   loaders.t1_actives.index_to_char)
                 print(reconstruction_dataframe)

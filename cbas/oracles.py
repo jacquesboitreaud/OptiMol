@@ -20,7 +20,7 @@ def qed(smiles):
     t = torch.zeros(len(smiles))
     for i, s in enumerate(smiles):
         m = Chem.MolFromSmiles(s)
-        if (m != None):
+        if m is not None:
             t[i] = QED.qed(m)
     return t
 
