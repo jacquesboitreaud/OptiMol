@@ -137,7 +137,7 @@ def one_node_main(server, exhaustiveness, name, qed):
                                      load=False), list_smiles)
 
     dump_path = os.path.join(script_dir, 'results', name, 'docking_small_results', '0.csv')
-    df = pd.from_dict({'smile': list_smiles, 'score': list_results})
+    df = pd.DataFrame.from_dict({'smile': list_smiles, 'score': list_results})
     df.to_csv(dump_path)
 
 
