@@ -4,7 +4,7 @@ Created on Mon Jan 20 15:46:47 2020
 
 @author: jacqu
 """
-
+import os
 import numpy as np
 from numpy.linalg import norm
 import random
@@ -18,6 +18,32 @@ from rdkit.Chem import AllChem
 from rdkit.Chem.Fingerprints import FingerprintMols
 
 from sklearn.decomposition import PCA
+
+
+def plot_csvs(dir_path):
+    """
+    get scores in successive dfs.
+    Expect the names to be in format *_iteration.csv
+    Expect to contain a 'score' column to get mean and std over
+    :param path:
+    :return:
+    """
+    # 2,3,23 not 2,23,3
+    names = os.listdir(dir_path)
+    numbers = [int(name.split('_')[-1].split('.')[0]) for name in names]
+    asort = np.argsort(np.array(numbers))
+    iterations = np.array(numbers)[asort]
+    sorted_names = np.array(names)[asort]
+
+    mus, stds = list(), list()
+    for name in sorted_names:
+        df = pd.read_csv(os.path.join(dir_path, name))
+        values = df['score']
+        mus.append(np.mean(values))
+        stds.append(np.std(values))
+
+    plt.errorbar(iterations, mus, stds, linestyle='None', marker='^')
+    plt.show()
 
 
 def plot_kde(z):
@@ -93,3 +119,8 @@ def pca_plot_hue(z, pca, variable, label):
         if i > 0:
             t.set_text(t.get_text()[:4])
     return ax
+
+
+if __name__=='__main__':
+    plot_csvs('plot/gaussian')
+    # plot_csvs('plot/deterministic')
