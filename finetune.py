@@ -299,8 +299,8 @@ if __name__ == "__main__":
                     for s in sample_selfies:
                         s=decoder(s)
                         m=Chem.MolFromSmiles(s)
-                        Chem.MolFromSmiles(s)
-                        s= Chem.MolToSmiles(s, kekuleSmiles=True)
+                        Chem.Kekulize(m)
+                        s= Chem.MolToSmiles(m, kekuleSmiles=True)
                         sample_smi.append(s)
                     
                     actives = [int(s in actives_set) for s in sample_smi]
