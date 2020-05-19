@@ -27,7 +27,7 @@ for i in idces :
     
     Nsteps = np.max(samples['step'])
     
-    mu, top = [], []
+    mu, top, stds = [], [], []
     for s in range(Nsteps):
         stepsamp=samples[samples['step']==s]
         
@@ -35,6 +35,7 @@ for i in idces :
             n_init_samples = stepsamp.shape[0]
         
         mu.append(np.mean(stepsamp.qed))
+        stds.append(np.std(stepsamp.qed))
         
         # scores > threshold 
         goods = np.where(stepsamp.qed >= threshold)
@@ -48,6 +49,12 @@ for i in idces :
     sns.barplot(x = np.arange(Nsteps), y=top, color = 'lightblue')
     plt.ylim(0,50)
     plt.title(f'Number of samples better than threshold ({threshold}) at each step. run {i}')
+    
+    plt.figure()
+    plt.errorbar(np.arange(Nsteps), mu, stds, linestyle='None', marker='^')
+    plt.xlabel('Step')
+    plt.ylabel('QED')
+    plt.show()
     
     print(f'Run {i}: step 0 contains {n_init_samples} initial samples (random from zinc and excape)')
     

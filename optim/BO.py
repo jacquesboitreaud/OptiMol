@@ -56,10 +56,11 @@ if __name__ == "__main__":
     from dgl_utils import send_graph_to_device
     from BO_utils import get_fitted_model, qed_one 
     from docking.docking import dock, set_path
+    from data_processing.comp_metrics import cLogP, cQED
 
     parser = argparse.ArgumentParser()
     
-    parser.add_argument('-o', '--objective', default='qed') # 'qed', 'aff', 'aff_pred' or 'qsar'
+    parser.add_argument('-o', '--objective', default='logp') # 'qed', 'logp' 'aff', 'aff_pred' or 'qsar'
     
     parser.add_argument( '--bo_name', help="Name for BO results subdir ",
                         default='bo_run')
@@ -67,11 +68,11 @@ if __name__ == "__main__":
     parser.add_argument( '--name', help="saved model weights fname. Located in saved_models subdir",
                         default='inference_default')
     
-    parser.add_argument('-n', "--n_steps", help="Nbr of optim steps", type=int, default=300)
+    parser.add_argument('-n', "--n_steps", help="Nbr of optim steps", type=int, default=20)
     parser.add_argument('-q', "--n_queries", help="Nbr of queries per step", type=int, default=50)
     
     # initial samples to use 
-    parser.add_argument('--init_samples', default='qsar/actives_clean.csv') # samples to start with // random or excape data
+    parser.add_argument('--init_samples', default='diverse_samples.csv') # samples to start with // random or excape data
     parser.add_argument('--n_init', type = int ,  default=500) # Number of samples to start with 
     
     # docking specific params 
@@ -115,7 +116,7 @@ if __name__ == "__main__":
     # Search space 
     d = model.l_size
     dtype = torch.float
-    bounds = torch.tensor([[-5.0] * d, [5.0] * d], device=gp_device, dtype=dtype)
+    bounds = torch.tensor([[-3.0] * d, [3.0] * d], device=gp_device, dtype=dtype)
     BO_BATCH_SIZE = args.n_queries
     N_STEPS = args.n_steps
     MC_SAMPLES = 2000
@@ -133,7 +134,9 @@ if __name__ == "__main__":
     train_z = torch.tensor(model.embed( loader, df)) # z has shape (N_molecules, latent_size)
     
     if args.objective == 'qed':
-        scores_init = torch.tensor([Chem.QED.qed(Chem.MolFromSmiles(s)) for s in smiles]).view(-1,1).to(device)
+        scores_init = torch.tensor([cQED(s) for s in smiles]).view(-1,1).to(device)
+    elif args.objective == 'logp':
+        scores_init = torch.tensor([cLogP(s) for s in smiles]).view(-1,1).to(device)
     elif args.objective == 'aff_pred':
         with torch.no_grad():
             scores_init = -1* model.affs(train_z.to(device)).cpu() # careful, maximize -aff <=> minimize binding energy (negative value)
@@ -264,10 +267,13 @@ if __name__ == "__main__":
                 
             elif args.objective =='qed':
                 
-                # Multiprocessing
-                pool = Pool()
-                new_scores = pool.map(qed_one, enumerate(smiles))
-                pool.close()
+                new_scores = [cQED(s) for s in smiles]
+                new_scores = torch.tensor(new_scores, dtype = torch.float)
+                new_scores = new_scores.unsqueeze(-1)  # new scores must be (N*1)
+                
+            elif args.objective == 'logp':
+                
+                new_scores = [cLogP(s) for s in smiles]
                 new_scores = torch.tensor(new_scores, dtype = torch.float)
                 new_scores = new_scores.unsqueeze(-1)  # new scores must be (N*1)
                 
