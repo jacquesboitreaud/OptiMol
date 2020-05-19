@@ -169,7 +169,10 @@ def one_node_main(server, exhaustiveness, name, oracle):
     if oracle == 'qed':
         list_results = p.map(one_qed, list_smiles)
     elif oracle == 'qsar':
-        list_results = p.map(one_qed, list_smiles)
+        list_fps = p.map(one_fp, list_smiles)
+        svm_model = pickle.load(
+            open(os.path.join(script_dir, '..', '..', 'results', 'saved_models', 'qsar_svm.pickle'), 'rb'))
+        list_results = svm_model.predict_proba(list_fps)[:, 1]
     elif oracle == 'docking':
         list_results = p.map(partial(one_dock,
                                      server=server,

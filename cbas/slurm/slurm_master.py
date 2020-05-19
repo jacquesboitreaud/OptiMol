@@ -50,6 +50,8 @@ if __name__ == '__main__':
     args, _ = parser.parse_known_args()
     device = 'cpu'  # 'cuda' if torch.cuda.is_available() else 'cpu'
 
+    assert args.oracle in ['qed', 'docking', 'qsar']
+
 
     def setup():
         pass
