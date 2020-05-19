@@ -304,7 +304,7 @@ if __name__ == "__main__":
                         sample_smi.append(s)
                     
                     actives = [int(s in actives_set) for s in sample_smi]
-                    pct_actives = sum(actives)/len(actives)
+                    pct_actives = float(sum(actives))/float(len(actives))
                     
                     print('PCT ACTIVES in samples : ', pct_actives)
                     
