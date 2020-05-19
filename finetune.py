@@ -80,6 +80,7 @@ if __name__ == "__main__":
 
     parser.add_argument('--print_iter', type=int, default=1000)  # print loss metrics every _ step
     parser.add_argument('--sample_iter', type=int, default=100)  # print reconstructed smiles every _ step
+    
     parser.add_argument('--save_iter', type=int, default=10000)  # save model weights every _ step
 
     # teacher forcing rnn schedule
@@ -179,6 +180,7 @@ if __name__ == "__main__":
 
     print(model)
     map = ('cpu' if device == 'cpu' else None)
+    model.fix_index_to_char()
 
     # Optim
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
@@ -288,8 +290,7 @@ if __name__ == "__main__":
                     for batch_idx in range(N // 100):
                         batch_z = samples_z[batch_idx * 100:(batch_idx + 1) * 100]
                         gen_seq = model.decode(batch_z)
-                        _, sample_indices = torch.max(gen_seq, dim=1)
-                        sample_selfies += model.indices_to_smiles(sample_indices)
+                        sample_selfies += model.probas_to_smiles(gen_seq)
                     
                     sample_smi = [decoder(s) for s in sample_selfies]
                     

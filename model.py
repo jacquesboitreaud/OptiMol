@@ -284,6 +284,10 @@ class Model(nn.Module):
         for i in range(N):
             smiles.append(''.join([self.index_to_char[str(idx)] for idx in indices[i]]).rstrip())
         return smiles
+    
+    def fix_index_to_char(self):
+        self.index_to_char = {str(k):v for k,v in self.index_to_char.items()}
+        print('fixed idx to char')
 
     def indices_to_smiles(self, indices):
         # Takes indices tensor of shape (N, seq_len), returns list of corresponding smiles
