@@ -7,8 +7,7 @@ Created on Thu Jan 23 16:24:31 2020
 Optimize affinity with bayesian optimization 
 
 """
-import os
-import sys
+import os, sys 
 import numpy as np
 
 import torch
@@ -32,15 +31,12 @@ def get_fitted_model(train_x, train_obj, state_dict=None):
     fit_gpytorch_model(mll)
     return model
 
-
 def qed_one(enum):
-    """
-    Input : one smiles
-    Output : QED of molecule (0 if invalid)
-    """
     i,s = enum
-    m=Chem.MolFromSmiles(s) 
-    if m==None:
+    m= Chem.MolFromSmiles(s)
+    if m is None :
         return 0.0
     else:
         return QED.qed(m)
+
+
