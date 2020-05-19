@@ -54,12 +54,12 @@ if __name__ == "__main__":
     from model import Model, model_from_json
     from utils import *
     from dgl_utils import send_graph_to_device
-    from bo_utils import get_fitted_model, qed_one #dock_one
+    from BO_utils import get_fitted_model, qed_one 
     from docking.docking import dock, set_path
 
     parser = argparse.ArgumentParser()
     
-    parser.add_argument('-o', '--objective', default='qsar') # 'qed', 'aff', 'aff_pred' or 'qsar'
+    parser.add_argument('-o', '--objective', default='qed') # 'qed', 'aff', 'aff_pred' or 'qsar'
     
     parser.add_argument( '--bo_name', help="Name for BO results subdir ",
                         default='bo_run')
@@ -115,7 +115,7 @@ if __name__ == "__main__":
     # Search space 
     d = model.l_size
     dtype = torch.float
-    bounds = torch.tensor([[-3.0] * d, [3.0] * d], device=gp_device, dtype=dtype)
+    bounds = torch.tensor([[-5.0] * d, [5.0] * d], device=gp_device, dtype=dtype)
     BO_BATCH_SIZE = args.n_queries
     N_STEPS = args.n_steps
     MC_SAMPLES = 2000
