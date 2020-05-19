@@ -32,7 +32,8 @@ class GenTrain():
     Wrapper for search model iterative training in CbAS
     """
 
-    def __init__(self, model, savepath, epochs, device, lr, clip_grad, beta, processes=8, DEBUG=False):
+    def __init__(self, model, savepath, epochs, device, lr, clip_grad, beta, processes=8, DEBUG=False,
+                 optimizer='adam', scheduler='elr'):
         super(GenTrain, self).__init__()
 
         self.model = model
@@ -52,8 +53,15 @@ class GenTrain():
         self.anneal_rate = 0.9
         self.anneal_iter = 40000
         self.clip_grads = clip_grad
-        self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr0)
-        self.scheduler = lr_scheduler.ExponentialLR(self.optimizer, self.anneal_rate)
+        if optimizer == 'adam':
+            self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr0)
+        elif optimizer == 'sgd':
+            self.optimizer = optim.SGD(self.model.parameters(), lr=self.lr0)
+
+        if scheduler == 'elr':
+            self.scheduler = lr_scheduler.ExponentialLR(self.optimizer, self.anneal_rate)
+        else:
+            self.scheduler = None
 
         self.load_optim()
 
@@ -133,9 +141,12 @@ class GenTrain():
         weights_path = os.path.join(self.savepath, "weights.pth")
         optim_path = os.path.join(self.savepath, "optim.pth")
         torch.save(self.model.state_dict(), weights_path)
-        checkpoint = {'optimizer_state_dict': self.optimizer.state_dict(),
-                      'scheduler_state_dict': self.scheduler.state_dict()}
-        torch.save(checkpoint, optim_path)
+        try:
+            checkpoint = {'optimizer_state_dict': self.optimizer.state_dict(),
+                          'scheduler_state_dict': self.scheduler.state_dict()}
+            torch.save(checkpoint, optim_path)
+        except:
+            print('Optim and scheduler could not be saved')
 
     def load_optim(self):
         """
@@ -150,6 +161,9 @@ class GenTrain():
 
         except FileNotFoundError:
             print('No optimizer state was found')
+        #     If it is not defined, for instance when using no scheduler
+        except AttributeError:
+            pass
 
 # def load_from_dir(dir):
 #     dumper = Dumper()

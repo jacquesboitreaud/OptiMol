@@ -42,10 +42,12 @@ if __name__ == '__main__':
 
     # GENTRAIN
     parser.add_argument('--procs', type=int, default=10)  # Number of processes for VAE dataloading
-    parser.add_argument('--epochs', type=int, default=5)  # Number of iterations
+    parser.add_argument('--epochs', type=int, default=1)  # Number of iterations
     parser.add_argument('--learning_rate', type=float, default=1e-4)  # Number of iterations
     parser.add_argument('--beta', type=float, default=0.2)  # KL weight in loss function
     parser.add_argument('--clip_grad_norm', type=float, default=5.0)  # quantile of scores accepted
+    parser.add_argument('--opti', type=str, default='adam')  # the mode of the oracle
+    parser.add_argument('--sched', type=str, default='elr')  # the mode of the oracle
 
     # =======
 
@@ -78,6 +80,8 @@ if __name__ == '__main__':
                        'clip_grad': args.clip_grad_norm,
                        'beta': args.beta,
                        'processes': args.procs,
+                       'optimizer': args.opti,
+                       'scheduler': args.sched,
                        'DEBUG': True}
     dumper = Dumper(dumping_path=os.path.join(savepath, 'params_gentrain.json'), dic=params_gentrain)
     dumper.dump()
