@@ -35,14 +35,37 @@ def plot_csvs(dir_path):
     iterations = np.array(numbers)[asort]
     sorted_names = np.array(names)[asort]
 
+    batch_size = None  # default
     mus, stds = list(), list()
+    olds = set()
+    newslist = list()
     for name in sorted_names:
+        # Check scores
+        news = 0
         df = pd.read_csv(os.path.join(dir_path, name))
         values = df['score']
         mus.append(np.mean(values))
         stds.append(np.std(values))
 
-    plt.errorbar(iterations, mus, stds, linestyle='None', marker='^')
+        # Check novelty
+        smiles = df['smile']
+        for smile in smiles:
+            if smile not in olds:
+                olds.add(smile)
+                news += 1
+        newslist.append(news)
+
+        if batch_size is None:
+            batch_size = len(smiles)
+    if batch_size is None:
+        batch_size = 1000  # default
+
+    fig, ax = plt.subplots(1, 2, num=1)
+    ax[0].errorbar(iterations, mus, stds, linestyle='None', marker='^')
+    ax[1].set_ylim(0, batch_size + 100)
+    ax[1].plot(iterations, newslist)
+    fig.suptitle(dir_path.split("/")[-1])
+
     plt.show()
 
 
@@ -121,9 +144,10 @@ def pca_plot_hue(z, pca, variable, label):
     return ax
 
 
-if __name__=='__main__':
-    plot_csvs('plot/small')
-    # plot_csvs('plot/deterministic')
-
-
-
+if __name__ == '__main__':
+    # plot_csvs('plot/long_gaussian')
+    # plot_csvs('plot/gpu_test')
+    # plot_csvs('plot/sgd')
+    plot_csvs('plot/sgd_large')
+    plot_csvs('plot/more_epochs')
+    plot_csvs('plot/more_lr')
