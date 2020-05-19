@@ -62,9 +62,10 @@ if __name__ == "__main__":
     parser.add_argument('--latent_size', type=int, default=56)  # size of latent code
     parser.add_argument('--n_gcn_layers', type=int, default=3)  # number of gcn encoder layers (3 or 4?)
     
-    parser.add_argument('--lr', type=float, default=1e-4)  # Initial learning rate
+    parser.add_argument('--lr', type=float, default=5e-4)  # Initial learning rate
     parser.add_argument('--clip_norm', type=float, default=50.0)  # Gradient clipping max norm
-    parser.add_argument('--beta', type=float, default=0.0)  # initial KL annealing weight
+    parser.add_argument('--beta', type=float, default=0.5)  # initial KL annealing weight
+    
     parser.add_argument('--step_beta', type=float, default=0.002)  # beta increase per step
     parser.add_argument('--max_beta', type=float, default=0.5)  # maximum KL annealing weight
     parser.add_argument('--warmup', type=int, default=40000)  # number of steps with only reconstruction loss (beta=0)
@@ -81,7 +82,7 @@ if __name__ == "__main__":
     parser.add_argument('--print_iter', type=int, default=1000)  # print loss metrics every _ step
     parser.add_argument('--sample_iter', type=int, default=100)  # print reconstructed smiles every _ step
     
-    parser.add_argument('--save_iter', type=int, default=10000)  # save model weights every _ step
+    parser.add_argument('--save_iter', type=int, default=100)  # save model weights every _ step
 
     # teacher forcing rnn schedule
     parser.add_argument('--tf_init', type=float, default=1.0)
