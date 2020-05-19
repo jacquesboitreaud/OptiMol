@@ -195,7 +195,7 @@ class Model(nn.Module):
         if aff_net:
             self.load_state_dict(torch.load(trained_path))
         else:
-            self.load_no_aff_net(trained_path)
+            self.load_no_multitask(trained_path)
         # print(f'Loaded weights from {trained_path}')
 
     # ======================== Model pass functions ==========================
@@ -474,7 +474,7 @@ class Model(nn.Module):
         z_all = torch.cat(z_all, dim=0).numpy()
         return z_all
 
-    def load_no_aff_net(self, state_dict):
+    def load_no_multitask(self, state_dict):
         # Workaround to be able to load a model with not same size of affinity predictor... 
         pretrained_dict = torch.load(state_dict)
         model_dict = self.state_dict()
