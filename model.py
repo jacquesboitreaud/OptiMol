@@ -196,7 +196,7 @@ class Model(nn.Module):
             self.load_state_dict(torch.load(trained_path))
         else:
             self.load_no_aff_net(trained_path)
-        print(f'Loaded weights from {trained_path}')
+        # print(f'Loaded weights from {trained_path}')
 
     # ======================== Model pass functions ==========================
 

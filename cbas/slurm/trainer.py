@@ -44,13 +44,13 @@ def gather_scores(iteration, name):
     return dict(zip(molecules, scores))
 
 
-def process_samples(score_dict, samples, weights, quantile, oracle='binary', threshold=0.05, qed=False):
+def process_samples(score_dict, samples, weights, quantile, uncertainty='binary', threshold=0.05, oracle='qed'):
     """
     reweight samples using docking scores
     :return:
     """
     # We maximize an objective but for docking we actually need to minimize things
-    if not qed:
+    if oracle == 'docking':
         for key, value in score_dict.items():
             score_dict[key] = -value
     sorted_sc = sorted(score_dict.values())
@@ -78,10 +78,11 @@ def process_samples(score_dict, samples, weights, quantile, oracle='binary', thr
         # For a gaussian, default 0.05 is approx 1.6 stds so we take into account docking scores up until :
         # (quantile - 1.6std) with weight 0.05
 
-        if oracle == 'binary':
+        if uncertainty == 'binary':
             oracle_proba = deterministic_one(score, gamma)
-        elif oracle == 'gaussian':
-            oracle_proba = normal_cdf_oracle(score, gamma)
+        elif uncertainty == 'gaussian':
+            std = 0.1 if oracle == 'qed' else 1
+            oracle_proba = normal_cdf_oracle(score, gamma, std=std)
         else:
             raise ValueError('wrong option')
         # print(f'p(score>gamma = {(1 - oracle_proba)}, and threshold is {threshold}')
@@ -95,22 +96,25 @@ def process_samples(score_dict, samples, weights, quantile, oracle='binary', thr
     return filtered_samples, filtered_weights
 
 
-def main(iteration, quantile, oracle, prior_name, name, qed):
+def main(iteration, quantile, uncertainty, prior_name, name, oracle):
     # Aggregate docking results
     score_dict = gather_scores(iteration, name)
 
-    # Memoization of the sampled compounds, if they are not qed scores
-    if not qed:
+    # Memoization of the sampled compounds, if they are docking scores
+    if oracle == 'docking':
         print('doing memoization')
         whole_path = os.path.join(script_dir, '..', '..', 'data', 'drd3_scores.pickle')
         docking_whole_results = pickle.load(open(whole_path, 'rb'))
-        docking_whole_results.update(score_dict)
+        # Only update memoization for successful dockings
+        new_results = {key: value for key, value in score_dict if value < 0}
+        docking_whole_results.update(new_results)
         pickle.dump(docking_whole_results, open(whole_path, 'wb'))
 
     # Reweight and discard wrong samples
     dump_path = os.path.join(script_dir, 'results', name, 'samples.p')
     samples, weights = pickle.load(open(dump_path, 'rb'))
-    samples, weights = process_samples(score_dict, samples, weights, oracle=oracle, quantile=quantile, qed=qed)
+    samples, weights = process_samples(score_dict, samples, weights, uncertainty=uncertainty, quantile=quantile,
+                                       oracle=oracle)
 
     # Load an instance of previous model
     search_model = model_from_json(prior_name)
@@ -142,8 +146,8 @@ if __name__ == '__main__':
     parser.add_argument('--prior_name', type=str, default='inference_default')  # the prior VAE (pretrained)
     parser.add_argument('--name', type=str, default='search_vae')  # the experiment name
     parser.add_argument('--quantile', type=float, default=0.6)  # quantile of scores accepted
-    parser.add_argument('--oracle', type=str, default='gaussian')  # the mode of the oracle
-    parser.add_argument('--qed', action='store_true')
+    parser.add_argument('--uncertainty', type=str, default='gaussian')  # the mode of the oracle
+    parser.add_argument('--oracle', type=str)  # 'qed' or 'docking' or 'qsar'
 
     args, _ = parser.parse_known_args()
 
@@ -151,5 +155,5 @@ if __name__ == '__main__':
          name=args.name,
          iteration=args.iteration,
          quantile=args.quantile,
-         oracle=args.oracle,
-         qed=args.qed)
+         uncertainty=args.uncertainty,
+         oracle=args.oracle)

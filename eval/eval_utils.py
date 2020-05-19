@@ -122,7 +122,7 @@ def pca_plot_hue(z, pca, variable, label):
 
 
 if __name__=='__main__':
-    plot_csvs('plot/gaussian')
+    plot_csvs('plot/small')
     # plot_csvs('plot/deterministic')
 
 

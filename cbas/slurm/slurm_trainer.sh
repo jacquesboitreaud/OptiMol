@@ -11,6 +11,6 @@ module load cudnn/v7.6.5.32/cuda-10.1
 source ~/anaconda3/etc/profile.d/conda.sh
 conda activate optimol
 
-python trainer.py --prior_name $1 --name $2 --iteration $3 --quantile $4 --oracle $5 $6
+python trainer.py --prior_name $1 --name $2 --iteration $3 --quantile $4 --uncertainty $5 --oracle $6
 
 

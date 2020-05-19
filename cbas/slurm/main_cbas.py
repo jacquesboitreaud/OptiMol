@@ -27,7 +27,7 @@ if __name__ == '__main__':
     parser.add_argument('--prior_name', type=str, default='inference_default')  # the prior VAE (pretrained)
     parser.add_argument('-n', '--name', type=str, default='search_vae')  # the name of the experiment
     parser.add_argument('--iters', type=int, default=2)  # Number of iterations
-    parser.add_argument('--qed', action='store_true')
+    parser.add_argument('--oracle', type=str, default='qed')  # 'qed' or 'docking' or 'qsar'
 
     # SAMPLER
     parser.add_argument('--max_samples', type=int, default=3000)  # Nbr of samples at each iter
@@ -38,10 +38,10 @@ if __name__ == '__main__':
 
     # TRAINER
     parser.add_argument('--quantile', type=float, default=0.6)  # quantile of scores accepted
-    parser.add_argument('--oracle', type=str, default='gaussian')  # the mode of the oracle
+    parser.add_argument('--uncertainty', type=str, default='gaussian')  # the mode of the oracle
 
     # GENTRAIN
-    parser.add_argument('--procs', type=int, default=0)  # Number of processes for VAE dataloading
+    parser.add_argument('--procs', type=int, default=10)  # Number of processes for VAE dataloading
     parser.add_argument('--epochs', type=int, default=5)  # Number of iterations
     parser.add_argument('--learning_rate', type=float, default=1e-4)  # Number of iterations
     parser.add_argument('--beta', type=float, default=0.2)  # KL weight in loss function
@@ -88,18 +88,18 @@ if __name__ == '__main__':
         sampler_main(prior_name=args.prior_name,
                      name=args.name,
                      max_samples=args.max_samples,
-                     qed=args.qed)
+                     oracle=args.oracle)
 
         # DOCKING
         docker_main(server=args.server,
                     exhaustiveness=args.ex,
                     name=args.name,
-                    qed=args.qed)
+                    oracle=args.oracle)
 
         # AGGREGATION AND TRAINING
         trainer_main(prior_name=args.prior_name,
                      name=args.name,
                      iteration=iteration,
                      quantile=args.quantile,
-                     oracle=args.oracle,
-                     qed=args.qed)
+                     uncertainty=args.uncertainty,
+                     oracle=args.oracle)

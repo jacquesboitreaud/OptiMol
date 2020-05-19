@@ -61,7 +61,7 @@ def get_samples(prior_model, search_model, max):
     return sample_selfies, weights
 
 
-def main(prior_name, name, max_samples, qed):
+def main(prior_name, name, max_samples, oracle):
     prior_model = model_from_json(prior_name)
 
     # We start by creating another prior instance, then replace it with the actual weights
@@ -73,7 +73,7 @@ def main(prior_name, name, max_samples, qed):
     samples, weights = get_samples(prior_model, search_model, max=max_samples)
 
     # Since we don't maintain a dict for qed, we just give everything to the docker
-    if qed:
+    if oracle != 'docking':
         dump_path = os.path.join(script_dir, 'results', name, 'docker_samples.p')
         pickle.dump(samples, open(dump_path, 'wb'))
 
@@ -117,7 +117,7 @@ if __name__ == '__main__':
     parser.add_argument('--prior_name', type=str, default='inference_default')  # the prior VAE (pretrained)
     parser.add_argument('--name', type=str, default='search_vae')  # the prior VAE (pretrained)
     parser.add_argument('--max_samples', type=int, default=1000)  # the prior VAE (pretrained)
-    parser.add_argument('--qed', action='store_true')
+    parser.add_argument('--oracle', type=str) # 'qed' or 'docking' or 'qsar'
     # =======
 
     args, _ = parser.parse_known_args()
@@ -125,4 +125,4 @@ if __name__ == '__main__':
     main(prior_name=args.prior_name,
          name=args.name,
          max_samples=args.max_samples,
-         qed=args.qed)
+         oracle=args.oracle)

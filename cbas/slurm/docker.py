@@ -9,6 +9,7 @@ import pandas as pd
 import csv
 import pickle
 from rdkit import Chem
+from rdkit.Chem import AllChem
 from rdkit.Chem import QED
 from functools import partial
 
@@ -76,7 +77,36 @@ def one_slurm_qed(list_smiles, unique_id, name):
             csv.writer(csvfile).writerow(list_to_write)
 
 
-def main(proc_id, num_procs, server, exhaustiveness, name, qed):
+def one_slurm_qsar(list_smiles, unique_id, name):
+    """
+
+    :param list_smiles:
+    :param unique_id:
+    :param name:
+    :return:
+    """
+    # TODO: IMPLEMENT
+    raise NotImplementedError
+
+    dirname = os.path.join(script_dir, 'results', name, 'docking_small_results')
+    dump_path = os.path.join(dirname, f"{unique_id}.csv")
+
+    header = ['smile', 'score']
+    with open(dump_path, 'w', newline='') as csvfile:
+        csv.writer(csvfile).writerow(header)
+
+    for smile in list_smiles:
+        m = Chem.MolFromSmiles(smile)
+        if m is not None:
+            score_smile = QED.qed(m)
+        else:
+            score_smile = 0
+        with open(dump_path, 'a', newline='') as csvfile:
+            list_to_write = [smile, score_smile]
+            csv.writer(csvfile).writerow(list_to_write)
+
+
+def main(proc_id, num_procs, server, exhaustiveness, name, oracle):
     # parse the docking task of the whole job array and split it
     dump_path = os.path.join(script_dir, 'results', name, 'docker_samples.p')
     list_smiles = pickle.load(open(dump_path, 'rb'))
@@ -91,10 +121,11 @@ def main(proc_id, num_procs, server, exhaustiveness, name, qed):
         list_data.append(list_smiles[-(proc_id + 1)])
 
     # Just use qed
-    if qed:
+    if oracle == 'qed':
         one_slurm_qed(list_data, proc_id, name)
+
     # Do the docking and dump results
-    else:
+    elif oracle == 'docking':
         one_slurm(list_data,
                   name=name,
                   server=server,
@@ -117,7 +148,16 @@ def one_qed(smile):
     return 0 if m is None else QED.qed(m)
 
 
-def one_node_main(server, exhaustiveness, name, qed):
+def one_fp(smile):
+    m = Chem.MolFromSmiles(smile)
+    if m is not None:
+        fp = AllChem.GetMorganFingerprintAsBitVect(m, 3,
+                                                   nBits=2048)  # careful radius = 3 equivalent to ECFP 6 (diameter = 6, radius = 3)
+        return fp
+    return None
+
+
+def one_node_main(server, exhaustiveness, name, oracle):
     from multiprocessing import Pool
 
     # parse the docking task of the whole job array and split it
@@ -126,9 +166,11 @@ def one_node_main(server, exhaustiveness, name, qed):
 
     p = Pool(20)
     # Just use qed
-    if qed:
+    if oracle == 'qed':
         list_results = p.map(one_qed, list_smiles)
-    else:
+    elif oracle == 'qsar':
+        list_results = p.map(one_qed, list_smiles)
+    elif oracle == 'docking':
         list_results = p.map(partial(one_dock,
                                      server=server,
                                      parallel=False,
@@ -148,7 +190,7 @@ if __name__ == '__main__':
     parser.add_argument("-s", "--server", default='mac', help="Server to run the docking on, for path and configs.")
     parser.add_argument("-ex", "--exhaustiveness", default=64, help="exhaustiveness parameter for vina")
     parser.add_argument("-n", "--name", default='search_vae', help="Name of the exp")
-    parser.add_argument('--qed', action='store_true')
+    parser.add_argument('--oracle', type=str)  # 'qed' or 'docking' or 'qsar'
     args, _ = parser.parse_known_args()
 
     try:
@@ -165,4 +207,4 @@ if __name__ == '__main__':
          server=args.server,
          exhaustiveness=args.exhaustiveness,
          name=args.name,
-         qed=args.qed)
+         oracle=args.oracle)

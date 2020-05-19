@@ -25,7 +25,7 @@ if __name__ == '__main__':
     parser.add_argument('--prior_name', type=str, default='inference_default')  # the prior VAE (pretrained)
     parser.add_argument('-n', '--name', type=str, default='search_vae')  # the name of the experiment
     parser.add_argument('--iters', type=int, default=2)  # Number of iterations
-    parser.add_argument('--qed', action='store_true')
+    parser.add_argument('--oracle', type=str, default='qed')  # 'qed' or 'docking' or 'qsar'
 
     # SAMPLER
     parser.add_argument('--max_samples', type=int, default=3000)  # Nbr of samples at each iter
@@ -36,8 +36,7 @@ if __name__ == '__main__':
 
     # TRAINER
     parser.add_argument('--quantile', type=float, default=0.6)  # quantile of scores accepted
-    parser.add_argument('--oracle', type=str, default='gaussian')  # the mode of the oracle
-
+    parser.add_argument('--uncertainty', type=str, default='gaussian')  # the mode of the oracle
 
     # GENTRAIN
     parser.add_argument('--procs', type=int, default=0)  # Number of processes for VAE dataloading
@@ -90,30 +89,24 @@ if __name__ == '__main__':
             cmd = f'sbatch {slurm_sampler_path}'
         else:
             cmd = f'sbatch --depend=afterany:{id_train} {slurm_sampler_path}'
-        extra_args = f' {args.prior_name} {args.name} {args.max_samples}'
+        extra_args = f' {args.prior_name} {args.name} {args.max_samples} {args.oracle}'
         cmd = cmd + extra_args
-        if args.qed:
-            cmd = cmd + ' --qed'
         a = subprocess.run(cmd.split(), stdout=subprocess.PIPE).stdout.decode('utf-8')
         id_sample = a.split()[3]
 
         # DOCKING
         slurm_docker_path = os.path.join(script_dir, 'slurm_docker.sh')
         cmd = f'sbatch --depend=afterany:{id_sample} {slurm_docker_path}'
-        extra_args = f' {args.server} {args.ex} {args.name}'
+        extra_args = f' {args.server} {args.ex} {args.name} {args.oracle}'
         cmd = cmd + extra_args
-        if args.qed:
-            cmd = cmd + ' --qed'
         a = subprocess.run(cmd.split(), stdout=subprocess.PIPE).stdout.decode('utf-8')
         id_dock = a.split()[3]
 
         # AGGREGATION AND TRAINING
         slurm_trainer_path = os.path.join(script_dir, 'slurm_trainer.sh')
         cmd = f'sbatch --depend=afterany:{id_dock} {slurm_trainer_path}'
-        extra_args = f' {args.prior_name} {args.name} {iteration} {args.quantile} {args.oracle}'
+        extra_args = f' {args.prior_name} {args.name} {iteration} {args.quantile} {args.uncertainty} {args.oracle}'
         cmd = cmd + extra_args
-        if args.qed:
-            cmd = cmd + ' --qed'
         a = subprocess.run(cmd.split(), stdout=subprocess.PIPE).stdout.decode('utf-8')
         id_train = a.split()[3]
 
