@@ -14,14 +14,14 @@ import pandas as pd
 from rdkit import Chem
 
 
-name = 'bo_run_18_0804'
+name = 'qsar_300'
 threshold=0.5
     
 samples=pd.read_csv(f'../../results/bo/{name}/samples.csv') 
 
-Nsteps = np.max(samples['step'])
+Nsteps = 200 #np.max(samples['step'])
 
-mu, top = [], []
+mu, top, stds = [], [], []
 for s in range(Nsteps):
     stepsamp=samples[samples['step']==s]
     
@@ -35,6 +35,7 @@ for s in range(Nsteps):
         print(len(mols), f' valid samples at step {s}')
     
     mu.append(np.mean(stepsamp.qsar))
+    stds.append(np.std(stepsamp.qsar))
     
     # scores > threshold 
     goods = np.where(stepsamp.qsar >= threshold)
@@ -43,11 +44,23 @@ for s in range(Nsteps):
 plt.figure()
 sns.lineplot(x = np.arange(Nsteps), y=mu)
 plt.ylim(0,1)
-plt.title(f'Mean score of fresh samples at each step')
+plt.xlabel(f'Step')
+plt.ylabel(f'QSAR score')
 
 plt.figure()
 sns.barplot(x = np.arange(Nsteps), y=top, color = 'lightblue')
 plt.ylim(0,10)
 plt.title(f'Number of samples better than threshold ({threshold}) at each step')
 
+plt.figure()
+plt.errorbar(np.arange(Nsteps), mu, stds, linestyle='None', marker='^')
+plt.xlabel('Step')
+plt.ylabel('QSAR scores')
+plt.show()
+
 print(f' step 0 contains {n_init_samples} initial samples')
+
+discovered = samples[samples['step']>0]
+discovered = discovered[discovered['qsar']>threshold]
+
+print(discovered)

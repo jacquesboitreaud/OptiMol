@@ -9,10 +9,13 @@ Functions to compute composite QED and composite logP
 
 
 import networkx as nx
+import os, sys
+
 
 from rdkit import Chem
 from rdkit.Chem import rdmolops, QED, Crippen
-
+script_dir_metrics = os.path.dirname(os.path.realpath(__file__))
+sys.path.append(script_dir_metrics)
 from sascorer import *
 
 def cycle_score(m):
@@ -30,7 +33,7 @@ def cycle_score(m):
     else:
         cycle_length = cycle_length - 6
         
-    return -1*cycle_length
+    return cycle_length
 
 
 def cLogP(smi):
@@ -44,9 +47,9 @@ def cLogP(smi):
     if m is None:
         return 0.0
     else:
-        logP = Chem.Crippen.MolLogP(m)
-        c = cycle_score(m)
-        s = calculateScore(m)
+        logP = Chem.Crippen.MolLogP(m) # logp high => good. what we look for 
+        c = cycle_score(m) # c big => not good // big cycles 
+        s = calculateScore(m) # s big => not good // hard to make 
         
     return logP - s - c
 

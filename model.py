@@ -195,7 +195,7 @@ class Model(nn.Module):
         if aff_net:
             self.load_state_dict(torch.load(trained_path))
         else:
-            self.load_no_aff_net(trained_path)
+            self.load_no_multitask(trained_path)
         # print(f'Loaded weights from {trained_path}')
 
     # ======================== Model pass functions ==========================
@@ -284,6 +284,10 @@ class Model(nn.Module):
         for i in range(N):
             smiles.append(''.join([self.index_to_char[str(idx)] for idx in indices[i]]).rstrip())
         return smiles
+    
+    def fix_index_to_char(self):
+        self.index_to_char = {str(k):v for k,v in self.index_to_char.items()}
+        print('fixed idx to char')
 
     def indices_to_smiles(self, indices):
         # Takes indices tensor of shape (N, seq_len), returns list of corresponding smiles
@@ -474,7 +478,7 @@ class Model(nn.Module):
         z_all = torch.cat(z_all, dim=0).numpy()
         return z_all
 
-    def load_no_aff_net(self, state_dict):
+    def load_no_multitask(self, state_dict):
         # Workaround to be able to load a model with not same size of affinity predictor... 
         pretrained_dict = torch.load(state_dict)
         model_dict = self.state_dict()

@@ -23,7 +23,7 @@ with open(f'../../data/drd3_scores.pickle', 'rb') as f:
 zinc_scores = np.array(list(zinc_scores.values()))
     
 N = np.max(df.step)
-means = []
+means, stds = [], []
 good_samples = []
 
 for i in range(N):
@@ -31,6 +31,7 @@ for i in range(N):
     scores = df[df['step']==i].aff
     mu = np.mean(scores)
     means.append(mu)
+    stds.append(np.std(scores))
     
     idces = np.where(np.array(scores).flatten()>=10.0)
     N_good = idces[0].shape[0]
@@ -43,7 +44,14 @@ for i in range(N):
   
 plt.figure()
 sns.lineplot(x = np.arange(N), y=means)
-plt.title('Mean score of fresh samples at each step')
+plt.xlabel('Step')
+plt.ylabel('Docking scores')
+
+plt.figure()
+plt.errorbar(np.arange(N), means, stds, linestyle='None', marker='^')
+plt.xlabel('Step')
+plt.ylabel('Docking scores')
+plt.show()
 
 plt.figure()
 sns.barplot(x = np.arange(N), y=good_samples, color = 'lightblue')
