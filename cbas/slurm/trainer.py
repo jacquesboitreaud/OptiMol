@@ -84,7 +84,7 @@ def process_samples(score_dict, samples, weights, quantile, prev_gamma=-1000, un
         if uncertainty == 'binary':
             oracle_proba = deterministic_one(score, gamma)
         elif uncertainty == 'gaussian':
-            std = 0.1 if oracle == 'qed' else 1
+            std = 0.03 if oracle == 'qed' else 1
             oracle_proba = normal_cdf_oracle(score, gamma, std=std)
         else:
             raise ValueError('wrong option')
