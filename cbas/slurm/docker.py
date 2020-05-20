@@ -7,6 +7,7 @@ import sys
 import argparse
 import pandas as pd
 import csv
+import numpy as np
 import pickle
 from rdkit import Chem
 from rdkit.Chem import AllChem
@@ -133,6 +134,8 @@ def main(proc_id, num_procs, server, exhaustiveness, name, oracle):
                   parallel=False,
                   exhaustiveness=exhaustiveness,
                   mean=True)
+    else:
+        raise ValueError(f'oracle {oracle} not implemented')
 
 
 def one_dock(smile, server, parallel=False, exhaustiveness=16, mean=False, load=False):
@@ -153,6 +156,7 @@ def one_fp(smile):
     if m is not None:
         fp = AllChem.GetMorganFingerprintAsBitVect(m, 3,
                                                    nBits=2048)  # careful radius = 3 equivalent to ECFP 6 (diameter = 6, radius = 3)
+        fp = np.array(fp)
         return fp
     return None
 
@@ -170,9 +174,17 @@ def one_node_main(server, exhaustiveness, name, oracle):
         list_results = p.map(one_qed, list_smiles)
     elif oracle == 'qsar':
         list_fps = p.map(one_fp, list_smiles)
+        filtered_smiles = list()
+        filtered_fps = list()
+        for i, fp in enumerate(list_fps):
+            if fp is not None:
+                filtered_smiles.append(list_smiles[i])
+                filtered_fps.append(fp)
+        list_smiles = filtered_smiles
+        input_array = np.vstack(filtered_fps)
         svm_model = pickle.load(
             open(os.path.join(script_dir, '..', '..', 'results', 'saved_models', 'qsar_svm.pickle'), 'rb'))
-        list_results = svm_model.predict_proba(list_fps)[:, 1]
+        list_results = svm_model.predict_proba(input_array)[:, 1]
     elif oracle == 'docking':
         list_results = p.map(partial(one_dock,
                                      server=server,
@@ -180,6 +192,8 @@ def one_node_main(server, exhaustiveness, name, oracle):
                                      exhaustiveness=exhaustiveness,
                                      mean=True,
                                      load=False), list_smiles)
+    else:
+        raise ValueError(f'oracle {oracle} not implemented')
 
     dump_path = os.path.join(script_dir, 'results', name, 'docking_small_results', '0.csv')
     df = pd.DataFrame.from_dict({'smile': list_smiles, 'score': list_results})

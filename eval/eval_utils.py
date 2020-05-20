@@ -20,7 +20,7 @@ from rdkit.Chem.Fingerprints import FingerprintMols
 from sklearn.decomposition import PCA
 
 
-def plot_csvs(dir_path):
+def plot_csvs(dir_paths):
     """
     get scores in successive dfs.
     Expect the names to be in format *_iteration.csv
@@ -28,43 +28,63 @@ def plot_csvs(dir_path):
     :param path:
     :return:
     """
-    # 2,3,23 not 2,23,3
-    names = os.listdir(dir_path)
-    numbers = [int(name.split('_')[-1].split('.')[0]) for name in names]
-    asort = np.argsort(np.array(numbers))
-    iterations = np.array(numbers)[asort]
-    sorted_names = np.array(names)[asort]
 
-    batch_size = None  # default
-    mus, stds = list(), list()
-    olds = set()
-    newslist = list()
-    for name in sorted_names:
-        # Check scores
-        news = 0
-        df = pd.read_csv(os.path.join(dir_path, name))
-        values = df['score']
-        mus.append(np.mean(values))
-        stds.append(np.std(values))
+    def plot_one(dir_path):
+        # 2,3,23 not 2,23,3
+        names = os.listdir(dir_path)
+        numbers = [int(name.split('_')[-1].split('.')[0]) for name in names]
+        asort = np.argsort(np.array(numbers))
+        iterations = np.array(numbers)[asort]
+        sorted_names = np.array(names)[asort]
 
-        # Check novelty
-        smiles = df['smile']
-        for smile in smiles:
-            if smile not in olds:
-                olds.add(smile)
-                news += 1
-        newslist.append(news)
+        batch_size = None  # default
+        mus, stds = list(), list()
+        olds = set()
+        newslist = list()
+        for name in sorted_names:
+            # Check scores
+            news = 0
+            df = pd.read_csv(os.path.join(dir_path, name))
+            values = df['score']
+            mus.append(np.mean(values))
+            stds.append(np.std(values))
 
+            # Check novelty
+            smiles = df['smile']
+            for smile in smiles:
+                if smile not in olds:
+                    olds.add(smile)
+                    news += 1
+            newslist.append(news)
+
+            if batch_size is None:
+                batch_size = len(smiles)
         if batch_size is None:
-            batch_size = len(smiles)
-    if batch_size is None:
-        batch_size = 1000  # default
+            batch_size = 1000  # default
+        title = dir_path.split("/")[-1]
+        return iterations, mus, stds, batch_size, newslist, title
 
-    fig, ax = plt.subplots(1, 2, num=1)
-    ax[0].errorbar(iterations, mus, stds, linestyle='None', marker='^')
-    ax[1].set_ylim(0, batch_size + 100)
-    ax[1].plot(iterations, newslist)
-    fig.suptitle(dir_path.split("/")[-1])
+    if not isinstance(dir_paths, list):
+        print(dir_paths)
+        fig, ax = plt.subplots(1, 2)
+        iterations, mus, stds, batch_size, newslist, title = plot_one(dir_paths)
+        ax[0].errorbar(iterations, mus, stds, linestyle='None', marker='^')
+        ax[0].set_ylim(0.6, 1)
+        ax[0].set_title(title)
+
+        ax[1].set_ylim(0, batch_size + 100)
+        ax[1].plot(iterations, newslist)
+
+    else:
+        fig, ax = plt.subplots(2, len(dir_paths))
+        for i, dir_path in enumerate(dir_paths):
+            iterations, mus, stds, batch_size, newslist, title = plot_one(dir_path)
+            ax[0, i].errorbar(iterations, mus, stds, linestyle='None', marker='^')
+            ax[0, i].set_ylim(0.75, 0.95)
+            ax[0, i].set_title(title)
+
+            ax[1, i].set_ylim(0, batch_size + 100)
+            ax[1, i].plot(iterations, newslist)
 
     plt.show()
 
@@ -150,5 +170,9 @@ if __name__ == '__main__':
     # plot_csvs('plot/sgd')
     # plot_csvs('plot/sgd_large')
     # plot_csvs('plot/more_epochs')
-    # plot_csvs('plot/more_lr')
-    plot_csvs('plot/more_both')
+    # plot_csvs(['plot/more_lr', 'plot/gamma'])
+    # plot_csvs('plot/more_both')
+    plot_csvs(['plot/adam_nosched', 'plot/more_lr'])
+    # plot_csvs(['plot/large_samples', 'plot/gpu_test'])
+    # plot_csvs('plot/gamma_lr')
+    # plot_csvs('plot/adam_nosched')
