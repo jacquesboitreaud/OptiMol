@@ -60,15 +60,15 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     
-    parser.add_argument('-o', '--objective', default='logp') # 'qed', 'logp' 'aff', 'aff_pred' or 'qsar'
+    parser.add_argument('-o', '--objective', default='qsar') # 'qed', 'logp' 'aff', 'aff_pred' or 'qsar'
     
     parser.add_argument( '--bo_name', help="Name for BO results subdir ",
                         default='bo_run')
     
     parser.add_argument( '--name', help="saved model weights fname. Located in saved_models subdir",
-                        default='inference_default')
+                        default='finetuned_10')
     
-    parser.add_argument('-n', "--n_steps", help="Nbr of optim steps", type=int, default=20)
+    parser.add_argument('-n', "--n_steps", help="Nbr of optim steps", type=int, default=50)
     parser.add_argument('-q', "--n_queries", help="Nbr of queries per step", type=int, default=50)
     
     # initial samples to use 

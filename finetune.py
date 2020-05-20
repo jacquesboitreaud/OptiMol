@@ -33,6 +33,8 @@ import torch.nn.utils.clip_grad as clip
 import torch.nn.functional as F
 from torch.utils.tensorboard import SummaryWriter
 
+from rdkit import Chem
+
 script_dir = os.path.dirname(os.path.realpath(__file__))
 if __name__=='__main__':
     sys.path.append(script_dir)
@@ -62,17 +64,19 @@ if __name__ == "__main__":
     parser.add_argument('--latent_size', type=int, default=56)  # size of latent code
     parser.add_argument('--n_gcn_layers', type=int, default=3)  # number of gcn encoder layers (3 or 4?)
     
-    parser.add_argument('--lr', type=float, default=1e-4)  # Initial learning rate
+    parser.add_argument('--opt', type='str', default = 'adam')  # adam or sgd 
+    parser.add_argument('--lr', type=float, default=5e-4)  # Initial learning rate
     parser.add_argument('--clip_norm', type=float, default=50.0)  # Gradient clipping max norm
-    parser.add_argument('--beta', type=float, default=0.0)  # initial KL annealing weight
+    parser.add_argument('--beta', type=float, default=0.5)  # initial KL annealing weight
+    
     parser.add_argument('--step_beta', type=float, default=0.002)  # beta increase per step
     parser.add_argument('--max_beta', type=float, default=0.5)  # maximum KL annealing weight
     parser.add_argument('--warmup', type=int, default=40000)  # number of steps with only reconstruction loss (beta=0)
 
-    parser.add_argument('--processes', type=int, default=8)  # num workers
+    parser.add_argument('--processes', type=int, default=12)  # num workers
 
     parser.add_argument('--batch_size', type=int, default=64)
-    parser.add_argument('--epochs', type=int, default=50)  # nbr training epochs
+    parser.add_argument('--epochs', type=int, default=100)  # nbr training epochs
     
     parser.add_argument('--anneal_rate', type=float, default=0.9)  # Learning rate annealing
     parser.add_argument('--anneal_iter', type=int, default=40000)  # update learning rate every _ step
@@ -81,7 +85,7 @@ if __name__ == "__main__":
     parser.add_argument('--print_iter', type=int, default=1000)  # print loss metrics every _ step
     parser.add_argument('--sample_iter', type=int, default=100)  # print reconstructed smiles every _ step
     
-    parser.add_argument('--save_iter', type=int, default=10000)  # save model weights every _ step
+    parser.add_argument('--save_iter', type=int, default=100)  # save model weights every _ step
 
     # teacher forcing rnn schedule
     parser.add_argument('--tf_init', type=float, default=1.0)
@@ -183,7 +187,11 @@ if __name__ == "__main__":
     model.fix_index_to_char()
 
     # Optim
-    optimizer = optim.Adam(model.parameters(), lr=args.lr)
+    if args.opt == 'adam':
+        optimizer = optim.Adam(model.parameters(), lr=args.lr)
+    else:
+        optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=0.9)
+    
     scheduler = lr_scheduler.ExponentialLR(optimizer, args.anneal_rate)
     print("> learning rate: %.6f" % scheduler.get_lr()[0])
 
@@ -292,10 +300,16 @@ if __name__ == "__main__":
                         gen_seq = model.decode(batch_z)
                         sample_selfies += model.probas_to_smiles(gen_seq)
                     
-                    sample_smi = [decoder(s) for s in sample_selfies]
+                    sample_smi=[]
+                    for s in sample_selfies:
+                        s=decoder(s)
+                        m=Chem.MolFromSmiles(s)
+                        Chem.Kekulize(m)
+                        s= Chem.MolToSmiles(m, kekuleSmiles=True)
+                        sample_smi.append(s)
                     
                     actives = [int(s in actives_set) for s in sample_smi]
-                    pct_actives = sum(actives)/len(actives)
+                    pct_actives = float(sum(actives))/float(len(actives))
                     
                     print('PCT ACTIVES in samples : ', pct_actives)
                     

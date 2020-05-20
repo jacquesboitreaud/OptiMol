@@ -10,6 +10,13 @@ Finetuning dataset for VAE with QSAR training set
 import pandas as pd 
 from dataloaders.molDataset import molDataset
 import numpy as np
+from rdkit import Chem
+import os, sys
+
+script_dir = os.path.dirname(os.path.realpath(__file__))
+
+if __name__ == "__main__":
+    sys.path.append(os.path.join(script_dir, '..'))
 
 df_a = pd.read_csv('../data/qsar/actives_split.csv')
 df_i = pd.read_csv('../data/qsar/inactives.csv')
@@ -28,6 +35,7 @@ i_train = smiles_i[:n2]
 
 dataset = molDataset(csv_path = None, maps_path = '../map_files', vocab='selfies', build_alphabet = False, props=[], targets=[])
 
+"""
 dataset.pass_smiles_list(i_train)
 
 inactives = []
@@ -37,10 +45,16 @@ for i in range(len(i_train)):
     
     if it[0] is not None :
         
-        inactives.append(i_train[i])
+        # kekulize smiles
+        s= i_train[i]
+        m=Chem.MolFromSmiles(s)
+        Chem.Kekulize(m)
+        s = Chem.MolToSmiles(m, kekuleSmiles=True)
+        inactives.append(s)
         
 df= pd.DataFrame.from_dict({'smiles':inactives, 'active': np.zeros(len(inactives))})
-    
+"""
+
 # Same for actives     
 a_train = df_a[df_a['split']=='train'].smiles
 dataset.pass_smiles_list(a_train)
@@ -52,7 +66,12 @@ for i in range(len(a_train)):
     
     if it[0] is not None :
         
-        actives.append(a_train[i])
+        # kekulize smiles 
+        s= a_train[i]
+        m=Chem.MolFromSmiles(s)
+        Chem.Kekulize(m)
+        s = Chem.MolToSmiles(m, kekuleSmiles=True)
+        actives.append(s)
         
 df2= pd.DataFrame.from_dict({'smiles':actives, 'active': np.ones(len(actives))})
 
