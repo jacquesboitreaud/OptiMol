@@ -172,7 +172,7 @@ if __name__ == '__main__':
     # plot_csvs('plot/more_epochs')
     # plot_csvs(['plot/more_lr', 'plot/gamma'])
     # plot_csvs('plot/more_both')
-    plot_csvs(['plot/adam_nosched', 'plot/more_lr'])
+    plot_csvs('plot/q07_bis')
     # plot_csvs(['plot/large_samples', 'plot/gpu_test'])
     # plot_csvs('plot/gamma_lr')
     # plot_csvs('plot/adam_nosched')
