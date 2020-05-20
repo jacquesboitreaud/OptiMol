@@ -44,7 +44,8 @@ def gather_scores(iteration, name):
     return dict(zip(molecules, scores))
 
 
-def process_samples(score_dict, samples, weights, quantile, uncertainty='binary', threshold=0.05, oracle='qed'):
+def process_samples(score_dict, samples, weights, quantile, prev_gamma=-1000, uncertainty='binary', threshold=0.05,
+                    oracle='qed'):
     """
     reweight samples using docking scores
     :return:
@@ -54,7 +55,9 @@ def process_samples(score_dict, samples, weights, quantile, uncertainty='binary'
         for key, value in score_dict.items():
             score_dict[key] = -value
     sorted_sc = sorted(score_dict.values())
-    gamma = np.quantile(sorted_sc, quantile)
+
+    new_gamma = np.quantile(sorted_sc, quantile)
+    gamma = new_gamma if new_gamma > prev_gamma else prev_gamma
     print(f" gamma = {gamma}")
 
     filtered_samples = list()
@@ -93,11 +96,11 @@ def process_samples(score_dict, samples, weights, quantile, uncertainty='binary'
         filtered_weights.append(weight)
 
     print(f'{len(filtered_samples)}/{len(samples)} samples kept')
-    return filtered_samples, filtered_weights
+    return filtered_samples, filtered_weights, gamma
 
 
 def main(iteration, quantile, uncertainty, prior_name, name, oracle):
-    # Aggregate docking results
+    # Aggregate docking results using previous gamma
     score_dict = gather_scores(iteration, name)
 
     # Memoization of the sampled compounds, if they are docking scores
@@ -113,16 +116,22 @@ def main(iteration, quantile, uncertainty, prior_name, name, oracle):
     # Reweight and discard wrong samples
     dump_path = os.path.join(script_dir, 'results', name, 'samples.p')
     samples, weights = pickle.load(open(dump_path, 'rb'))
-    samples, weights = process_samples(score_dict, samples, weights, uncertainty=uncertainty, quantile=quantile,
-                                       oracle=oracle)
+
+    dumper = Dumper()
+    json_path = os.path.join(script_dir, 'results', name, 'params_gentrain.json')
+    params = dumper.load(json_path)
+    gamma = params['gamma']
+
+    samples, weights, gamma = process_samples(score_dict, samples, weights, uncertainty=uncertainty, quantile=quantile,
+                                              oracle=oracle, prev_gamma=gamma)
+    params['gamma'] = gamma
+    dumper.dump(dict_to_dump=params, dumping_path=json_path)
+    params.pop('gamma')
 
     # Load an instance of previous model
     search_model = model_from_json(prior_name)
 
     # Retrieve the gentrain object and feed it with updated model
-    dumper = ModelDumper(default_model=False)
-    json_path = os.path.join(script_dir, 'results', name, 'params_gentrain.json')
-    params = dumper.load(json_path)
     savepath = os.path.join(params['savepath'], 'weights.pth')
     search_model.load(savepath)
     search_trainer = GenTrain(search_model, **params)

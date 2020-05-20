@@ -44,7 +44,8 @@ if __name__ == '__main__':
     parser.add_argument('--learning_rate', type=float, default=1e-4)  # Number of iterations
     parser.add_argument('--beta', type=float, default=0.2)  # KL weight in loss function
     parser.add_argument('--clip_grad_norm', type=float, default=5.0)  # quantile of scores accepted
-
+    parser.add_argument('--opti', type=str, default='adam')  # the mode of the oracle
+    parser.add_argument('--sched', type=str, default='elr')  # the mode of the oracle
     # =======
 
     args, _ = parser.parse_known_args()
@@ -76,6 +77,9 @@ if __name__ == '__main__':
                        'clip_grad': args.clip_grad_norm,
                        'beta': args.beta,
                        'processes': args.procs,
+                       'optimizer': args.opti,
+                       'scheduler': args.sched,
+                       'gamma': -1000,
                        'DEBUG': True}
     dumper = Dumper(dumping_path=os.path.join(savepath, 'params_gentrain.json'), dic=params_gentrain)
     dumper.dump()

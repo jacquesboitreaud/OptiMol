@@ -82,6 +82,7 @@ if __name__ == '__main__':
                        'processes': args.procs,
                        'optimizer': args.opti,
                        'scheduler': args.sched,
+                       'gamma': -1000,
                        'DEBUG': True}
     dumper = Dumper(dumping_path=os.path.join(savepath, 'params_gentrain.json'), dic=params_gentrain)
     dumper.dump()
