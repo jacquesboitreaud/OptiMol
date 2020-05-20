@@ -64,7 +64,7 @@ if __name__ == "__main__":
     parser.add_argument('--latent_size', type=int, default=56)  # size of latent code
     parser.add_argument('--n_gcn_layers', type=int, default=3)  # number of gcn encoder layers (3 or 4?)
     
-    parser.add_argument('--lr', type=float, default=5e-4)  # Initial learning rate
+    parser.add_argument('--lr', type=float, default=1e-3)  # Initial learning rate
     parser.add_argument('--clip_norm', type=float, default=50.0)  # Gradient clipping max norm
     parser.add_argument('--beta', type=float, default=0.5)  # initial KL annealing weight
     
