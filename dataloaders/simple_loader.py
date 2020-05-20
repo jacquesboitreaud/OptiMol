@@ -258,7 +258,7 @@ class SimpleDataset(Dataset):
 
             a, valid_flag = self.selfies_to_hot(string_representation)
 
-            if valid_flag == 0 and self.debug:  # no one hot encoding for this selfie, ignore
+            if valid_flag == 0 :  # no one hot encoding for this selfie, ignore
                 print('!!! Selfie to one-hot failed with current alphabet:')
                 print(smiles)
                 return None, 0, 0
