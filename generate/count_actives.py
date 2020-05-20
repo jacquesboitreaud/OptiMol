@@ -24,6 +24,7 @@ if __name__=='__main__':
     actives_set = pd.read_csv('../data/finetuning.csv')
     actives_set = set(list(actives_set.smiles))
     cpt=0 
+    discovered = []
     
     kek_actives = []
     
@@ -42,7 +43,11 @@ if __name__=='__main__':
         
         if s in actives_set :
             cpt +=1
+            discovered.append(s)
             print('active')
             
+    d=np.unique(discovered)
+    
+    print(f'sampled {d.shape[0]} actives from the train set')
             
     
