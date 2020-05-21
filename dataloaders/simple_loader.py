@@ -186,6 +186,9 @@ class SimpleDataset(Dataset):
         except:
             a = 0
             valid_flag = 0  # no one hot encoding possible : ignoring molecule 
+        
+        if a.shape[0]>self.max_len:
+            valid_flag = 0 
 
         return a, valid_flag
 
