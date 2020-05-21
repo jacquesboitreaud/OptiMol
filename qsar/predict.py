@@ -64,16 +64,18 @@ if __name__=='__main__':
     
     df['qsar']=y_score
     
-    plt.scatter(x=df['drd3'], y=df['qsar'])
-    plt.xlabel('drd3 docking')
-    plt.ylabel('qsar score')
+    # plt.scatter(x=df['drd3'], y=df['qsar'])
+    # plt.xlabel('drd3 docking')
+    # plt.ylabel('qsar score')
     
-    positives = df[df['qsar']>=0.5]
-    print(positives.shape[0], ' positives')
+    # positives = df[df['qsar']>=0.5]
+    # print(positives.shape[0], ' positives')
+    df = pd.to_csv('../data/moses_scored.csv')
 
-plt.figure()
-sns.distplot(df['qsar'], hist=False)
 
-sns.distplot((df['drd3']-np.max(df['drd3']))/np.min(df['drd3']), hist=False)
+# plt.figure()
+# sns.distplot(df['qsar'], hist=False)
+
+# sns.distplot((df['drd3']-np.max(df['drd3']))/np.min(df['drd3']), hist=False)
 
 
