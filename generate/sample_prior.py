@@ -38,9 +38,9 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--name', help="Saved model directory, in /results/saved_models",
-                        default='finetuned_10')
+                        default='inference_default')
     
-    parser.add_argument('-N', "--n_mols", help="Nbr to generate", type=int, default=1000)
+    parser.add_argument('-N', "--n_mols", help="Nbr to generate", type=int, default=30000)
     parser.add_argument('-v', '--vocab', default='selfies')  # vocab used by model
 
     parser.add_argument('-o', '--output_file', type=str, default='data/gen.txt')
