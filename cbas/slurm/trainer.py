@@ -109,7 +109,7 @@ def main(iteration, quantile, uncertainty, prior_name, name, oracle):
         whole_path = os.path.join(script_dir, '..', '..', 'data', 'drd3_scores.pickle')
         docking_whole_results = pickle.load(open(whole_path, 'rb'))
         # Only update memoization for successful dockings
-        new_results = {key: value for key, value in score_dict if value < 0}
+        new_results = {key: value for key, value in score_dict.items() if value < 0}
         docking_whole_results.update(new_results)
         pickle.dump(docking_whole_results, open(whole_path, 'wb'))
 
