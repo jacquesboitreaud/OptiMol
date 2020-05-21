@@ -53,7 +53,6 @@ if __name__ == '__main__':
 
     assert args.oracle in ['qed', 'docking', 'qsar']
 
-
     def setup():
         pass
         soft_mkdir(os.path.join(script_dir, 'results'))
