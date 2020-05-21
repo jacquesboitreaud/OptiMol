@@ -17,9 +17,6 @@ from botorch.utils.transforms import standardize, normalize, unnormalize
 from botorch.optim import optimize_acqf
 from botorch import fit_gpytorch_model
 
-from rdkit import Chem
-from rdkit.Chem import QED
-
 
 def get_fitted_model(train_x, train_obj, state_dict=None):
     # initialize and fit model
@@ -31,12 +28,5 @@ def get_fitted_model(train_x, train_obj, state_dict=None):
     fit_gpytorch_model(mll)
     return model
 
-def qed_one(enum):
-    i,s = enum
-    m= Chem.MolFromSmiles(s)
-    if m is None :
-        return 0.0
-    else:
-        return QED.qed(m)
 
 
