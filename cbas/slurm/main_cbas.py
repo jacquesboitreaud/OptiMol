@@ -25,19 +25,19 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--prior_name', type=str, default='inference_default')  # the prior VAE (pretrained)
-    parser.add_argument('-n', '--name', type=str, default='search_vae')  # the name of the experiment
-    parser.add_argument('--iters', type=int, default=2)  # Number of iterations
+    parser.add_argument('-n', '--name', type=str, default='q07')  # the name of the experiment
+    parser.add_argument('--iters', type=int, default=20)  # Number of iterations
     parser.add_argument('--oracle', type=str, default='qed')  # 'qed' or 'docking' or 'qsar'
 
     # SAMPLER
-    parser.add_argument('--max_samples', type=int, default=3000)  # Nbr of samples at each iter
+    parser.add_argument('--max_samples', type=int, default=1000)  # Nbr of samples at each iter
 
     # DOCKER
     parser.add_argument('--server', type=str, default='pasteur', help='server to run on')  # the prior VAE (pretrained)
     parser.add_argument('--ex', type=int, default=16)  # Nbr of samples at each iter
 
     # TRAINER
-    parser.add_argument('--quantile', type=float, default=0.6)  # quantile of scores accepted
+    parser.add_argument('--quantile', type=float, default=0.7)  # quantile of scores accepted
     parser.add_argument('--uncertainty', type=str, default='gaussian')  # the mode of the oracle
 
     # GENTRAIN
@@ -47,7 +47,7 @@ if __name__ == '__main__':
     parser.add_argument('--beta', type=float, default=0.2)  # KL weight in loss function
     parser.add_argument('--clip_grad_norm', type=float, default=5.0)  # quantile of scores accepted
     parser.add_argument('--opti', type=str, default='adam')  # the mode of the oracle
-    parser.add_argument('--sched', type=str, default='elr')  # the mode of the oracle
+    parser.add_argument('--sched', type=str, default='none')  # the mode of the oracle
 
     # =======
 

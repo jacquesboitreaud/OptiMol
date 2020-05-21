@@ -153,40 +153,40 @@ def load_csv(path='to_dock_shuffled.csv'):
     actives = df['active'].values
     px50 = df['affinity'].values
     return smiles, actives, px50
-
+    
 
 if __name__ == '__main__':
     pass
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-s", "--server", default='mac', help="Server to run the docking on, for path and configs.")
-    parser.add_argument("-e", "--ex", default=64, help="exhaustiveness parameter for vina")
+    parser.add_argument("-e", "--ex", default=16, help="exhaustiveness parameter for vina")
     args, _ = parser.parse_known_args()
 
     PYTHONSH, VINA = set_path(args.server)
 
-    # ==========SLURM for experimental=============
-    # proc_id, num_procs = int(sys.argv[1]), int(sys.argv[2])
-    #
-    # dirname = os.path.join(script_dir, 'docking_results')
-    # if not os.path.isdir(dirname):
-    #     try:
-    #         os.mkdir(dirname)
-    #     except:
-    #         pass
-    #
-    # list_smiles, list_active, list_px50 = load_csv(os.path.join(script_dir, 'scores_archive/to_dock.csv'))
-    # N = len(list_smiles)
-    #
-    # chunk_size = N // (num_procs - 1)
-    # chunk_min, chunk_max = proc_id * chunk_size, min((proc_id + 1) * chunk_size, N)
-    # list_data = list_smiles[chunk_min:chunk_max], list_active[chunk_min:chunk_max], list_px50[chunk_min:chunk_max]
-    # #
-    # one_slurm_experimental(list_data,
-    #                        id=proc_id,
-    #                        path=os.path.join(dirname, f"{proc_id}.csv"),
-    #                        parallel=True,
-    #                        exhaustiveness=args.ex)
+    #==========SLURM for experimental=============
+    proc_id, num_procs = int(sys.argv[1]), int(sys.argv[2])
+    
+    dirname = os.path.join(script_dir, 'docking_results')
+    if not os.path.isdir(dirname):
+       try:
+         os.mkdir(dirname)
+       except:
+         pass
+
+    list_smiles, list_active, list_px50 = load_csv(os.path.join(script_dir, 'scores_archive/to_dock.csv'))
+    N = len(list_smiles)
+
+    chunk_size = N // (num_procs - 1)
+    chunk_min, chunk_max = proc_id * chunk_size, min((proc_id + 1) * chunk_size, N)
+    list_data = list_smiles[chunk_min:chunk_max], list_active[chunk_min:chunk_max], list_px50[chunk_min:chunk_max]
+
+    one_slurm_experimental(list_data,
+            id=proc_id,
+            path=os.path.join(dirname, f"{proc_id}.csv"),
+            parallel=False,
+            exhaustiveness=args.ex)
 
     # one_slurm(['toto','tata','titi'], 1, 'zztest')
     # dock('CC1C2CCC(C2)C1CN(CCO)C(=O)c1ccc(Cl)cc1', unique_id=2, exhaustiveness=args.ex)
