@@ -6,3 +6,4 @@ eval/plots
 data/
 results/
 docking/scores_archive
+docking/docking_results
