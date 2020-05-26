@@ -46,6 +46,7 @@ from botorch.sampling.samplers import SobolQMCNormalSampler
 from sklearn.svm import SVC
 
 from datetime import datetime
+from time import time 
 
 
 if __name__ == "__main__":
@@ -54,7 +55,7 @@ if __name__ == "__main__":
     from model import Model, model_from_json
     from utils import *
     from dgl_utils import send_graph_to_device
-    from BO_utils import get_fitted_model, qed_one 
+    from BO_utils import get_fitted_model
     from docking.docking import dock, set_path
     from data_processing.comp_metrics import cLogP, cQED
 
@@ -69,7 +70,7 @@ if __name__ == "__main__":
                         default='finetuned_10')
     
     parser.add_argument('-n', "--n_steps", help="Nbr of optim steps", type=int, default=50)
-    parser.add_argument('-q', "--n_queries", help="Nbr of queries per step", type=int, default=50)
+    parser.add_argument('-q', "--n_queries", help="Nbr of queries per step", type=int, default=1000)
     
     # initial samples to use 
     parser.add_argument('--init_samples', default='diverse_samples.csv') # samples to start with // random or excape data
@@ -196,6 +197,7 @@ if __name__ == "__main__":
         """Optimizes the acquisition function, and returns a new candidate and a noisy observation"""
         
         # optimize
+        queries_start_time = time()
         candidates, _ = optimize_acqf(
             acq_function=acq_func,
             bounds=torch.stack([
@@ -206,6 +208,9 @@ if __name__ == "__main__":
             num_restarts=10,
             raw_samples=200,
         )
+        queries_stop_time = time()
+        
+        print('TIME TO DRAW SAMPLES : ', queries_stop_time-queries_start_time)
     
         # observe new values 
         new_z = unnormalize(candidates.detach(), bounds=bounds).to(device)

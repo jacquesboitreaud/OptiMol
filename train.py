@@ -40,13 +40,15 @@ from model import Model
 from loss_func import VAELoss, weightedPropsLoss, affsRegLoss, affsClassifLoss
 from dataloaders.molDataset import molDataset, Loader
 
+from pytorch_model_summary import summary
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--name', type=str, default='default')
+    parser.add_argument('--name', type=str, default='inference_default')
     parser.add_argument('--train', help="path to training dataframe", type=str, default='data/moses_train.csv')
-    parser.add_argument("--cutoff", help="Max number of molecules to use. Set to -1 for all", type=int, default=-1)
+    parser.add_argument("--cutoff", help="Max number of molecules to use. Set to -1 for all", type=int, default=1000)
 
     parser.add_argument('--load_model', action='store_true', default=False)
     parser.add_argument('--load_name', type=str, default='default')  # name of model to load from
@@ -197,6 +199,7 @@ if __name__ == "__main__":
                 a_target = a_target.to(device)
 
             # Forward pass
+            summary(model(graph, smiles, tf_proba))
             mu, logv, _, out_smi, out_p, out_a = model(graph, smiles, tf=tf_proba)
 
             # Compute loss terms : change according to multitask setting

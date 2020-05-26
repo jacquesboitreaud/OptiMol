@@ -1,7 +1,7 @@
 {
-    "name": "default",
+    "name": "inference_default",
     "train": "data/moses_train.csv",
-    "cutoff": -1,
+    "cutoff": 1000,
     "load_model": false,
     "load_iter": 0,
     "decode": "selfies",
@@ -20,7 +20,7 @@
     "anneal_iter": 40000,
     "kl_anneal_iter": 2000,
     "print_iter": 1000,
-    "print_smiles_iter": 10000,
+    "print_smiles_iter": 10,
     "save_iter": 10000,
     "tf_init": 1.0,
     "tf_step": 0.002,
