@@ -46,16 +46,16 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--name', type=str, default='inference_default')
-    parser.add_argument('--train', help="path to training dataframe", type=str, default='data/moses_train.csv')
-    parser.add_argument("--cutoff", help="Max number of molecules to use. Set to -1 for all", type=int, default=1000)
+    parser.add_argument('--name', type=str, default='default')
+    parser.add_argument('--train', help="path to training dataframe", type=str, default='data/250k_zinc.csv')
+    parser.add_argument("--cutoff", help="Max number of molecules to use. Set to -1 for all", type=int, default=-1)
 
     parser.add_argument('--load_model', action='store_true', default=False)
     parser.add_argument('--load_name', type=str, default='default')  # name of model to load from
     parser.add_argument('--load_iter', type=int, default=0)  # resume training at optimize step n°
 
     parser.add_argument('--decode', type=str, default='selfies')  # 'smiles' or 'selfies'
-    parser.add_argument('--build_alphabet', action='store_true', default=False)  # use params.json alphabet
+    parser.add_argument('--build_alphabet', action='store_true', default=True)  # use params.json alphabet
 
     parser.add_argument('--latent_size', type=int, default=56)  # size of latent code
     parser.add_argument('--n_gcn_layers', type=int, default=3)  # number of gcn encoder layers (3 or 4?)
@@ -86,8 +86,8 @@ if __name__ == "__main__":
     parser.add_argument('--tf_warmup', type=int, default=200000)  # nbr of steps at tf_init
 
     # Multitask :
-    parser.add_argument('--no_props', action='store_true', default=False)  # No multitask props
-    parser.add_argument('--no_aff', action='store_true', default=False)  # No multitask aff
+    parser.add_argument('--no_props', action='store_true', default=True)  # No multitask props
+    parser.add_argument('--no_aff', action='store_true', default=True)  # No multitask aff
     parser.add_argument('--bin_affs', action='store_true', default=False)  # Binned discretized affs or true values
 
     # =======
@@ -198,8 +198,7 @@ if __name__ == "__main__":
             if use_affs:
                 a_target = a_target.to(device)
 
-            # Forward pass
-            summary(model(graph, smiles, tf_proba))
+            # Forward passs
             mu, logv, _, out_smi, out_p, out_a = model(graph, smiles, tf=tf_proba)
 
             # Compute loss terms : change according to multitask setting
