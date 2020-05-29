@@ -53,7 +53,8 @@ if __name__ == "__main__":
     parser.add_argument('--load_iter', type=int, default=0)  # resume training at optimize step n°
 
     parser.add_argument('--decode', type=str, default='selfies')  # 'smiles' or 'selfies'
-    parser.add_argument('--build_alphabet', action='store_true', default=True)  # use params.json alphabet
+    parser.add_argument('--alphabet_name', type=str, default='250k_alphabets.json') # name of alphabets json file, in map_files dir 
+    parser.add_argument('--build_alphabet', action='store_true', default=False)  # use params.json alphabet
 
     parser.add_argument('--latent_size', type=int, default=56)  # size of latent code
     parser.add_argument('--n_gcn_layers', type=int, default=3)  # number of gcn encoder layers (3 or 4?)
@@ -125,6 +126,7 @@ if __name__ == "__main__":
                      csv_path=args.train,
                      vocab=args.decode,
                      build_alphabet=args.build_alphabet,
+                     alphabet_name = args.alphabet_name, 
                      n_mols=args.cutoff,
                      num_workers=args.processes,
                      batch_size=args.batch_size,

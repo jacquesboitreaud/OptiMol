@@ -65,6 +65,7 @@ class molDataset(Dataset):
                  maps_path,
                  vocab, 
                  build_alphabet,
+                 alphabet_name,
                  props,
                  targets,
                  n_mols=-1,
@@ -115,7 +116,7 @@ class molDataset(Dataset):
         self.language = vocab # smiles or selfies 
         
         if build_alphabet: # Parsing dataset to build custom alphabets
-            print('!! Building custom alphabet for dataset. Set build_alphabet=True to use params.json moses alphabet.')
+            print('!! Building custom alphabet for dataset. Set build_alphabet=False to use predefined alphabet.')
             selfies_a , len_selfies, smiles_a, len_smiles = self._get_selfie_and_smiles_alphabets()
             if self.language == 'smiles':
                 self.max_len = len_smiles
@@ -126,9 +127,11 @@ class molDataset(Dataset):
                 self.alphabet = selfies_a
             
         else: # params.json alphabets and length
-            print('-> Using PREDEFINED selfies alphabet // some strings may be ignored if not one-hot compatible')
-            with open(os.path.join(maps_path, 'predefined_alphabets.pickle'), 'rb') as f :
-                alphabets_dict = pickle.load(f)
+            print(f'-> Careful : Using PREDEFINED selfies alphabet : {alphabet_name}')
+            
+            with open(os.path.join(maps_path, alphabet_name)) as json_file:
+                alphabets_dict = json.load(json_file)
+    
                 
             if self.language == 'smiles':
                 self.alphabet = alphabets_dict['smiles_alphabet']
@@ -200,7 +203,7 @@ class molDataset(Dataset):
             selfies_alphabet.append('['+selfies_element+']')        
         largest_selfies_len=max(selfies_len)
         
-        print('Finished parsing smiles and selfies alphabet. Saving to pickle file custom_alphabets.pickle')
+        print('Finished parsing smiles and selfies alphabet. Saving to json file custom_alphabets.json')
         print('Longest selfies : ',  largest_selfies_len)
         print('Longest smiles : ',  largest_smiles_len)
         
@@ -209,8 +212,8 @@ class molDataset(Dataset):
             'smiles_alphabet': smiles_alphabet,
             'largest_smiles_len': largest_smiles_len}
         
-        with open('custom_alphabets.pickle', 'wb') as f :
-            pickle.dump(d,f)
+        with open('custom_alphabets.json', 'w') as outfile:
+            json.dump(d, outfile)
         
         return (selfies_alphabet, largest_selfies_len, smiles_alphabet, largest_smiles_len)
     
@@ -342,6 +345,7 @@ class Loader():
                  maps_path ='../map_files/',
                  vocab='selfies',
                  build_alphabet = False,
+                 alphabet_name='moses_alphabets.json',
                  n_mols=None,
                  batch_size=64,
                  num_workers=12,
@@ -363,6 +367,7 @@ class Loader():
                                   maps_path=maps_path, 
                                   vocab=vocab,
                                   build_alphabet = build_alphabet,
+                                  alphabet_name=alphabet_name,
                                   n_mols=n_mols,
                                   graph_only=graph_only)
 

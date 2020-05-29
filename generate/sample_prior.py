@@ -35,18 +35,22 @@ if __name__ == "__main__":
     from data_processing.rdkit_to_nx import smiles_to_nx
     from model import Model, model_from_json
     from utils import *
+    from selfies import encoder, decoder
+    from data_processing.get_selfies import clean_smiles
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--name', help="Saved model directory, in /results/saved_models",
-                        default='inference_default')
+                        default='default')
     
-    parser.add_argument('-N', "--n_mols", help="Nbr to generate", type=int, default=30000)
+    parser.add_argument('-N', "--n_mols", help="Nbr to generate", type=int, default=5000)
     parser.add_argument('-v', '--vocab', default='selfies')  # vocab used by model
 
     parser.add_argument('-o', '--output_file', type=str, default='data/gen.txt')
     parser.add_argument('-b', '--use_beam', action='store_true', help="use beam search (slow!)")
     
     parser.add_argument( '--qed', action='store_true', help="plot qed distrib")
+    
+    parser.add_argument('--reencode', action='store_true', default = False)
 
     args, _ = parser.parse_known_args()
 
@@ -83,8 +87,9 @@ if __name__ == "__main__":
             mols = [Chem.MolFromSmiles(s) for s in smiles]
             for i,m in enumerate(mols) :
                 if m==None:
-                    print(smiles[i], ' , invalid, selfies output was : ')
-                    print(selfies[i])
+                    pass
+                    #print(smiles[i], ' , invalid, selfies output was : ')
+                    #print(selfies[i])
                 else:
                     cpt +=1
 
@@ -106,3 +111,64 @@ if __name__ == "__main__":
             f.write(s)
             f.write('\n')
     print(f'wrote {N} unique compounds / {Ntot} to {args.output_file}')
+    
+    # =================================
+    # Reencoding checks for selfies compatibility 
+    
+    if args.reencode:
+        
+        from rdkit.Chem.MolStandardize.rdMolStandardize import Cleanup
+        
+        char2idx = {v:k for k,v in model.index_to_char.items()}
+        
+        # Add ons 
+        char2idx['[SHexpl]']=str(len(char2idx))
+        char2idx['[=SHexpl]']=str(len(char2idx))
+        
+        fail = 0
+        too_long = 0 
+        valid = 0
+        
+        for s in compounds : 
+        
+            # to kekule clean smiles
+            m=Chem.MolFromSmiles(s)
+            if m==None:
+                continue
+            
+            valid+=1
+            s_clean = clean_smiles(s)
+            
+            # to selfies 
+            molecule = encoder(s_clean)
+            
+            # check tokens 
+            # integer encode input smile
+            len_of_molecule=len(molecule)-len(molecule.replace('[',''))
+            
+            if len_of_molecule > model.max_len :
+                too_long+=1
+                continue
+            for _ in range(model.max_len - len_of_molecule): # selfies padding 
+                molecule+='[epsilon]'
+        
+            selfies_char_list_pre=molecule[1:-1].split('][')
+            selfies_char_list=[]
+            for selfies_element in selfies_char_list_pre:
+                selfies_char_list.append('['+selfies_element+']')   
+        
+            try:
+                integer_encoded = [char2idx[char] for char in selfies_char_list]
+                a = np.array(integer_encoded)
+                valid_flag = 1 
+            except:
+                a = 0
+                fail +=1  
+                print(s_clean)
+                
+        print('Reencode failures : ', fail, '/', valid)
+        print('Too long canonical selfies : ', too_long, '/', valid)
+        
+        
+    
+    
