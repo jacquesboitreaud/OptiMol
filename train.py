@@ -40,8 +40,6 @@ from model import Model
 from loss_func import VAELoss, weightedPropsLoss, affsRegLoss, affsClassifLoss
 from dataloaders.molDataset import molDataset, Loader
 
-from pytorch_model_summary import summary
-
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
@@ -76,14 +74,14 @@ if __name__ == "__main__":
 
     parser.add_argument('--print_iter', type=int, default=1000)  # print loss metrics every _ step
     parser.add_argument('--print_smiles_iter', type=int, default=10)  # print reconstructed smiles every _ step
-    parser.add_argument('--save_iter', type=int, default=10000)  # save model weights every _ step
+    parser.add_argument('--save_iter', type=int, default=1000)  # save model weights every _ step
 
     # teacher forcing rnn schedule
     parser.add_argument('--tf_init', type=float, default=1.0)
     parser.add_argument('--tf_step', type=float, default=0.002)  # step decrease
     parser.add_argument('--tf_end', type=float, default=0)  # final tf frequency
     parser.add_argument('--tf_anneal_iter', type=int, default=1000)  # nbr of iters between each annealing
-    parser.add_argument('--tf_warmup', type=int, default=200000)  # nbr of steps at tf_init
+    parser.add_argument('--tf_warmup', type=int, default=60000)  # nbr of steps at tf_init
 
     # Multitask :
     parser.add_argument('--no_props', action='store_true', default=True)  # No multitask props
