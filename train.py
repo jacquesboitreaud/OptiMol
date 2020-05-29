@@ -44,17 +44,22 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--name', type=str, default='default')
+    parser.add_argument('--name', type=str, default='default') # model name in results/saved_models/
     parser.add_argument('--train', help="path to training dataframe", type=str, default='data/250k_zinc.csv')
-    parser.add_argument("--cutoff", help="Max number of molecules to use. Set to -1 for all", type=int, default=-1)
+    parser.add_argument("--cutoff", help="Max number of molecules to use. Set to -1 for all in csv", type=int, default=-1)
+    
+    # Alphabets params 
+    parser.add_argument('--decode', type=str, default='selfies')  # language used : 'smiles' or 'selfies'
+    parser.add_argument('--alphabet_name', type=str, default='250k_alphabets.json') # name of alphabets json file, in map_files dir 
+    parser.add_argument('--build_alphabet', action='store_true', default=False)  # use params.json alphabet
 
+    # If we start from a pretrained model : 
     parser.add_argument('--load_model', action='store_true', default=False)
     parser.add_argument('--load_name', type=str, default='default')  # name of model to load from
     parser.add_argument('--load_iter', type=int, default=0)  # resume training at optimize step n°
 
-    parser.add_argument('--decode', type=str, default='selfies')  # 'smiles' or 'selfies'
-    parser.add_argument('--alphabet_name', type=str, default='250k_alphabets.json') # name of alphabets json file, in map_files dir 
-    parser.add_argument('--build_alphabet', action='store_true', default=False)  # use params.json alphabet
+    
+    # No need to change under this 
 
     parser.add_argument('--latent_size', type=int, default=56)  # size of latent code
     parser.add_argument('--n_gcn_layers', type=int, default=3)  # number of gcn encoder layers (3 or 4?)
@@ -74,7 +79,7 @@ if __name__ == "__main__":
     parser.add_argument('--kl_anneal_iter', type=int, default=2000)  # update beta every _ step
 
     parser.add_argument('--print_iter', type=int, default=1000)  # print loss metrics every _ step
-    parser.add_argument('--print_smiles_iter', type=int, default=10)  # print reconstructed smiles every _ step
+    parser.add_argument('--print_smiles_iter', type=int, default=100)  # print reconstructed smiles every _ step
     parser.add_argument('--save_iter', type=int, default=1000)  # save model weights every _ step
 
     # teacher forcing rnn schedule
@@ -82,7 +87,7 @@ if __name__ == "__main__":
     parser.add_argument('--tf_step', type=float, default=0.002)  # step decrease
     parser.add_argument('--tf_end', type=float, default=0)  # final tf frequency
     parser.add_argument('--tf_anneal_iter', type=int, default=1000)  # nbr of iters between each annealing
-    parser.add_argument('--tf_warmup', type=int, default=60000)  # nbr of steps at tf_init
+    parser.add_argument('--tf_warmup', type=int, default=100000)  # nbr of steps at tf_init
 
     # Multitask :
     parser.add_argument('--no_props', action='store_true', default=True)  # No multitask props
