@@ -14,6 +14,9 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 import os
 import sys
+from ordered_set import OrderedSet
+
+import json
 
 
 script_dir = os.path.dirname(os.path.realpath(__file__))
@@ -21,7 +24,7 @@ if __name__ == '__main__':
     sys.path.append(os.path.join(script_dir, '..'))
 
 from data_processing.neutralize import NeutraliseCharges
-from selfies import encoder, decoder, selfies_alphabet
+from selfies import encoder, decoder
 
 
 def clean_smiles(s):
@@ -41,7 +44,7 @@ def process_one(s):
 
 
 
-def add_selfies(path='data/moses_train.csv', serial=False, smi=False ):
+def add_selfies(path='data/moses_train.csv', alphabet='my_alphabet.json', serial=False, smi=False ):
     
     if not smi:
         train = pd.read_csv(path, index_col=0)
@@ -82,7 +85,34 @@ def add_selfies(path='data/moses_train.csv', serial=False, smi=False ):
         train = pd.DataFrame.from_dict({'smiles':smiles_list, 'selfies': selfies_list})
         print(train)
         train.to_csv(path[:-4]+'.csv')
+        
+    # Alphabets and longest smiles / selfies collection 
     
+    smiles_alphabet=list(OrderedSet(''.join(smiles_list)))
+    largest_smiles_len=len(max(smiles_list, key=len))
+    selfies_len=[]
+    
+    print(f'--> Building alphabets for {smiles_list.shape[0]} smiles and selfies in dataset...')
+    for individual_selfie in selfies_list:
+        selfies_len.append(len(individual_selfie)-len(individual_selfie.replace('[',''))) # len of SELFIES
+    selfies_alphabet_pre=list(OrderedSet(''.join(selfies_list)[1:-1].split('][')))
+    selfies_alphabet=[]
+    for selfies_element in selfies_alphabet_pre:
+        selfies_alphabet.append('['+selfies_element+']')        
+    largest_selfies_len=max(selfies_len)
+    
+    print('Finished parsing smiles and selfies alphabet. Saving to json file custom_alphabets.json')
+    print('Longest selfies : ',  largest_selfies_len)
+    print('Longest smiles : ',  largest_smiles_len)
+    
+    d= {'selfies_alphabet':selfies_alphabet,
+        'largest_selfies_len':largest_selfies_len,
+        'smiles_alphabet': smiles_alphabet,
+        'largest_smiles_len': largest_smiles_len}
+    
+    with open(os.path.join(script_dir,'..','map_files',alphabet), 'w') as outfile:
+        json.dump(d, outfile)
+    print('Saved alphabet to ', alphabet)
     
     print('Saved selfies as a column in csv. Ready to train with selfies.')
     print(f'Max smiles length : {max(max_smiles_len)}')
@@ -96,6 +126,8 @@ if __name__ == '__main__':
     
     parser.add_argument('--smi', help="input smi file", action='store_true',
                         default=True)
+    parser.add_argument('--alphabet', help="Name for alphabet json file saved in map_files", type = str,
+                        default='my_alphabets.json')
     
     # ======================
     args, _ = parser.parse_known_args()
@@ -112,5 +144,5 @@ if __name__ == '__main__':
 
     if args.smi:
         print('Taking .smi file as input, output to a csv')
-    add_selfies(path = args.smiles_file, smi = args.smi, serial = True)
+    add_selfies(path = args.smiles_file, smi = args.smi, alphabet = args.alphabet, serial = False)
         
