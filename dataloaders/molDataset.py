@@ -152,17 +152,17 @@ class molDataset(Dataset):
         print(f"> Loaded alphabet. Using {self.language}. Max sequence length allowed is {self.max_len}")
 
 
-    def pass_dataset_path(self, path):
+    def pass_dataset_path(self, path, graph_only = True):
         # Pass a new dataset to the loader, without changing other parameters 
         self.df = pd.read_csv(path)
         self.n = self.df.shape[0]
-        self.graph_only=True
+        self.graph_only=graph_only
         print('New dataset columns:', self.df.columns)
 
-    def pass_dataset(self, df):
+    def pass_dataset(self, df, graph_only = True):
         self.df = df
         self.n = df.shape[0]
-        self.graph_only=True
+        self.graph_only=graph_only
         print('New dataset columns:', self.df.columns)
 
     def pass_smiles_list(self, smiles):
@@ -185,7 +185,6 @@ class molDataset(Dataset):
             - smiles alphabet (character based)
             - longest smiles string
         """
-    
         smiles_list = np.asanyarray(self.df.smiles)
         
         selfies_list = np.asanyarray(self.df.selfies)
@@ -216,6 +215,7 @@ class molDataset(Dataset):
             json.dump(d, outfile)
         
         return (selfies_alphabet, largest_selfies_len, smiles_alphabet, largest_smiles_len)
+    
     
     def selfies_to_hot(self, molecule):
         """
