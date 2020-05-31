@@ -39,11 +39,14 @@ from sklearn.decomposition import PCA
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--name', help="Name of saved model directory, in /results/saved_models",
-                    default='inference_default')
+                    default='250k')
 parser.add_argument('-i', '--test_set', help="Test molecules file, in /data",
-                    default='moses_test.csv')
+                    default='250k_zinc.csv')
+parser.add_argument('-a', '--alphabet', help="Test molecules file, in /data",
+                    default='250k_alphabets.json')
+
 parser.add_argument('-N', '--n_mols', help="Number of molecules, set to -1 for all in csv ", type=int,
-                    default=10000)
+                    default=1000)
 
 args, _ = parser.parse_known_args()
 
@@ -57,18 +60,21 @@ if __name__ == "__main__":
     from utils import *
     from dgl_utils import send_graph_to_device
 
+    properties = []
+    targets = ()
     # Should be same as for training
-    properties = ['QED', 'logP', 'molWt']
-    targets = ['drd3']
+    #properties = ['QED', 'logP', 'molWt']
+    #targets = ['drd3']
 
     # Select only DUDE subset to plot in PCA space 
     plot_target = 'drd3'
 
     # Load eval set
-    loaders = Loader(csv_path=os.path.join(script_dir, 'data', args.test_set),
-                     maps_path=os.path.join(script_dir, 'map_files'),
+    loaders = Loader(csv_path=os.path.join(script_dir, '..', 'data', args.test_set),
+                     maps_path=os.path.join(script_dir,'..', 'map_files'),
                      n_mols=args.n_mols,
                      vocab='selfies',
+                     alphabet_name = args.alphabet, 
                      num_workers=0,
                      batch_size=100,
                      props=properties,
@@ -129,16 +135,18 @@ if __name__ == "__main__":
             z = z.cpu().numpy()
             z_all[batch_idx * batch_size:(batch_idx + 1) * batch_size] = z
 
-            props = pred_p.cpu().numpy()
-            p_all[batch_idx * batch_size:(batch_idx + 1) * batch_size] = props
+            if len(properties)>0:
+                props = pred_p.cpu().numpy()
+                p_all[batch_idx * batch_size:(batch_idx + 1) * batch_size] = props
+    
+                p_target_all[batch_idx * batch_size:(batch_idx + 1) * batch_size] = p_target.numpy()
 
-            p_target_all[batch_idx * batch_size:(batch_idx + 1) * batch_size] = p_target.numpy()
-
-            # Classification of binned affinities
-            affs = pred_a.cpu().numpy()
-            a_all[batch_idx * batch_size:(batch_idx + 1) * batch_size] = affs
-
-            a_target_all[batch_idx * batch_size:(batch_idx + 1) * batch_size] = a_target.numpy()
+            if len(targets)>0:
+                # Classification of binned affinities
+                affs = pred_a.cpu().numpy()
+                a_all[batch_idx * batch_size:(batch_idx + 1) * batch_size] = affs
+    
+                a_target_all[batch_idx * batch_size:(batch_idx + 1) * batch_size] = a_target.numpy()
 
         # ===================================================================
         # Latent space KDE 

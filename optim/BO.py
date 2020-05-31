@@ -61,19 +61,19 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     
-    parser.add_argument('-o', '--objective', default='qsar') # 'qed', 'logp' 'aff', 'aff_pred' or 'qsar'
+    parser.add_argument('-o', '--objective', default='qed') # 'qed', 'logp' 'aff', 'aff_pred' or 'qsar'
     
     parser.add_argument( '--bo_name', help="Name for BO results subdir ",
                         default='bo_run')
     
     parser.add_argument( '--name', help="saved model weights fname. Located in saved_models subdir",
-                        default='finetuned_10')
+                        default='250k')
     
-    parser.add_argument('-n', "--n_steps", help="Nbr of optim steps", type=int, default=50)
-    parser.add_argument('-q', "--n_queries", help="Nbr of queries per step", type=int, default=1000)
+    parser.add_argument('-n', "--n_steps", help="Nbr of optim steps", type=int, default=10)
+    parser.add_argument('-q', "--n_queries", help="Nbr of queries per step", type=int, default=50)
     
     # initial samples to use 
-    parser.add_argument('--init_samples', default='diverse_samples.csv') # samples to start with // random or excape data
+    parser.add_argument('--init_samples', default='250k_zinc.csv') # samples to start with // random or excape data
     parser.add_argument('--n_init', type = int ,  default=500) # Number of samples to start with 
     
     # docking specific params 
@@ -98,11 +98,20 @@ if __name__ == "__main__":
     time_id = datetime.now()
     time_id = time_id.strftime("_%d_%H%M")
 
+    # ALphabets and language 
     vocab = 'selfies'
+    if '250k' in args.name:
+        alphabet = '250k_alphabets.json'
+    elif 'zinc' in args.name:
+        alphabet = 'zinc_alphabets.json'
+    else:
+        alphabet = 'moses_alphabets.json'
+        
     # Loader for initial sample
     loader = Loader(props=[], 
                     targets=[], 
                     csv_path = None,
+                    alphabet_name = alphabet,
                     vocab=vocab, 
                     num_workers = 0,
                     test_only=True)

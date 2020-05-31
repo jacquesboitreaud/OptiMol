@@ -57,8 +57,8 @@ model.to(device)
 
 
 # Load eval set
-loaders = Loader(csv_path='../data/moses_test.csv',
-                 n_mols=-1,
+loaders = Loader(csv_path='../data/250k_zinc.csv',
+                 n_mols=125000,
                  num_workers=0,
                  batch_size=batch_size,
                  test_only=True,
@@ -96,5 +96,5 @@ with torch.no_grad():
     # PCA fitting
     # ===================================================================
     fitted_pca = fit_pca(z)
-    dump(fitted_pca,  os.path.join(script_dir, f'results/saved_models/{args.name}/fitted_pca.joblib'))
+    dump(fitted_pca,  os.path.join(script_dir,'..', f'results/saved_models/{args.name}/fitted_pca.joblib'))
     print('Fitted and saved PCA to data/fitted_pca.joblib for next time!')
