@@ -36,6 +36,8 @@ import data_processing.comp_metrics
 
 from model import model_from_json
 from dataloaders.molDataset import Loader
+from data_processing.comp_metrics import cycle_score, logP, qed
+from data_processing.sascorer import calculateScore
 from selfies import encoder,decoder
 from utils import soft_mkdir
 
@@ -47,7 +49,10 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--seed', type = int ,  default=1) # random seed (simulation id for multiple runs)
 parser.add_argument('--model', type = str ,  default='250k') # name of model to use 
 
+parser.add_argument('--obj', type = str ,  default='logp') # objective : logp (composite), qed (composite), qsar or docking
+
 parser.add_argument('--n_iters', type = int ,  default=5) # Number of iterations
+
 
 args, _ = parser.parse_known_args()
 
@@ -99,7 +104,7 @@ np.random.seed(random_seed)
 # We load the data
 
 X = np.loadtxt('../../data/latent_features_and_targets/latent_features.txt')
-y = -np.loadtxt('../../data/latent_features_and_targets/targets.txt')
+y = -np.loadtxt('../../data/latent_features_and_targets/targets_{args.obj}.txt')
 y = y.reshape((-1, 1))
 
 n = X.shape[ 0 ]
@@ -178,48 +183,70 @@ while iteration < args.n_iters:
 
 
     new_features = next_inputs
-
     save_object(valid_smiles_final, f"results/simulation_{random_seed}/valid_smiles_{iteration}.dat")
-
-    logP_values = np.loadtxt('../../data/latent_features_and_targets/logP_values.txt')
-    SA_scores = np.loadtxt('../../data/latent_features_and_targets/SA_scores.txt')
-    cycle_scores = np.loadtxt('../../data/latent_features_and_targets/cycle_scores.txt')
     
-    SA_scores_normalized = (np.array(SA_scores) - np.mean(SA_scores)) / np.std(SA_scores)
-    logP_values_normalized = (np.array(logP_values) - np.mean(logP_values)) / np.std(logP_values)
-    cycle_scores_normalized = (np.array(cycle_scores) - np.mean(cycle_scores)) / np.std(cycle_scores)
+    if args.obj == 'logp':
 
-    targets = SA_scores_normalized + logP_values_normalized + cycle_scores_normalized
-
-
-    scores = []
-    for i in range(len(valid_smiles_final)):
-        if valid_smiles_final[ i ] is not None:
-            current_log_P_value = Descriptors.MolLogP(MolFromSmiles(valid_smiles_final[ i ]))
-            current_SA_score = -sascorer.calculateScore(MolFromSmiles(valid_smiles_final[ i ]))
-            cycle_list = nx.cycle_basis(nx.Graph(rdmolops.GetAdjacencyMatrix(MolFromSmiles(valid_smiles_final[ i ]))))
-            if len(cycle_list) == 0:
-                cycle_length = 0
+        logP_values = np.loadtxt('../../data/latent_features_and_targets/logP_values.txt')
+        SA_scores = np.loadtxt('../../data/latent_features_and_targets/SA_scores.txt')
+        cycle_scores = np.loadtxt('../../data/latent_features_and_targets/cycle_scores.txt')
+    
+        scores = []
+        for i in range(len(valid_smiles_final)):
+            if valid_smiles_final[ i ] is not None:
+                m= MolFromSmiles(valid_smiles_final[ i ])
+                
+                current_log_P_value = logP(m)
+                current_SA_score = -calculateScore(m)
+                current_cycle_score = -cycle_score(m)
+                
+                # Normalize 
+                current_SA_score_normalized = (current_SA_score - np.mean(SA_scores)) / np.std(SA_scores)
+                current_log_P_value_normalized = (current_log_P_value - np.mean(logP_values)) / np.std(logP_values)
+                current_cycle_score_normalized = (current_cycle_score - np.mean(cycle_scores)) / np.std(cycle_scores)
+    
+                score = (current_SA_score_normalized + current_log_P_value_normalized + current_cycle_score_normalized)
             else:
-                cycle_length = max([ len(j) for j in cycle_list ])
-            if cycle_length <= 6:
-                cycle_length = 0
+                score = -max(y)[ 0 ]
+
+            scores.append(-score)
+        
+    elif args.obj == 'qed':
+        
+        qed_values = np.loadtxt('../../data/latent_features_and_targets/qed_values.txt')
+        SA_scores = np.loadtxt('../../data/latent_features_and_targets/SA_scores.txt')
+        cycle_scores = np.loadtxt('../../data/latent_features_and_targets/cycle_scores.txt')
+    
+        scores = []
+        for i in range(len(valid_smiles_final)):
+            if valid_smiles_final[ i ] is not None:
+                m= MolFromSmiles(valid_smiles_final[ i ])
+                
+                current_qed_value = qed(m)
+                current_SA_score = -calculateScore(m)
+                current_cycle_score = -cycle_score(m)
+                
+                # Normalize 
+                current_SA_score_normalized = (current_SA_score - np.mean(SA_scores)) / np.std(SA_scores)
+                current_qed_value_normalized = (current_qed_value - np.mean(qed_values)) / np.std(qed_values)
+                current_cycle_score_normalized = (current_cycle_score - np.mean(cycle_scores)) / np.std(cycle_scores)
+    
+                score = (current_SA_score_normalized + current_qed_value_normalized + current_cycle_score_normalized)
             else:
-                cycle_length = cycle_length - 6
+                score = -max(y)[ 0 ]
 
-            current_cycle_score = -cycle_length
-         
-            current_SA_score_normalized = (current_SA_score - np.mean(SA_scores)) / np.std(SA_scores)
-            current_log_P_value_normalized = (current_log_P_value - np.mean(logP_values)) / np.std(logP_values)
-            current_cycle_score_normalized = (current_cycle_score - np.mean(cycle_scores)) / np.std(cycle_scores)
-
-            score = (current_SA_score_normalized + current_log_P_value_normalized + current_cycle_score_normalized)
-        else:
-            score = -max(y)[ 0 ]
-
-        scores.append(-score)
-        print(i)
-
+            scores.append(-score)
+            
+    elif args.obj == 'qsar':
+        raise NotImplementedError
+        
+    elif args.obj == 'docking':
+        raise NotImplementedError
+        
+        
+    
+    # Common to all objectives ; saving scores and smiles for this step 
+    print(i)
     print(valid_smiles_final)
     print(scores)
 
