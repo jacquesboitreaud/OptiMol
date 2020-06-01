@@ -5,6 +5,10 @@ Created on Mon Jun  1 11:14:21 2020
 @author: jacqu
 
 Parsing BO results in ./results 
+
+Code from Kusner et al. in Grammar VAE 
+
+@ https://github.com/mkusner/grammarVAE 
 """
 
 import pickle
@@ -14,6 +18,11 @@ import numpy as np
 from rdkit.Chem import MolFromSmiles, MolToSmiles
 from rdkit.Chem import Draw
 from rdkit.Chem import Descriptors
+
+# Params 
+
+n_simulations = 4
+iteration = 5
 
 # We define the functions used to load and save objects
 
@@ -41,9 +50,7 @@ def load_object(filename):
     return ret
 
 # We compute the average statistics for the grammar autoencoder
-
-n_simulations = 1
-iteration = 5
+    
 results_grammar = np.zeros((n_simulations, 3))
 for j in range(1, n_simulations + 1):
     best_value = 1e10
@@ -64,7 +71,7 @@ for j in range(1, n_simulations + 1):
     sum_values = 0
     count_values = 0
     for i in range(iteration):
-        scores = np.array(load_object('results/scores{}.gz'.format(j, i)))
+        scores = np.array(load_object(f'results/simulation_{j}/scores_{i}.dat'))
         sum_values += np.sum(scores[  scores < max_value ])
         count_values += len(scores[  scores < max_value ])
         
