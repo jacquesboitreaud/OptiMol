@@ -142,7 +142,7 @@ while iteration < 5:
     # We decode the 50 smiles: 
     # Decode z into smiles
     with torch.no_grad():
-        gen_seq = model.decode(torch.from_numpy(next_inputs).to(device))
+        gen_seq = model.decode(torch.FloatTensor(next_inputs).to(device))
         smiles = model.probas_to_smiles(gen_seq)
         valid_smiles_final = []
         for s in smiles :
