@@ -79,7 +79,7 @@ def cQED(smi):
     
 if __name__=='__main__':
     
-    s='CC=CC=CC1NCCc2cc(OC)c(OC)c(OC)c21'
+    s='CC1=C(Br)C=CC=C1NC(=O)CN1CC=C2C3CCOC(=O)C(C)C2CCCC3NC1=O'
     
     q = cQED(s)
     p =cLogP(s)
