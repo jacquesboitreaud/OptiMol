@@ -21,6 +21,7 @@ import gzip
 import numpy as np
 
 import torch
+import argparse
 
 from rdkit import Chem
 from rdkit.Chem import MolFromSmiles, MolToSmiles
@@ -36,15 +37,36 @@ import data_processing.comp_metrics
 from model import model_from_json
 from dataloaders.molDataset import Loader
 from selfies import encoder,decoder
+from utils import soft_mkdir
 
 from sparse_gp import SparseGP
 import scipy.stats as sps
 
-# Params 
-random_seed = 1 # random seed 
+parser = argparse.ArgumentParser()
 
-model_name = '250k'
-alphabet = '250k_alphabets.json'
+parser.add_argument('--seed', type = int ,  default=1) # random seed (simulation id for multiple runs)
+parser.add_argument('--model', type = str ,  default='250k') # name of model to use 
+
+parser.add_argument('--n_iters', type = int ,  default=5) # Number of iterations
+
+args, _ = parser.parse_known_args()
+
+# ===========================================================================
+
+
+# Params 
+random_seed = args.seed # random seed 
+soft_mkdir(f'results/simulation_{random_seed}')
+
+
+model_name = args.model
+if '250k' in model_name:
+        alphabet = '250k_alphabets.json'
+elif 'zinc' in args.name:
+    alphabet = 'zinc_alphabets.json'
+else:
+    alphabet = 'moses_alphabets.json'
+print(f'Using alphabet : {alphabet}. Make sure it is coherent with args.model = {args.model}')
 
 
 # Helper functions used to load and save objects
@@ -109,11 +131,10 @@ model.to(device)
 model.eval()
 
 
-
 iteration = 0
 
 # ============ Iter loop ===============
-while iteration < 5:
+while iteration < args.n_iters:
 
     # We fit the GP
 
@@ -158,7 +179,7 @@ while iteration < 5:
 
     new_features = next_inputs
 
-    save_object(valid_smiles_final, f"results/valid_smiles_{iteration}.dat")
+    save_object(valid_smiles_final, f"results/simulation_{random_seed}/valid_smiles_{iteration}.dat")
 
     logP_values = np.loadtxt('../../data/latent_features_and_targets/logP_values.txt')
     SA_scores = np.loadtxt('../../data/latent_features_and_targets/SA_scores.txt')
@@ -202,7 +223,7 @@ while iteration < 5:
     print(valid_smiles_final)
     print(scores)
 
-    save_object(scores, "results/scores{}.gz".format(iteration))
+    save_object(scores, f"results/simulation_{random_seed}/scores_{iteration}.dat")
 
     if len(new_features) > 0:
         X_train = np.concatenate([ X_train, new_features ], 0)
