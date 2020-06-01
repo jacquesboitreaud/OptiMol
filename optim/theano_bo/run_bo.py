@@ -104,7 +104,7 @@ np.random.seed(random_seed)
 # We load the data
 
 X = np.loadtxt('../../data/latent_features_and_targets/latent_features.txt')
-y = -np.loadtxt('../../data/latent_features_and_targets/targets_{args.obj}.txt')
+y = -np.loadtxt(f'../../data/latent_features_and_targets/targets_{args.obj}.txt')
 y = y.reshape((-1, 1))
 
 n = X.shape[ 0 ]
