@@ -193,14 +193,6 @@ if __name__ == "__main__":
         identifier, smiles = enum_tuple
         return dock(smiles, identifier, PYTHONSH, VINA, parallel=False, exhaustiveness = args.ex)
     
-    def qsar_predict_one(smi):
-        m=Chem.MolFromSmiles(smi)
-        if m==None:
-            return 0.0
-        else:
-            fp = np.array(AllChem.GetMorganFingerprintAsBitVect(m , 3, nBits=2048))
-            sc = clf.predict_proba(fp.reshape(1,-1))
-            return sc 
     
     def optimize_acqf_and_get_observation(acq_func, device, gp_device):
         """Optimizes the acquisition function, and returns a new candidate and a noisy observation"""

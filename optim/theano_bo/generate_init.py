@@ -20,6 +20,8 @@ import torch
 import argparse
 import pickle
 
+from multiprocessing import Pool
+
 if __name__ == "__main__":
     script_dir = os.path.dirname(os.path.realpath(__file__))
     sys.path.append(os.path.join(script_dir, '../..'))
@@ -35,6 +37,8 @@ if __name__ == '__main__':
     from model import  model_from_json
     from data_processing.comp_metrics import cycle_score, logP, qed
     from data_processing.sascorer import calculateScore
+    
+    from docking.docking import dock, set_path
 
     parser = argparse.ArgumentParser()
 
@@ -46,7 +50,8 @@ if __name__ == '__main__':
     
     parser.add_argument('-name', '--name', type=str, default='250k') 
     
-    parser.add_argument('-t', '--target_only', action='store_true', default = True)
+    parser.add_argument('-t', '--target_only', action='store_true', default = False) # do not recompute latent features, only target scores
+    # careful : cutoff should be same as before, otherwise will result in shape mismatch of features and targets 
 
     # =====================
     
@@ -84,8 +89,12 @@ if __name__ == '__main__':
         z = model.embed(dataloader, smiles_df)  # z has shape (N_molecules, latent_size)
     
         # Save molecules latent embeds to pickle.
-        np.savetxt(os.path.join(savedir, 'latent_features.txt'), z)
-        print(f'>>> Saved latent representations of {z.shape[0]} molecules to ~/data/latent_features.txt')
+        if args.obj != 'docking':
+            np.savetxt(os.path.join(savedir, 'latent_features.txt'), z)
+            print(f'>>> Saved latent representations of {z.shape[0]} molecules to ~/data/latent_features.txt')
+        else:
+            np.savetxt(os.path.join(savedir, 'latent_features_docking.txt'), z)
+            print(f'>>> Saved latent representations of {z.shape[0]} molecules to ~/data/latent_features_docking.txt')
 
     # Compute properties : 
     smiles_rdkit = smiles_df.smiles
@@ -171,13 +180,42 @@ if __name__ == '__main__':
         
         print('>>> Saving QSAR targets to .txt file')
         np.savetxt(os.path.join(savedir, 'targets_qsar.txt'), targets)
-
         print('done!')
         
     elif args.obj == 'docking':
         
         print(f'>>> Computing docking scores for {len(smiles_rdkit)} mols (!! time)')
         
-        raise NotImplementedError
+        PYTHONSH, VINA = set_path(args.server)
+        
+        def dock_one(enum_tuple):
+            """ Docks one smiles. Input = tuple from enumerate iterator"""
+            identifier, smiles = enum_tuple
+            return dock(smiles, identifier, PYTHONSH, VINA, parallel=False, exhaustiveness = 16)
+        
+        
+        pool = Pool()
+        targets = pool.map(dock_one, enumerate(smiles_rdkit))
+        pool.close()
+        
+        raw_scores = targets
+        targets = np.array(targets)
+        targets = (targets -np.mean(targets)) /np.std(targets)
+        
+        print('>>> Saving docking scores to .txt file')
+        np.savetxt(os.path.join(savedir, 'targets_docking.txt'), targets)
+        print('done!')
+        
+        # Add to dict with docking scores 
+        docked = {}
+        for i,s in enumerate(smiles_rdkit):
+            
+            m=Chem.MolFromSmiles(s)
+            s= Chem.MolToSmiles(m, kekuleSmiles = True)
+            docked[s] = raw_scores[i] # unnormalized docking scores 
+                
+        with open('250k_docking_scores.pickle', 'wb') as f :
+            pickle.dump(docked, f)
+        print('Saved docking scores to pickle dict 250k_docking_scores.pickle' )
         
         

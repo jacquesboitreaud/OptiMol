@@ -23,6 +23,8 @@ import numpy as np
 import torch
 import argparse
 
+from multiprocessing import Pool
+
 from rdkit import Chem
 from rdkit.Chem import MolFromSmiles, MolToSmiles
 from rdkit.Chem import Draw
@@ -40,6 +42,8 @@ from data_processing.comp_metrics import cycle_score, logP, qed
 from data_processing.sascorer import calculateScore
 from selfies import encoder,decoder
 from utils import soft_mkdir
+
+from docking.docking import dock, set_path
 
 from sparse_gp import SparseGP
 import scipy.stats as sps
@@ -102,11 +106,28 @@ def load_object(filename):
 np.random.seed(random_seed)
 
 # We load the data
+if args.obj != 'docking':
+    X = np.loadtxt('../../data/latent_features_and_targets/latent_features.txt')
+    y = -np.loadtxt(f'../../data/latent_features_and_targets/targets_{args.obj}.txt')
+else:
+    X = np.loadtxt('../../data/latent_features_and_targets/latent_features_docking.txt')
+    # We want to minimize docking scores => no need to take (-scores)
+    y = -np.loadtxt(f'../../data/latent_features_and_targets/targets_{args.obj}.txt')
+    PYTHONSH, VINA = set_path(args.server)
+    
+    with open('250k_docking_scores.pickle', 'rb') as f :
+        docked = pickle.load(f)
+    
+    def dock_one(enum_tuple):
+        """ Docks one smiles. Input = tuple from enumerate iterator"""
+        identifier, smiles = enum_tuple
+        if smiles in docked :
+            return docked[smiles]
+        else:
+            return dock(smiles, identifier, PYTHONSH, VINA, parallel=False, exhaustiveness = 16)
+    
 
-X = np.loadtxt('../../data/latent_features_and_targets/latent_features.txt')
-y = -np.loadtxt(f'../../data/latent_features_and_targets/targets_{args.obj}.txt')
 y = y.reshape((-1, 1))
-
 n = X.shape[ 0 ]
 permutation = np.random.choice(n, n, replace = False)
 
@@ -240,11 +261,29 @@ while iteration < args.n_iters:
     elif args.obj == 'qsar':
         raise NotImplementedError
         
-    elif args.obj == 'docking':
-        raise NotImplementedError
+    elif args.obj == 'docking': # we want to minimize docking scores => no need to take (-score) as for other objectives 
+        
+        pool = Pool()
+        scores = pool.map(dock_one, enumerate(valid_smiles_final))
+        pool.close()
+        
+        raw_scores = np.array(scores)
+        # normalize 
+        targets_distrib = np.loadtxt(f'../../data/latent_features_and_targets/targets_docking.txt')
+        scores = (raw_scores - np.mean(targets_distrib) ) / np.std(targets_distrib)
+        
+        # add to known scores : 
+        for i in range(len(valid_smiles_final)):
+            m=Chem.MolFromSmiles(valid_smiles_final[i])
+            s= Chem.MolToSmiles(m, kekuleSmiles = True)
+            if s not in docked : 
+                docked[s] = raw_scores[i] # unnormalized docking scores 
+                
+        with open('250k_docking_scores.pickle', 'wb') as f :
+            pickle.dump(docked, f)
         
         
-    
+        
     # Common to all objectives ; saving scores and smiles for this step 
     print(i)
     print(valid_smiles_final)
