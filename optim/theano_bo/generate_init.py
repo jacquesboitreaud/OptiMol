@@ -40,18 +40,22 @@ if __name__ == '__main__':
 
     parser.add_argument('-i', '--input', help="path to csv containing molecules", type=str, default='data/250k_zinc.csv')
     
-    parser.add_argument('--obj', help="BO objective", type=str, default='logp')
+    parser.add_argument('--obj', help="BO objective", type=str, default='qed')
     
-    parser.add_argument('-n', "--cutoff", help="Number of molecules to embed. -1 for all", type=int, default=2000)
+    parser.add_argument('-n', "--cutoff", help="Number of molecules to embed. -1 for all", type=int, default=50000)
     
     parser.add_argument('-name', '--name', type=str, default='250k') 
+    
+    parser.add_argument('-t', '--target_only', action='store_true', default = True)
 
     # =====================
     
+    args, _ = parser.parse_known_args()
+    
     alphabet = '250k_alphabets.json'
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    args, _ = parser.parse_known_args()
-
+    savedir = os.path.join(script_dir, '../..', 'data/latent_features_and_targets')
+    
     # Load model (on gpu if available)
     model = model_from_json(args.name)
     model.to(device)
@@ -74,14 +78,14 @@ if __name__ == '__main__':
                     num_workers = 0,
                     test_only=True)
 
-    # embed molecules in latent space of dimension 64
-    print('>>> Start computation of molecules embeddings...')
-    z = model.embed(dataloader, smiles_df)  # z has shape (N_molecules, latent_size)
-
-    # Save molecules latent embeds to pickle.
-    savedir = os.path.join(script_dir, '../..', 'data/latent_features_and_targets')
-    np.savetxt(os.path.join(savedir, 'latent_features.txt'), z)
-    print(f'>>> Saved latent representations of {z.shape[0]} molecules to ~/data/latent_features.txt')
+    if not args.target_only:
+        # embed molecules in latent space of dimension 64
+        print('>>> Start computation of molecules embeddings...')
+        z = model.embed(dataloader, smiles_df)  # z has shape (N_molecules, latent_size)
+    
+        # Save molecules latent embeds to pickle.
+        np.savetxt(os.path.join(savedir, 'latent_features.txt'), z)
+        print(f'>>> Saved latent representations of {z.shape[0]} molecules to ~/data/latent_features.txt')
 
     # Compute properties : 
     smiles_rdkit = smiles_df.smiles
@@ -152,7 +156,7 @@ if __name__ == '__main__':
         
         print(f'>>> Computing QSAR for {len(smiles_rdkit)} mols')
         
-        with open(os.path.join(script_dir, '../..', 'results/qsar_svm.pickle'), 'rb') as f :
+        with open(os.path.join(script_dir, '../..', 'results/saved_models/qsar_svm.pickle'), 'rb') as f :
             clf = pickle.load(f)
             print('-> Loaded qsar svm')
             

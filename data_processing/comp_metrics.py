@@ -33,7 +33,13 @@ def cycle_score(m):
     else:
         cycle_length = cycle_length - 6
         
-    return cycle_length
+    return float(cycle_length)
+
+def logP(m):
+    return Crippen.MolLogP(m)
+
+def qed(m):
+    return Chem.QED.qed(m)
 
 
 def cLogP(smi):
@@ -45,7 +51,7 @@ def cLogP(smi):
     m=Chem.MolFromSmiles(smi)
     
     if m is None:
-        return -100.0
+        return -1e6
     else:
         logP = Chem.Crippen.MolLogP(m) # logp high => good. what we look for 
         c = cycle_score(m) # c big => not good // big cycles 
@@ -62,7 +68,7 @@ def cQED(smi):
     m=Chem.MolFromSmiles(smi)
     
     if m is None:
-        return -100.0
+        return -1e6
     else:
         q = Chem.QED.qed(m)
         c = cycle_score(m)
