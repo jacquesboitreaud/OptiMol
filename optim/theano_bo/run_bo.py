@@ -160,9 +160,9 @@ while iteration < 5:
 
     save_object(valid_smiles_final, f"results/valid_smiles_{iteration}.dat")
 
-    logP_values = np.loadtxt('../../latent_features_and_targets_grammar/logP_values.txt')
-    SA_scores = np.loadtxt('../../latent_features_and_targets_grammar/SA_scores.txt')
-    cycle_scores = np.loadtxt('../../latent_features_and_targets_grammar/cycle_scores.txt')
+    logP_values = np.loadtxt('../../data/latent_features_and_targets/logP_values.txt')
+    SA_scores = np.loadtxt('../../data/latent_features_and_targets/SA_scores.txt')
+    cycle_scores = np.loadtxt('../../data/latent_features_and_targets/cycle_scores.txt')
     
     SA_scores_normalized = (np.array(SA_scores) - np.mean(SA_scores)) / np.std(SA_scores)
     logP_values_normalized = (np.array(logP_values) - np.mean(logP_values)) / np.std(logP_values)
@@ -202,7 +202,7 @@ while iteration < 5:
     print(valid_smiles_final)
     print(scores)
 
-    save_object(scores, "results/scores{}.dat".format(iteration))
+    save_object(scores, "results/scores{}.gz".format(iteration))
 
     if len(new_features) > 0:
         X_train = np.concatenate([ X_train, new_features ], 0)
