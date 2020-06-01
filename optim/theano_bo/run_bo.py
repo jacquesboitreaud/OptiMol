@@ -121,7 +121,7 @@ while iteration < 5:
     M = 500
     sgp = SparseGP(X_train, 0 * X_train, y_train, M)
     sgp.train_via_ADAM(X_train, 0 * X_train, y_train, X_test, X_test * 0,  \
-        y_test, minibatch_size = 10 * M, max_iterations = 50, learning_rate = 0.0005)
+        y_test, minibatch_size = 10 * M, max_iterations = 1, learning_rate = 0.0005)
 
     pred, uncert = sgp.predict(X_test, 0 * X_test)
     error = np.sqrt(np.mean((pred - y_test)**2))
@@ -135,11 +135,6 @@ while iteration < 5:
     print('Train RMSE: ', error)
     print('Train ll: ', trainll)
 
-    # We load the decoder to obtain the molecules
-
-
-
-
     # We pick the next 50 inputs
 
     next_inputs = sgp.batched_greedy_ei(50, np.min(X_train, 0), np.max(X_train, 0))
@@ -147,7 +142,7 @@ while iteration < 5:
     # We decode the 50 smiles: 
     # Decode z into smiles
     with torch.no_grad():
-        gen_seq = model.decode(torch.from_numpy(next_inputs))
+        gen_seq = model.decode(torch.from_numpy(next_inputs).to(device))
         smiles = model.probas_to_smiles(gen_seq)
         valid_smiles_final = []
         for s in smiles :
