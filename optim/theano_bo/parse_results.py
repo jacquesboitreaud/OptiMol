@@ -21,7 +21,7 @@ from rdkit.Chem import Descriptors
 
 # Params 
 
-n_simulations = 4
+n_simulations = 5
 iteration = 5
 
 # We define the functions used to load and save objects
