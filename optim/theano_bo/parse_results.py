@@ -23,7 +23,7 @@ import matplotlib.pyplot as plt
 
 # Params 
 
-name = '250k_mult'
+name = '250k'
 n_simulations = 10
 iteration = 5
 
