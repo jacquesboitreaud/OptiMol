@@ -19,9 +19,12 @@ from rdkit.Chem import MolFromSmiles, MolToSmiles
 from rdkit.Chem import Draw
 from rdkit.Chem import Descriptors
 
+import matplotlib.pyplot as plt
+
 # Params 
 
-n_simulations = 5
+name = '250k_mult'
+n_simulations = 10
 iteration = 5
 
 # We define the functions used to load and save objects
@@ -57,8 +60,8 @@ for j in range(1, n_simulations + 1):
     n_valid = 0
     max_value = 0
     for i in range(iteration):
-        smiles = load_object(f'results/simulation_{j}/valid_smiles_{i}.dat')
-        scores = load_object(f'results/simulation_{j}/scores_{i}.dat')
+        smiles = load_object(f'results/{name}/simulation_{j}/valid_smiles_{i}.dat')
+        scores = load_object(f'results/{name}/simulation_{j}/scores_{i}.dat')
         n_valid += len([ x for x in smiles if x is not None ])
 
         if min(scores) < best_value:
@@ -71,7 +74,7 @@ for j in range(1, n_simulations + 1):
     sum_values = 0
     count_values = 0
     for i in range(iteration):
-        scores = np.array(load_object(f'results/simulation_{j}/scores_{i}.dat'))
+        scores = np.array(load_object(f'results/{name}/simulation_{j}/scores_{i}.dat'))
         sum_values += np.sum(scores[  scores < max_value ])
         count_values += len(scores[  scores < max_value ])
         
@@ -91,8 +94,9 @@ print("Results (fraction valid, best, average)):")
 
 print("Mean:", np.mean(results_grammar, 0)[ 0 ], -np.mean(results_grammar, 0)[ 1 ], -np.mean(results_grammar, 0)[ 2 ])
 print("Std:", np.std(results_grammar, 0) / np.sqrt(iteration))
-print("First:", -np.min(results_grammar[ : , 1 ]))
 
+
+print("First:", -np.min(results_grammar[ : , 1 ]))
 best_score = np.min(results_grammar[ : , 1 ])
 results_grammar[ results_grammar[ : , 1 ] == best_score , 1 ] = 1e10
 print("Second:", -np.min(results_grammar[ : , 1 ]))
@@ -104,8 +108,8 @@ third_best_score = np.min(results_grammar[ : , 1 ])
 mols = []
 for j in range(1, n_simulations + 1):
     for i in range(iteration):
-        smiles = np.array(load_object(f'results/simulation_{j}/valid_smiles_{i}.dat'))
-        scores = np.array(load_object(f'results/simulation_{j}/scores_{i}.dat'))
+        smiles = np.array(load_object(f'results/{name}/simulation_{j}/valid_smiles_{i}.dat'))
+        scores = np.array(load_object(f'results/{name}/simulation_{j}/scores_{i}.dat'))
         
         if np.any(scores == best_score):
             smile = smiles[ scores == best_score ]
@@ -132,5 +136,34 @@ for j in range(1, n_simulations + 1):
             third_best_score = 1e10
 
 img = Draw.MolsToGridImage(mols, molsPerRow = len(mols), subImgSize=(300, 300), useSVG=True)
-with open("results/best_molecule.svg", "w") as text_file:
+with open(f"results/{name}/best_molecule.svg", "w") as text_file:
     text_file.write(img)
+    
+# Distribution plots 
+
+
+for j in range(1, n_simulations + 1):
+    means, stds , best = [], [], []
+    
+    for i in range(iteration):
+        smiles = np.array(load_object(f'results/{name}/simulation_{j}/valid_smiles_{i}.dat'))
+        scores = -np.array(load_object(f'results/{name}/simulation_{j}/scores_{i}.dat'))
+        
+        means.append(np.mean(scores))
+        stds.append(np.std(scores))
+        
+        best.append(max(scores))
+        
+    fig, ax = plt.subplots(1,1)
+    
+    it = np.arange(iteration)
+    ax.set_xticks(np.arange(iteration))
+    plt.errorbar(it, means, stds, linestyle='None', marker='^')
+    plt.plot(it, best, 'r*')
+    
+    plt.ylim(-20,6)
+    plt.xlabel('Step')
+    plt.ylabel('Score')
+    plt.show()
+    
+    
