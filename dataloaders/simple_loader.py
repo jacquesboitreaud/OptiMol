@@ -86,7 +86,7 @@ class SimpleDataset(Dataset):
 
         self.language = vocab  # smiles or selfies
 
-        print('-> Using PREDEFINED selfies alphabet : {alphabet}, check compatibility with prior model')
+        print(f'-> Using {alphabet} selfies alphabet, check compatibility with prior model !!')
         with open(os.path.join(maps_path, alphabet)) as json_file:
             alphabets_dict = json.load(json_file)
 
