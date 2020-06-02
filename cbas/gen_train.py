@@ -32,11 +32,12 @@ class GenTrain():
     Wrapper for search model iterative training in CbAS
     """
 
-    def __init__(self, model, savepath, epochs, device, lr, clip_grad, beta, processes=8, DEBUG=False,
+    def __init__(self, model, alphabet_name, savepath, epochs, device, lr, clip_grad, beta, processes=8, DEBUG=False,
                  optimizer='adam', scheduler='elr'):
         super(GenTrain, self).__init__()
 
         self.model = model
+        self.json_alphabet_name = alphabet_name
         self.savepath = savepath
         soft_mkdir(self.savepath)  # create dir to save the search model
         self.device = device
@@ -67,7 +68,7 @@ class GenTrain():
 
         # loader
         map_path = os.path.join(script_dir, '..', 'map_files')
-        self.dataset = SimpleDataset(maps_path=map_path, vocab='selfies', debug=self.debug)
+        self.dataset = SimpleDataset(maps_path=map_path, vocab='selfies', alphabet = self.json_alphabet_name, debug=self.debug)
 
     def step(self, input_type, x, w):
         """ 

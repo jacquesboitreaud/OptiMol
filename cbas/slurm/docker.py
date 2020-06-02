@@ -19,6 +19,7 @@ if __name__ == '__main__':
     sys.path.append(os.path.join(script_dir, '..', '..'))
 
 from docking.docking import dock, set_path
+from data_processing.comp_metrics import cLogP, cQED
 
 
 def one_slurm(list_smiles, server, unique_id, name, parallel=True, exhaustiveness=16, mean=False,
@@ -76,11 +77,31 @@ def one_slurm_qed(list_smiles, unique_id, name):
         with open(dump_path, 'a', newline='') as csvfile:
             list_to_write = [smile, score_smile]
             csv.writer(csvfile).writerow(list_to_write)
+            
+def one_slurm_clogp(list_smiles, unique_id, name):
+    """
+
+    :param list_smiles:
+    :param unique_id:
+    :param name:
+    :return:
+    """
+    dirname = os.path.join(script_dir, 'results', name, 'docking_small_results')
+    dump_path = os.path.join(dirname, f"{unique_id}.csv")
+
+    header = ['smile', 'score']
+    with open(dump_path, 'w', newline='') as csvfile:
+        csv.writer(csvfile).writerow(header)
+
+    for smile in list_smiles:
+        score_smile = cLogP(smile, errorVal = -100) # invalid smiles get score -100
+        with open(dump_path, 'a', newline='') as csvfile:
+            list_to_write = [smile, score_smile]
+            csv.writer(csvfile).writerow(list_to_write)
 
 
 def one_slurm_qsar(list_smiles, unique_id, name):
     """
-
     :param list_smiles:
     :param unique_id:
     :param name:
@@ -124,7 +145,10 @@ def main(proc_id, num_procs, server, exhaustiveness, name, oracle):
     # Just use qed
     if oracle == 'qed':
         one_slurm_qed(list_data, proc_id, name)
-
+        
+    elif oracle == 'clogp': # composite logp; almost like for qed 
+        one_slurm_clogp(list_data, proc_id, name)
+        
     # Do the docking and dump results
     elif oracle == 'docking':
         one_slurm(list_data,
@@ -172,6 +196,12 @@ def one_node_main(server, exhaustiveness, name, oracle):
     # Just use qed
     if oracle == 'qed':
         list_results = p.map(one_qed, list_smiles)
+        p.close()
+        
+    elif oracle == 'clogp':
+        list_results = p.map(cLogP, list_smiles)
+        p.close()
+        
     elif oracle == 'qsar':
         list_fps = p.map(one_fp, list_smiles)
         filtered_smiles = list()

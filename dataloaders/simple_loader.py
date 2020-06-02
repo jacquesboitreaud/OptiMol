@@ -63,7 +63,9 @@ class SimpleDataset(Dataset):
 
     def __init__(self,
                  maps_path,
-                 vocab, debug=False):
+                 vocab,
+                 alphabet,
+                 debug=False):
 
         self.debug = debug  # error prints for invalid smiles / mols
 
@@ -84,9 +86,9 @@ class SimpleDataset(Dataset):
 
         self.language = vocab  # smiles or selfies
 
-        print('-> Using PREDEFINED selfies alphabet // some strings may be ignored if not one-hot compatible')
-        with open(os.path.join(maps_path, 'predefined_alphabets.pickle'), 'rb') as f:
-            alphabets_dict = pickle.load(f)
+        print('-> Using PREDEFINED selfies alphabet : {alphabet}, check compatibility with prior model')
+        with open(os.path.join(maps_path, alphabet)) as json_file:
+            alphabets_dict = json.load(json_file)
 
         if self.language == 'smiles':
             self.alphabet = alphabets_dict['smiles_alphabet']
@@ -181,14 +183,15 @@ class SimpleDataset(Dataset):
 
         try:
             integer_encoded = [self.char_to_index[char] for char in selfies_char_list]
-            a = np.array(integer_encoded)
-            valid_flag = 1
+            if len(integer_encoded)> self.max_len:
+                valid_flag = 0
+                a=0
+            else:
+                a = np.array(integer_encoded)
+                valid_flag=1
         except:
             a = 0
             valid_flag = 0  # no one hot encoding possible : ignoring molecule 
-        
-        if a.shape[0]>self.max_len:
-            valid_flag = 0 
 
         return a, valid_flag
 
