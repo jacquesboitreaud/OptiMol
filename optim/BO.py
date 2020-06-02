@@ -85,7 +85,7 @@ if __name__ == "__main__":
     parser.add_argument("--qsar", help="Path to pickle svm, from repo root", type=str, default='results/saved_models/qsar_svm.pickle')
     
     
-    parser.add_argument('-v', "--verbose", help="print new scores at each iter", action = 'store_true', default=False)
+    parser.add_argument('-v', "--verbose", help="print new scores at each iter", action = 'store_true')
     args, _ = parser.parse_known_args()
 
     # ==============

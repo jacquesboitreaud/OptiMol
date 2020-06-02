@@ -49,7 +49,7 @@ if __name__ == "__main__":
     
     parser.add_argument( '--qed', action='store_true', help="plot qed distrib")
     
-    parser.add_argument('--reencode', action='store_true', default = False)
+    parser.add_argument('--reencode', action='store_true')
 
     args, _ = parser.parse_known_args()
 

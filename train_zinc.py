@@ -13,8 +13,7 @@ To resume training form a given
 pass corresponding args + load_model = True
 
 ***
-Training script to train on large data : iterate on csv chunks until convergence 
-
+Training script to train on large data : iterate on csv chunks until convergence
 
 """
 
@@ -33,7 +32,7 @@ import torch.nn.functional as F
 from torch.utils.tensorboard import SummaryWriter
 
 script_dir = os.path.dirname(os.path.realpath(__file__))
-if __name__=='__main__':
+if __name__ == '__main__':
     sys.path.append(script_dir)
 
 from utils import ModelDumper, disable_rdkit_logging, setup, log_reconstruction
@@ -46,22 +45,23 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--name', type=str, default='zinc') # model name in results/saved_models/
+    parser.add_argument('--name', type=str, default='zinc')  # model name in results/saved_models/
     parser.add_argument('--train', help="path to training dataframe", type=str, default='data/250k_zinc.csv')
-    parser.add_argument("--chunk_size", help="Nbr of molecules loaded simultaneously in memory (csv chunk)", type=int, default=10000)
-    
+    parser.add_argument("--chunk_size", help="Nbr of molecules loaded simultaneously in memory (csv chunk)", type=int,
+                        default=10000)
+
     # Alphabets params 
     parser.add_argument('--decode', type=str, default='selfies')  # language used : 'smiles' or 'selfies'
-    parser.add_argument('--alphabet_name', type=str, default='zinc_alphabets.json') # name of alphabets json file, in map_files dir 
-    parser.add_argument('--build_alphabet', action='store_true', default=False)  # Ignore json alphabet and build from scratch 
+    parser.add_argument('--alphabet_name', type=str,
+                        default='zinc_alphabets.json')  # name of alphabets json file, in map_files dir
+    parser.add_argument('--build_alphabet', action='store_true')  # Ignore json alphabet and build from scratch
 
-    # If we start from a pretrained model : 
-    parser.add_argument('--load_model', action='store_true', default=False)
+    # If we start from a pretrained model :
+    parser.add_argument('--load_model', action='store_true')
     parser.add_argument('--load_name', type=str, default='default')  # name of model to load from
     parser.add_argument('--load_iter', type=int, default=0)  # resume training at optimize step n°
 
-    
-    # No need to change under this 
+    # No need to change under this
 
     parser.add_argument('--latent_size', type=int, default=56)  # size of latent code
     parser.add_argument('--n_gcn_layers', type=int, default=3)  # number of gcn encoder layers (3 or 4?)
@@ -92,9 +92,9 @@ if __name__ == "__main__":
     parser.add_argument('--tf_warmup', type=int, default=100000)  # nbr of steps at tf_init
 
     # Multitask :
-    parser.add_argument('--no_props', action='store_true', default=True)  # No multitask props
-    parser.add_argument('--no_aff', action='store_true', default=True)  # No multitask aff
-    parser.add_argument('--bin_affs', action='store_true', default=False)  # Binned discretized affs or true values
+    parser.add_argument('--no_props', action='store_false')  # No multitask props
+    parser.add_argument('--no_aff', action='store_false')  # No multitask aff
+    parser.add_argument('--bin_affs', action='store_true')  # Binned discretized affs or true values
 
     # =======
 
@@ -132,7 +132,7 @@ if __name__ == "__main__":
                      csv_path=None,
                      vocab=args.decode,
                      build_alphabet=args.build_alphabet,
-                     alphabet_name = args.alphabet_name, 
+                     alphabet_name=args.alphabet_name,
                      n_mols=-1,
                      num_workers=args.processes,
                      batch_size=args.batch_size,
@@ -186,13 +186,13 @@ if __name__ == "__main__":
     beta = args.beta
     tf_proba = args.tf_init
 
-    for epoch, chunk in enumerate(pd.read_csv(os.path.join(script_dir, args.train), chunksize=args.chunk_size)): 
-        
+    for epoch, chunk in enumerate(pd.read_csv(os.path.join(script_dir, args.train), chunksize=args.chunk_size)):
+
         print(f'Starting epoch {epoch}')
         # give csv chunk to loader 
-        loaders.dataset.pass_dataset(chunk, graph_only = False)
+        loaders.dataset.pass_dataset(chunk, graph_only=False)
         train_loader, _, test_loader = loaders.get_data()
-        
+
         model.train()
         epoch_train_rec, epoch_train_kl, epoch_train_pmse, epoch_train_amse = 0, 0, 0, 0
 

@@ -29,8 +29,7 @@ from rdkit import Chem
 parser = argparse.ArgumentParser()
 parser.add_argument('-i', '--csv', help="molecules file, in /data",
                     default='moses_test.csv')
-parser.add_argument('--parallel', help="parallelize over processors ", action = 'store_true', 
-                    default=True)
+parser.add_argument('--parallel', help="parallelize over processors ", action = 'store_false')
 parser.add_argument('--start_idx', type=int, default = 0)
 parser.add_argument('--end_idx', type=int, default = 1000)
 

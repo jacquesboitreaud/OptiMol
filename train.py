@@ -51,10 +51,10 @@ if __name__ == "__main__":
     # Alphabets params 
     parser.add_argument('--decode', type=str, default='selfies')  # language used : 'smiles' or 'selfies'
     parser.add_argument('--alphabet_name', type=str, default='250k_alphabets.json') # name of alphabets json file, in map_files dir 
-    parser.add_argument('--build_alphabet', action='store_true', default=False)  # use params.json alphabet
+    parser.add_argument('--build_alphabet', action='store_true')  # use params.json alphabet
 
     # If we start from a pretrained model : 
-    parser.add_argument('--load_model', action='store_true', default=False)
+    parser.add_argument('--load_model', action='store_true')
     parser.add_argument('--load_name', type=str, default='default')  # name of model to load from
     parser.add_argument('--load_iter', type=int, default=0)  # resume training at optimize step n°
 
@@ -90,9 +90,9 @@ if __name__ == "__main__":
     parser.add_argument('--tf_warmup', type=int, default=100000)  # nbr of steps at tf_init
 
     # Multitask :
-    parser.add_argument('--no_props', action='store_true', default=True)  # No multitask props
-    parser.add_argument('--no_aff', action='store_true', default=True)  # No multitask aff
-    parser.add_argument('--bin_affs', action='store_true', default=False)  # Binned discretized affs or true values
+    parser.add_argument('--no_props', action='store_false')  # No multitask props
+    parser.add_argument('--no_aff', action='store_false')  # No multitask aff
+    parser.add_argument('--bin_affs', action='store_true')  # Binned discretized affs or true values
 
     # =======
 

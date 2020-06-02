@@ -131,8 +131,7 @@ class molDataset(Dataset):
             
             with open(os.path.join(maps_path, alphabet_name)) as json_file:
                 alphabets_dict = json.load(json_file)
-    
-                
+
             if self.language == 'smiles':
                 self.alphabet = alphabets_dict['smiles_alphabet']
                 self.max_len = alphabets_dict['largest_smiles_len']

@@ -41,8 +41,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--name', help="Saved model directory, in /results/saved_models",
                     default='inference_default')
 
-parser.add_argument('-r', "--random", help="Start from random latent point ", action='store_true',
-                    default=True)
+parser.add_argument('-r', "--random", help="Start from random latent point ", action='store_false')
 
 parser.add_argument('-s', "--seed", help="seed smiles to optimize ", type=str,
                     default='O=C(NC1=CCCC1=O)NC1=CCN(c2ncnc3ccccc23)CC1')
@@ -52,8 +51,7 @@ parser.add_argument("--steps", help="Number of gradients ascent steps", type=int
 parser.add_argument("--lr", help="Learning rate at each step", type=float,
                     default=1e-1)  # Best value still to find. Need experiments.
 
-parser.add_argument('-v', "--verbose", help="Extensive step by step logs ", action='store_true',
-                    default=False)
+parser.add_argument('-v', "--verbose", help="Extensive step by step logs ", action='store_true')
 
 args, _ = parser.parse_known_args()
 

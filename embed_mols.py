@@ -46,9 +46,8 @@ if __name__ == '__main__':
     parser.add_argument('-n', "--cutoff", help="Number of molecules to embed. -1 for all", type=int, default=-1)
     parser.add_argument('-name', '--name', type=str, default='inference_default')
     parser.add_argument('-v', '--vocab', type=str, default='selfies')
-    parser.add_argument('-d', '--decode', action='store_true', default=False)
-    
-    parser.add_argument('--pca', action='store_true', default=True) # PCA space plot 
+    parser.add_argument('-d', '--decode', action='store_true')
+    parser.add_argument('--pca', action='store_false')  # PCA space plot
 
     # =====================
 
@@ -104,11 +103,11 @@ if __name__ == '__main__':
 
             for s in smiles:
                 print(s)
-                
-    if args.pca : 
+
+    if args.pca:
         # Plot the embeddings in predefined 2D PCA space (usually fitted on all moses test data )
         try:
-            fitted_pca = load( os.path.join(script_dir,'results/saved_models', args.name, 'fitted_pca.joblib'))
+            fitted_pca = load(os.path.join(script_dir, 'results/saved_models', args.name, 'fitted_pca.joblib'))
         except(FileNotFoundError):
             print(
                 'Fitted PCA object not found at /data/fitted_pca.joblib, new PCA will be fitted on current data.')
@@ -116,9 +115,9 @@ if __name__ == '__main__':
 
         # Plot PCA with desired hue variable 
         plt.figure()
-        plt.xlim(-4,4)
-        plt.ylim(-4,4)
-        pca_plot_color(z=z , pca=fitted_pca, color = 'b', label = args.input)
+        plt.xlim(-4, 4)
+        plt.ylim(-4, 4)
+        pca_plot_color(z=z, pca=fitted_pca, color='b', label=args.input)
 
     """
     # Plotting molecules 

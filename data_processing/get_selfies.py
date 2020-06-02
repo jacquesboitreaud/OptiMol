@@ -121,8 +121,7 @@ if __name__ == '__main__':
     parser.add_argument('-i', '--smiles_file', help="path to csv with dataset", type=str,
                         default='../data/250k_zinc.smi')
 
-    parser.add_argument('--smi', help="input smi file", action='store_true',
-                        default=True)
+    parser.add_argument('--smi', help="input smi file", action='store_false')
     parser.add_argument('--alphabet', help="Name for alphabet json file saved in map_files", type=str,
                         default='my_alphabets.json')
 

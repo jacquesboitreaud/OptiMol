@@ -50,7 +50,7 @@ if __name__ == '__main__':
     
     parser.add_argument('-name', '--name', type=str, default='250k') 
     
-    parser.add_argument('-t', '--target_only', action='store_true', default = False) # do not recompute latent features, only target scores
+    parser.add_argument('-t', '--target_only', action='store_true') # do not recompute latent features, only target scores
     # careful : cutoff should be same as before, otherwise will result in shape mismatch of features and targets 
 
     # =====================
