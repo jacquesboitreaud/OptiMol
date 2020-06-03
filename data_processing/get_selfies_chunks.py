@@ -39,6 +39,7 @@ def add_selfies(dir_path='data/fabritiis/input_data/', alphabet='fabritiis.json'
         df = pd.read_csv(load_path)
         smiles = df['smiles']
 
+        # With pooling, about 1 minute, without almost 20
         if serial:
             smiles_list = []
             selfies_list = []
@@ -65,7 +66,57 @@ def add_selfies(dir_path='data/fabritiis/input_data/', alphabet='fabritiis.json'
         largest_smiles_len = max(max(smiles_lengths), largest_smiles_len)
         largest_selfies_len = max(max(selfies_lengths), largest_selfies_len)
 
-        # Alphabets and longest smiles / selfies collection
+        # Alphabets and longest smiles / selfies collection, this is approx 1 minute per chunk
+
+        # This is character based parsing
+        local_smiles_alphabet = OrderedSet(''.join(smiles_list))
+
+        # This is selfies parsing
+        selfies_alphabet_pre = OrderedSet(''.join(selfies_list)[1:-1].split(']['))
+        local_selfies_alphabet = []
+        for selfies_element in selfies_alphabet_pre:
+            local_selfies_alphabet.append('[' + selfies_element + ']')
+
+        # Merge local alphabets
+        smiles_alphabet |= local_smiles_alphabet
+        selfies_alphabet |= local_selfies_alphabet
+
+    smiles_alphabet = list(smiles_alphabet)
+    selfies_alphabet = list(selfies_alphabet)
+
+    d = {'selfies_alphabet': selfies_alphabet,
+         'largest_selfies_len': largest_selfies_len,
+         'smiles_alphabet': smiles_alphabet,
+         'largest_smiles_len': largest_smiles_len}
+
+    with open(os.path.join(script_dir, '..', 'map_files', alphabet), 'w') as outfile:
+        json.dump(d, outfile)
+
+
+def get_alphabet(dir_path='data/fabritiis/input_data/', alphabet='fabritiis.json'):
+    largest_smiles_len = 0
+    largest_selfies_len = 0
+
+    smiles_alphabet = OrderedSet()
+    selfies_alphabet = OrderedSet()
+
+    for file in tqdm(os.listdir(dir_path)):
+        load_path = os.path.join(dir_path, file)
+        df = pd.read_csv(load_path)
+        smiles_list = df['smiles']
+        selfies_list = df['selfies']
+
+        max_chunk_smiles_len = len(max(smiles_list, key=len))
+        max_chunk_selfies_len = 0
+        for individual_selfie in selfies_list:
+            individual_selfie_len = len(individual_selfie) - len(individual_selfie.replace('[', ''))
+            if individual_selfie_len > max_chunk_selfies_len:
+                max_chunk_selfies_len = individual_selfie_len
+
+        largest_smiles_len = max(max_chunk_smiles_len, largest_smiles_len)
+        largest_selfies_len = max(max_chunk_selfies_len, largest_selfies_len)
+
+        # Alphabets and longest smiles / selfies collection, this is approx 1 minute per chunk
 
         # This is character based parsing
         local_smiles_alphabet = OrderedSet(''.join(smiles_list))
