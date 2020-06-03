@@ -42,16 +42,17 @@ def qed(m):
     return Chem.QED.qed(m)
 
 
-def cLogP(smi):
+def cLogP(smi, errorVal = -20):
     """
     Input : a smiles string
+    error val : value to return for invalid smiles 
     Output : composite logP (scalar)
     """
     
     m=Chem.MolFromSmiles(smi)
     
     if m is None:
-        return -1e6
+        return errorVal
     else:
         logP = Chem.Crippen.MolLogP(m) # logp high => good. what we look for 
         c = cycle_score(m) # c big => not good // big cycles 
@@ -59,7 +60,7 @@ def cLogP(smi):
         
     return logP - s - c
 
-def cQED(smi):
+def cQED(smi, errorVal = -20):
     """
     Input : a smiles string
     Output : composite logP (scalar)
@@ -68,7 +69,7 @@ def cQED(smi):
     m=Chem.MolFromSmiles(smi)
     
     if m is None:
-        return -1e6
+        return errorVal
     else:
         q = Chem.QED.qed(m)
         c = cycle_score(m)

@@ -89,7 +89,7 @@ def add_selfies(path='data/moses_train.csv', alphabet='my_alphabet.json', serial
     largest_smiles_len = len(max(smiles_list, key=len))
     selfies_len = []
 
-    print(f'--> Building alphabets for {smiles_list.shape[0]} smiles and selfies in dataset...')
+    print(f'--> Building alphabets for {len(smiles_list)} smiles and selfies in dataset...')
     for individual_selfie in selfies_list:
         selfies_len.append(len(individual_selfie) - len(individual_selfie.replace('[', '')))  # len of SELFIES
     selfies_alphabet_pre = list(OrderedSet(''.join(selfies_list)[1:-1].split('][')))
@@ -119,9 +119,9 @@ def add_selfies(path='data/moses_train.csv', alphabet='my_alphabet.json', serial
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-i', '--smiles_file', help="path to csv with dataset", type=str,
-                        default='../data/250k_zinc.smi')
+                        default='../data/moses_train.csv')
 
-    parser.add_argument('--smi', help="input smi file", action='store_false')
+    parser.add_argument('--smi', help="input smi file", action='store_true')
     parser.add_argument('--alphabet', help="Name for alphabet json file saved in map_files", type=str,
                         default='my_alphabets.json')
 

@@ -236,6 +236,9 @@ class molDataset(Dataset):
             valid_flag = 1 
         except:
             a = 0
+            for char in selfies_char_list :
+                if char not in self.char_to_index :
+                    print(char)
             valid_flag = 0  # no one hot encoding possible : ignoring molecule 
                 
         return a, valid_flag
@@ -305,9 +308,7 @@ class molDataset(Dataset):
         string_representation = smiles
         
         if self.language == 'selfies':
-            #m=Chem.MolFromSmiles(smiles)
-            #Chem.Kekulize(m)
-            #selfies = encoder(Chem.MolToSmiles(m, kekuleSmiles=True))
+
             string_representation = row.selfies
             a, valid_flag = self.selfies_to_hot(string_representation)
             if valid_flag ==0 : # no one hot encoding for this selfie, ignore 

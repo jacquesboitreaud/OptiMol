@@ -56,7 +56,7 @@ parser.add_argument('--model', type = str ,  default='250k') # name of model to 
 parser.add_argument('--obj', type = str ,  default='logp') # objective : logp (composite), qed (composite), qsar or docking
 
 parser.add_argument('--n_iters', type = int ,  default=5) # Number of iterations
-
+parser.add_argument('--epochs', type = int ,  default=1) # Number of training epochs for gaussian process 
 
 args, _ = parser.parse_known_args()
 
@@ -168,7 +168,7 @@ while iteration < args.n_iters:
     M = 500
     sgp = SparseGP(X_train, 0 * X_train, y_train, M)
     sgp.train_via_ADAM(X_train, 0 * X_train, y_train, X_test, X_test * 0,  \
-        y_test, minibatch_size = 10 * M, max_iterations = 50, learning_rate = 0.0005)
+        y_test, minibatch_size = 10 * M, max_iterations = args.epochs, learning_rate = 0.0005)
 
     pred, uncert = sgp.predict(X_test, 0 * X_test)
     error = np.sqrt(np.mean((pred - y_test)**2))

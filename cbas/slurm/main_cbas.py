@@ -25,9 +25,11 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--prior_name', type=str, default='inference_default')  # the prior VAE (pretrained)
+    parser.add_argument('--alphabet', type=str, default='moses_alphabets.json')  # the json with selfies alphabet and max selfies len. 
+    
     parser.add_argument('-n', '--name', type=str, default='q07')  # the name of the experiment
     parser.add_argument('--iters', type=int, default=20)  # Number of iterations
-    parser.add_argument('--oracle', type=str, default='qed')  # 'qed' or 'docking' or 'qsar'
+    parser.add_argument('--oracle', type=str, default='qed')  # 'qed' or 'docking' or 'qsar' or 'clogp'
 
     # SAMPLER
     parser.add_argument('--max_samples', type=int, default=1000)  # Nbr of samples at each iter
@@ -54,7 +56,7 @@ if __name__ == '__main__':
     args, _ = parser.parse_known_args()
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-    assert args.oracle in ['qed', 'docking', 'qsar']
+    assert args.oracle in ['qed','clogp', 'docking', 'qsar' ]
 
 
     def setup():
@@ -74,6 +76,7 @@ if __name__ == '__main__':
     dumper.dump()
 
     params_gentrain = {'savepath': savepath,
+                       'alphabet_name': args.alphabet,
                        'epochs': args.epochs,
                        'device': device,
                        'lr': args.learning_rate,
