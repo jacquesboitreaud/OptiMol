@@ -78,7 +78,7 @@ def one_slurm_qed(list_smiles, unique_id, name):
             list_to_write = [smile, score_smile]
             csv.writer(csvfile).writerow(list_to_write)
             
-def one_slurm_clogp(list_smiles, unique_id, name):
+def one_slurm_composite(list_smiles, unique_id, name, oracle):
     """
 
     :param list_smiles:
@@ -88,13 +88,17 @@ def one_slurm_clogp(list_smiles, unique_id, name):
     """
     dirname = os.path.join(script_dir, 'results', name, 'docking_small_results')
     dump_path = os.path.join(dirname, f"{unique_id}.csv")
+    assert oracle in ['cqed', 'clogp']
 
     header = ['smile', 'score']
     with open(dump_path, 'w', newline='') as csvfile:
         csv.writer(csvfile).writerow(header)
 
     for smile in list_smiles:
-        score_smile = cLogP(smile, errorVal = -100) # invalid smiles get score -100
+        if oracle == 'clogp':
+            score_smile = cLogP(smile, errorVal = -100) # invalid smiles get score -100
+        else :
+            score_smile = cQED(smile, errorVal = -20)
         with open(dump_path, 'a', newline='') as csvfile:
             list_to_write = [smile, score_smile]
             csv.writer(csvfile).writerow(list_to_write)
@@ -146,8 +150,8 @@ def main(proc_id, num_procs, server, exhaustiveness, name, oracle):
     if oracle == 'qed':
         one_slurm_qed(list_data, proc_id, name)
         
-    elif oracle == 'clogp': # composite logp; almost like for qed 
-        one_slurm_clogp(list_data, proc_id, name)
+    elif oracle in ['clogp', 'cqed']: # composite logp or composite qed
+        one_slurm_composite(list_data, proc_id, name, oracle)
         
     # Do the docking and dump results
     elif oracle == 'docking':
@@ -200,6 +204,10 @@ def one_node_main(server, exhaustiveness, name, oracle):
         
     elif oracle == 'clogp':
         list_results = p.map(cLogP, list_smiles)
+        p.close()
+    
+    elif oracle == 'cqed':
+        list_results = p.map(cQED, list_smiles)
         p.close()
         
     elif oracle == 'qsar':

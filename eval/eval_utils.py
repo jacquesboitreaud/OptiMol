@@ -20,11 +20,14 @@ from rdkit.Chem.Fingerprints import FingerprintMols
 from sklearn.decomposition import PCA
 
 
-def plot_csvs(dir_paths):
+def plot_csvs(dir_paths, ylim=(0.6,1), plot_best=False, return_best=False):
     """
     get scores in successive dfs.
     Expect the names to be in format *_iteration.csv
     Expect to contain a 'score' column to get mean and std over
+    :param ylim : scores range for plt plot
+    :param plot_best: show best score for each iter with a red dot on the errorbars plot
+    :param return_best: returns a list of best smiles with their scores 
     :param path:
     :return:
     """
@@ -38,7 +41,7 @@ def plot_csvs(dir_paths):
         sorted_names = np.array(names)[asort]
 
         batch_size = None  # default
-        mus, stds = list(), list()
+        mus, stds, best, best_smiles = list(), list(), list(), list()
         olds = set()
         newslist = list()
         for name in sorted_names:
@@ -47,10 +50,13 @@ def plot_csvs(dir_paths):
             df = pd.read_csv(os.path.join(dir_path, name))
             values = df['score']
             mus.append(np.mean(values))
+            best.append(np.max(values)) # Careful : may need to change to min for the docking objective ? 
             stds.append(np.std(values))
+            i_best = np.argmax(values)
 
             # Check novelty
             smiles = df['smile']
+            best_smiles.append((smiles[i_best], values[i_best]))
             for smile in smiles:
                 if smile not in olds:
                     olds.add(smile)
@@ -62,24 +68,28 @@ def plot_csvs(dir_paths):
         if batch_size is None:
             batch_size = 1000  # default
         title = dir_path.split("/")[-1]
-        return iterations, mus, stds, batch_size, newslist, title
+        return iterations, mus, stds, batch_size, newslist, title, best, best_smiles
 
-    if not isinstance(dir_paths, list):
+    if not isinstance(dir_paths, list): # plot only one cbas 
         print(dir_paths)
         fig, ax = plt.subplots(1, 2)
-        iterations, mus, stds, batch_size, newslist, title = plot_one(dir_paths)
+        iterations, mus, stds, batch_size, newslist, title, best_scores, best_smiles = plot_one(dir_paths)
         ax[0].errorbar(iterations, mus, stds, linestyle='None', marker='^')
-        ax[0].set_ylim(0.6, 1)
+        if plot_best :
+            ax[0].plot(iterations, best_scores, 'r.')
+        ax[0].set_ylim(ylim[0], ylim[1])
         ax[0].set_title(title)
 
         ax[1].set_ylim(0, batch_size + 100)
         ax[1].plot(iterations, newslist)
 
-    else:
+    else: # plot multiple 
         fig, ax = plt.subplots(2, len(dir_paths))
         for i, dir_path in enumerate(dir_paths):
-            iterations, mus, stds, batch_size, newslist, title = plot_one(dir_path)
+            iterations, mus, stds, batch_size, newslist, title, best_scores, best_smiles = plot_one(dir_path)
             ax[0, i].errorbar(iterations, mus, stds, linestyle='None', marker='^')
+            if plot_best :
+                ax[0].plot(iterations, best_scores, 'r*')
             ax[0, i].set_ylim(0.75, 0.95)
             ax[0, i].set_title(title)
 
@@ -87,6 +97,9 @@ def plot_csvs(dir_paths):
             ax[1, i].plot(iterations, newslist)
 
     plt.show()
+    
+    if return_best :
+        return best_smiles
 
 
 def plot_kde(z):
@@ -172,7 +185,7 @@ if __name__ == '__main__':
     # plot_csvs('plot/more_epochs')
     # plot_csvs(['plot/more_lr', 'plot/gamma'])
     # plot_csvs('plot/more_both')
-    plot_csvs('plot/q07_bis')
+    plot_csvs('plot/q07')
     # plot_csvs(['plot/large_samples', 'plot/gpu_test'])
     # plot_csvs('plot/gamma_lr')
     # plot_csvs('plot/adam_nosched')

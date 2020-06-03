@@ -21,7 +21,6 @@ import numpy as np
 import torch
 import torch.utils.data
 import torch.nn.functional as F
-from selfies import decoder
 from rdkit import Chem
 
 import seaborn as sns
@@ -34,12 +33,13 @@ if __name__ == "__main__":
     from data_processing.rdkit_to_nx import smiles_to_nx
     from model import Model, model_from_json
     from utils import *
-    from selfies import encoder, decoder
+    from selfies import decoder
+    from selfies0 import decoder as default_decoder
     from data_processing.get_selfies import clean_smiles
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--name', help="Saved model directory, in /results/saved_models",
-                        default='250k')
+                        default='inference_default')
     
     parser.add_argument('-N', "--n_mols", help="Nbr to generate", type=int, default=20000)
     parser.add_argument('-v', '--vocab', default='selfies')  # vocab used by model
@@ -81,14 +81,17 @@ if __name__ == "__main__":
 
             if args.vocab == 'selfies' :
                 smiles = [decoder(s, bilocal_ring_function=True) for s in selfies]
+                default_smiles = [default_decoder(s, bilocal_ring_function=True) for s in selfies]
 
             compounds += smiles
             mols = [Chem.MolFromSmiles(s) for s in smiles]
-            for i,m in enumerate(mols) :
-                if m==None:
+            default_mols = [Chem.MolFromSmiles(s) for s in default_smiles]
+            for i,m in enumerate(default_mols) :
+                if m==None and mols[i]!=None :
                     pass
-                    #print(smiles[i], ' , invalid, selfies output was : ')
-                    #print(selfies[i])
+                    print(default_smiles[i], 'invalid')
+                    print(smiles[i], 'valid')
+                    print(selfies[i])
                 else:
                     cpt +=1
 
@@ -167,7 +170,15 @@ if __name__ == "__main__":
                 
         print('Reencode failures : ', fail, '/', valid)
         print('Too long canonical selfies : ', too_long, '/', valid)
-        
-        
+   
+import pandas as pd
+from rdkit.Chem import Draw
+df = pd.read_csv('../examples.csv')
+
+for s in df.fixed_smiles:
+    m=Chem.MolFromSmiles(s)
+    plt.figure()
+    img = Chem.Draw.MolToImage(m)
+    plt.imshow(img)
     
     
