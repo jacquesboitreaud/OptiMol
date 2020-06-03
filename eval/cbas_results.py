@@ -21,6 +21,7 @@ if __name__ == "__main__":
     sys.path.append(os.path.join(script_dir, '..'))
     
 from eval.eval_utils import plot_csvs
+from utils import soft_mkdir
     
 
 name = 'qed'
@@ -33,5 +34,6 @@ for i in range(len(smiles)):
 
 img=Draw.MolsToGridImage([Chem.MolFromSmiles(t[0]) for t in smiles], legends = [f'step {i}: {t[1]:.2f}' for i,t in enumerate(smiles)])
 
-img.save(f'cbas_{name}_mols.png')
+soft_mkdir('plots')
+img.save(f'plots/cbas_{name}_mols.png')
     
