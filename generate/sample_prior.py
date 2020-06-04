@@ -33,13 +33,12 @@ if __name__ == "__main__":
     from data_processing.rdkit_to_nx import smiles_to_nx
     from model import Model, model_from_json
     from utils import *
-    from selfies import decoder
-    from selfies0 import decoder as default_decoder
+    from selfies import decoder, encoder
     from data_processing.get_selfies import clean_smiles
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--name', help="Saved model directory, in /results/saved_models",
-                        default='inference_default')
+                        default='250k_mult')
     
     parser.add_argument('-N', "--n_mols", help="Nbr to generate", type=int, default=20000)
     parser.add_argument('-v', '--vocab', default='selfies')  # vocab used by model
@@ -49,7 +48,7 @@ if __name__ == "__main__":
     
     parser.add_argument( '--qed', action='store_true', help="plot qed distrib")
     
-    parser.add_argument('--reencode', action='store_true')
+    parser.add_argument('--reencode', action='store_false')
 
     args, _ = parser.parse_known_args()
 
@@ -61,6 +60,7 @@ if __name__ == "__main__":
     model.to(device)
 
     compounds = []
+    all_selfies = []
     cpt = 0 
     
     with torch.no_grad():
@@ -81,17 +81,17 @@ if __name__ == "__main__":
 
             if args.vocab == 'selfies' :
                 smiles = [decoder(s, bilocal_ring_function=True) for s in selfies]
-                default_smiles = [default_decoder(s, bilocal_ring_function=True) for s in selfies]
 
             compounds += smiles
+            all_selfies +=selfies
             mols = [Chem.MolFromSmiles(s) for s in smiles]
-            default_mols = [Chem.MolFromSmiles(s) for s in default_smiles]
-            for i,m in enumerate(default_mols) :
-                if m==None and mols[i]!=None :
+            for i,m in enumerate(mols) :
+                if m==None:
                     pass
-                    print(default_smiles[i], 'invalid')
-                    print(smiles[i], 'valid')
+                    """
+                    print(smiles[i], 'invalid')
                     print(selfies[i])
+                    """
                 else:
                     cpt +=1
 
@@ -124,14 +124,16 @@ if __name__ == "__main__":
         char2idx = {v:k for k,v in model.index_to_char.items()}
         
         # Add ons 
+        """
         char2idx['[SHexpl]']=str(len(char2idx))
         char2idx['[=SHexpl]']=str(len(char2idx))
+        """
         
         fail = 0
         too_long = 0 
         valid = 0
         
-        for s in compounds : 
+        for s, se in zip(compounds, all_selfies) : 
         
             # to kekule clean smiles
             m=Chem.MolFromSmiles(s)
@@ -167,18 +169,10 @@ if __name__ == "__main__":
                 a = 0
                 fail +=1  
                 print(s_clean)
+                print(se)
                 
         print('Reencode failures : ', fail, '/', valid)
         print('Too long canonical selfies : ', too_long, '/', valid)
    
-import pandas as pd
-from rdkit.Chem import Draw
-df = pd.read_csv('../examples.csv')
-
-for s in df.fixed_smiles:
-    m=Chem.MolFromSmiles(s)
-    plt.figure()
-    img = Chem.Draw.MolToImage(m)
-    plt.imshow(img)
     
     

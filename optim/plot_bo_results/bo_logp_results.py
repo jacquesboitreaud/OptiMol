@@ -13,12 +13,12 @@ import os, sys
 import pandas as pd
 
 
-name = 'logp_100'
+name = 'clogp'
 
 
 threshold=3
     
-samples=pd.read_csv(f'../../results/bo/{name}/samples.csv') 
+samples=pd.read_csv(f'../results/{name}/samples.csv') 
 
 Nsteps = 100 #np.max(samples['step'])
 
@@ -56,3 +56,6 @@ print(f' step 0 contains {n_init_samples} initial samples')
 
 discovered = samples[samples['step']>0]
 discovered = discovered[discovered['logp']>threshold]
+
+best_in_run = np.max(discovered.logp)
+print('Run best score : ', best_in_run)

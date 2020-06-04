@@ -61,10 +61,10 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     
-    parser.add_argument('-o', '--objective', default='qed') # 'qed', 'logp' 'aff', 'aff_pred' or 'qsar'
+    parser.add_argument('-o', '--objective', default='clogp') # 'cqed', 'clogp' 'aff', 'aff_pred' or 'qsar'
     
     parser.add_argument( '--bo_name', help="Name for BO results subdir ",
-                        default='bo_run')
+                        default='clopg')
     
     parser.add_argument( '--name', help="saved model weights fname. Located in saved_models subdir",
                         default='250k')
@@ -143,9 +143,9 @@ if __name__ == "__main__":
     loader.graph_only=True
     train_z = torch.tensor(model.embed( loader, df)) # z has shape (N_molecules, latent_size)
     
-    if args.objective == 'qed':
+    if args.objective == 'cqed':
         scores_init = torch.tensor([cQED(s) for s in smiles]).view(-1,1).to(device)
-    elif args.objective == 'logp':
+    elif args.objective == 'clogp':
         scores_init = torch.tensor([cLogP(s) for s in smiles]).view(-1,1).to(device)
     elif args.objective == 'aff_pred':
         with torch.no_grad():
@@ -173,8 +173,8 @@ if __name__ == "__main__":
     train_smiles = list(smiles)
     print(f'-> Best value observed in initial samples : {best_value}')
     
-    out_dir = os.path.join(script_dir,'..','results/bo', args.bo_name+time_id)
-    soft_mkdir(os.path.join(script_dir,'..','results/bo'))
+    out_dir = os.path.join(script_dir,'results', args.bo_name+time_id)
+    soft_mkdir(os.path.join(script_dir,'results'))
     os.mkdir(out_dir) # not soft to not overwrite a previous experiment 
     
     save_csv = os.path.join(out_dir, 'samples.csv') # csv to write samples and their score 
@@ -271,13 +271,13 @@ if __name__ == "__main__":
                         if not isValid(smiles[i]):
                             new_scores[i,0]=0.0 # assigning 0 score to invalid molecules for realistic oracle 
                 
-            elif args.objective =='qed':
+            elif args.objective =='cqed':
                 
                 new_scores = [cQED(s) for s in smiles]
                 new_scores = torch.tensor(new_scores, dtype = torch.float)
                 new_scores = new_scores.unsqueeze(-1)  # new scores must be (N*1)
                 
-            elif args.objective == 'logp':
+            elif args.objective == 'clogp':
                 
                 new_scores = [cLogP(s) for s in smiles]
                 new_scores = torch.tensor(new_scores, dtype = torch.float)
