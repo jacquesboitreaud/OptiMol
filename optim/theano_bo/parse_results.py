@@ -23,8 +23,8 @@ import matplotlib.pyplot as plt
 
 # Params 
 
-name = 'sim_full'
-n_simulations = 10
+name = '250k_all_5ep'
+n_simulations = 3
 iteration = 5
 
 # We define the functions used to load and save objects

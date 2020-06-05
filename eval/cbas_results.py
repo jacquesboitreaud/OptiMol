@@ -24,10 +24,10 @@ from eval.eval_utils import plot_csvs
 from utils import soft_mkdir
     
 
-name = 'qed'
+name = 'clogp'
 
 # Plot individual run results 
-smiles = plot_csvs(f'../cbas/slurm/results/{name}/docking_results', ylim=(0.4,1), plot_best = True, return_best=True)
+smiles = plot_csvs(f'../cbas/slurm/results/{name}/docking_results', ylim=(-4,13), plot_best = True, return_best=True)
 
 for i in range(len(smiles)):
     print('Step ', i, smiles[i][0], smiles[i][1])
