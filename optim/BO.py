@@ -61,20 +61,20 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     
-    parser.add_argument('-o', '--objective', default='clogp') # 'cqed', 'clogp' 'aff', 'aff_pred' or 'qsar'
-    
     parser.add_argument( '--bo_name', help="Name for BO results subdir ",
-                        default='clopg')
+                        default='clopg_big')
+    
+    parser.add_argument('-o', '--objective', default='clogp') # 'cqed', 'clogp' 'aff', 'aff_pred' or 'qsar'
     
     parser.add_argument( '--name', help="saved model weights fname. Located in saved_models subdir",
                         default='250k')
     
-    parser.add_argument('-n', "--n_steps", help="Nbr of optim steps", type=int, default=10)
-    parser.add_argument('-q', "--n_queries", help="Nbr of queries per step", type=int, default=50)
+    parser.add_argument('-n', "--n_steps", help="Nbr of optim steps", type=int, default=20)
+    parser.add_argument('-q', "--n_queries", help="Nbr of queries per step", type=int, default=500)
     
     # initial samples to use 
     parser.add_argument('--init_samples', default='250k_zinc.csv') # samples to start with // random or excape data
-    parser.add_argument('--n_init', type = int ,  default=2000) # Number of samples to start with 
+    parser.add_argument('--n_init', type = int ,  default=10000) # Number of samples to start with 
     
     # docking specific params 
     parser.add_argument('-e', "--ex", help="Docking exhaustiveness (vina)", type=int, default=16) 
@@ -90,7 +90,7 @@ if __name__ == "__main__":
 
     # ==============
     
-    n_runs = 10 
+    n_runs = 1
     
     for seed in range(1,n_runs+1):
         
@@ -324,6 +324,7 @@ if __name__ == "__main__":
             #debug_memory()
             
             # fit the model
+            train_start = time()
             train_z =train_z.to(gp_device)
             train_obj=train_obj.to(gp_device)
             
@@ -332,6 +333,9 @@ if __name__ == "__main__":
                 standardize(train_obj), 
                 state_dict=state_dict,
             )
+            
+            train_end = time()
+            print('TIME TO TRAIN GP: ', train_end - train_start)
             
             # define the qNEI acquisition module using a QMC sampler
             qmc_sampler = SobolQMCNormalSampler(num_samples=MC_SAMPLES, seed=seed)
