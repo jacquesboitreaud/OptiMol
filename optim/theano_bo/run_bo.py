@@ -47,6 +47,7 @@ from docking.docking import dock, set_path
 
 from sparse_gp import SparseGP
 import scipy.stats as sps
+from time import time
 
 parser = argparse.ArgumentParser()
 
@@ -104,6 +105,7 @@ def load_object(filename):
 
 
 np.random.seed(random_seed)
+start = time()
 
 # We load the data
 if args.obj != 'docking':
@@ -297,4 +299,10 @@ while iteration < args.n_iters:
 
     iteration += 1
     
+    end = time()
+    duration = end-start
+    # write running time 
+    with open(f"results/simulation_{random_seed}/time.txt", 'w') as f :
+        f.write(str(duration))
+        
     print(iteration)
