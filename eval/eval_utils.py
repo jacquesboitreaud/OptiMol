@@ -19,6 +19,14 @@ from rdkit.Chem.Fingerprints import FingerprintMols
 
 from sklearn.decomposition import PCA
 
+rc = {'figure.figsize':(10,5),
+      'axes.facecolor':'white',
+      'axes.grid' : True,
+      'lines.linewidth' : 4,
+      'grid.color': '.8',
+      'font.size' : 12}
+plt.rcParams.update(rc)
+
 
 def plot_csvs(dir_paths, ylim=(0.6,1), plot_best=False, return_best=False):
     """
@@ -68,34 +76,45 @@ def plot_csvs(dir_paths, ylim=(0.6,1), plot_best=False, return_best=False):
         if batch_size is None:
             batch_size = 1000  # default
         title = dir_path.split("/")[-1]
+        
         return iterations, mus, stds, batch_size, newslist, title, best, best_smiles
 
     if not isinstance(dir_paths, list): # plot only one cbas 
         print(dir_paths)
         fig, ax = plt.subplots(1, 2)
         iterations, mus, stds, batch_size, newslist, title, best_scores, best_smiles = plot_one(dir_paths)
-        ax[0].errorbar(iterations, mus, stds, linestyle='None', marker='^')
+        mus = np.array(mus)
+        stds = np.array(stds)
+        ax[0].fill_between(iterations, mus+stds, mus-stds, alpha=.25)
+        sns.lineplot(iterations, mus, ax=ax[0])
+        
         if plot_best :
             ax[0].plot(iterations, best_scores, 'r.')
         ax[0].set_ylim(ylim[0], ylim[1])
-        ax[0].set_title(title)
+        ax[0].set_xlim(1,iterations[-1]+0.2)
 
         ax[1].set_ylim(0, batch_size + 100)
         ax[1].plot(iterations, newslist)
+        sns.despine()
 
     else: # plot multiple 
         fig, ax = plt.subplots(2, len(dir_paths))
         for i, dir_path in enumerate(dir_paths):
             iterations, mus, stds, batch_size, newslist, title, best_scores, best_smiles = plot_one(dir_path)
-            ax[0, i].errorbar(iterations, mus, stds, linestyle='None', marker='^')
+            mus = np.array(mus)
+            stds = np.array(stds)
+            ax[0,i].fill_between(iterations, mus - stds, mus+stds)
+            
             if plot_best :
                 ax[0].plot(iterations, best_scores, 'r*')
             ax[0, i].set_ylim(0.75, 0.95)
-            ax[0, i].set_title(title)
+            ax[0,i].set_xlim(1,iterations[-1]+0.5)
+            #ax[0, i].set_title(title)
 
             ax[1, i].set_ylim(0, batch_size + 100)
             ax[1, i].plot(iterations, newslist)
 
+    plt.savefig("cbas_fig.pdf", format="pdf")
     plt.show()
     
     if return_best :
