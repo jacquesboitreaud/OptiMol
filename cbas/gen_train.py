@@ -68,7 +68,8 @@ class GenTrain():
 
         # loader
         map_path = os.path.join(script_dir, '..', 'map_files')
-        self.dataset = SimpleDataset(maps_path=map_path, vocab='selfies', alphabet = self.json_alphabet_name, debug=self.debug)
+        self.dataset = SimpleDataset(maps_path=map_path, vocab='selfies', alphabet=self.json_alphabet_name,
+                                     debug=self.debug)
 
     def step(self, input_type, x, w):
         """ 

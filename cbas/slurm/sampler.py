@@ -117,7 +117,7 @@ if __name__ == '__main__':
     parser.add_argument('--prior_name', type=str, default='inference_default')  # the prior VAE (pretrained)
     parser.add_argument('--name', type=str, default='search_vae')  # the prior VAE (pretrained)
     parser.add_argument('--max_samples', type=int, default=1000)  # the prior VAE (pretrained)
-    parser.add_argument('--oracle', type=str) # 'qed' or 'docking' or 'qsar'
+    parser.add_argument('--oracle', type=str)  # 'qed' or 'docking' or 'qsar'
     # =======
 
     args, _ = parser.parse_known_args()

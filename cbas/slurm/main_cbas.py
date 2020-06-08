@@ -76,7 +76,6 @@ if __name__ == '__main__':
     dumper.dump()
 
     params_gentrain = {'savepath': savepath,
-                       'alphabet_name': args.alphabet,
                        'epochs': args.epochs,
                        'device': device,
                        'lr': args.learning_rate,
@@ -85,6 +84,7 @@ if __name__ == '__main__':
                        'processes': args.procs,
                        'optimizer': args.opti,
                        'scheduler': args.sched,
+                       'alphabet_name': args.alphabet_name,
                        'gamma': -1000,
                        'DEBUG': True}
     dumper = Dumper(dumping_path=os.path.join(savepath, 'params_gentrain.json'), dic=params_gentrain)

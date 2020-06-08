@@ -145,6 +145,10 @@ def main(iteration, quantile, uncertainty, prior_name, name, oracle):
     # Update search model
     search_trainer.step('smiles', samples, weights)
 
+    # Add model dumping at each epoch
+    weights_path = os.path.join(search_trainer.savepath, f"weights_{iteration}.pth")
+    torch.save(search_trainer.model.state_dict(), weights_path)
+
 
 if __name__ == '__main__':
     pass
