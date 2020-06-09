@@ -41,6 +41,8 @@ from model import Model
 from loss_func import VAELoss, weightedPropsLoss, affsRegLoss, affsClassifLoss
 from dataloaders.molDataset import molDataset, Loader
 
+from time import time
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
@@ -75,13 +77,12 @@ if __name__ == "__main__":
     parser.add_argument('--processes', type=int, default=20)  # num workers
 
     parser.add_argument('--batch_size', type=int, default=64)
-    parser.add_argument('--epochs', type=int, default=50)  # nbr training epochs
     parser.add_argument('--anneal_rate', type=float, default=0.9)  # Learning rate annealing
     parser.add_argument('--anneal_iter', type=int, default=40000)  # update learning rate every _ step
     parser.add_argument('--kl_anneal_iter', type=int, default=2000)  # update beta every _ step
 
     parser.add_argument('--print_iter', type=int, default=1000)  # print loss metrics every _ step
-    parser.add_argument('--print_smiles_iter', type=int, default=100)  # print reconstructed smiles every _ step
+    parser.add_argument('--print_smiles_iter', type=int, default=-1)  # print reconstructed smiles every _ step
     parser.add_argument('--save_iter', type=int, default=1000)  # save model weights every _ step
 
     # teacher forcing rnn schedule
@@ -185,6 +186,7 @@ if __name__ == "__main__":
         total_steps = 0
     beta = args.beta
     tf_proba = args.tf_init
+    start = time() # get training start time 
 
     for epoch, chunk in enumerate(pd.read_csv(os.path.join(script_dir, args.train), chunksize=args.chunk_size)):
 
@@ -253,8 +255,11 @@ if __name__ == "__main__":
 
             # logs and monitoring
             if total_steps % args.print_iter == 0:
+                now = time()
                 print(
                     f'Opt step {total_steps}, rec: {rec.item():.2f}, kl: {beta * kl.item():.2f}, props mse: {pmse.item():.2f}, aff mse: {amse.item():.2f}')
+                print('Time elapsed : ', now-start)
+                
                 writer.add_scalar('BatchRec/train', rec.item(), total_steps)
                 writer.add_scalar('BatchKL/train', kl.item(), total_steps)
                 if use_props:
@@ -347,7 +352,7 @@ if __name__ == "__main__":
                                                                              epoch_train_pmse / len(train_loader), \
                                                                              epoch_train_amse / len(train_loader)
 
-        print(f'[Ep {epoch}/{args.epochs}], batch valid. loss: rec: {val_rec:.2f}, '
+        print(f'[Chunk {epoch}/], batch valid. loss: rec: {val_rec:.2f}, '
               f'kl: {beta * kl.item():.2f}, props mse: {val_pmse:.2f},'
               f' aff mse: {val_amse:.2f}')
 
