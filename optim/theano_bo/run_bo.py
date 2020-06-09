@@ -56,8 +56,11 @@ parser.add_argument('--model', type = str ,  default='250k') # name of model to 
 
 parser.add_argument('--obj', type = str ,  default='logp') # objective : logp (composite), qed (composite), qsar or docking
 
-parser.add_argument('--n_iters', type = int ,  default=5) # Number of iterations
-parser.add_argument('--epochs', type = int ,  default=1) # Number of training epochs for gaussian process 
+parser.add_argument('--n_iters', type = int ,  default=20) # Number of iterations
+parser.add_argument('--epochs', type = int ,  default=20) # Number of training epochs for gaussian process 
+
+parser.add_argument('--bo_batch_size', type = int ,  default=500) # Number of new samples per batch 
+parser.add_argument('--n_init', type = int ,  default=10000) # Number of initial points
 
 args, _ = parser.parse_known_args()
 
@@ -67,6 +70,8 @@ args, _ = parser.parse_known_args()
 # Params 
 random_seed = args.seed # random seed 
 soft_mkdir(f'results/simulation_{random_seed}')
+
+print(f'>>> Running with {args.n_init} init samples and {args.bo_batch_size} batch size')
 
 
 model_name = args.model
@@ -111,6 +116,8 @@ start = time()
 if args.obj != 'docking':
     X = np.loadtxt('../../data/latent_features_and_targets/latent_features.txt')
     y = -np.loadtxt(f'../../data/latent_features_and_targets/targets_{args.obj}.txt')
+    X= X[:args.n_init,]
+    y= y[:args.n_init]
 else:
     X = np.loadtxt('../../data/latent_features_and_targets/latent_features_docking.txt')
     # We want to minimize docking scores => no need to take (-scores)
@@ -186,7 +193,7 @@ while iteration < args.n_iters:
 
     # We pick the next 50 inputs
 
-    next_inputs = sgp.batched_greedy_ei(50, np.min(X_train, 0), np.max(X_train, 0))
+    next_inputs = sgp.batched_greedy_ei(args.bo_batch_size, np.min(X_train, 0), np.max(X_train, 0))
     
     # We decode the 50 smiles: 
     # Decode z into smiles
@@ -302,6 +309,7 @@ while iteration < args.n_iters:
     end = time()
     duration = end-start
     # write running time 
+    print('Step time: ', duration)
     with open(f"results/simulation_{random_seed}/time.txt", 'w') as f :
         f.write(str(duration))
         
