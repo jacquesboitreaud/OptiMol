@@ -19,7 +19,7 @@ import numpy as np
 from queue import PriorityQueue
 import json
 from rdkit import Chem
-import pickle
+import time
 
 script_dir = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(script_dir))
@@ -261,7 +261,8 @@ class Model(nn.Module):
         h = self.decoder.init_h(z)
 
         gen_seq = torch.zeros(batch_size, self.voc_size, seq_length).to(self.device)
-
+        tback = time.perf_counter()
+        
         for step in range(seq_length):
             out, h = self.decoder(rnn_in, h)
             gen_seq[:, :, step] = out
@@ -272,6 +273,10 @@ class Model(nn.Module):
                 v, indices = torch.max(gen_seq[:, :, step], dim=1)  # get char indices with max probability
             # Input to next step: either autoregressive or Teacher forced
             rnn_in = F.one_hot(indices, self.voc_size).float()
+            
+        if torch.cuda.is_available():
+            torch.cuda.synchronize()
+        print(f'time in rnn: {time.perf_counter() - tback}')
 
         return gen_seq  # probas
 

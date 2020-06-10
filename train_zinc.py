@@ -192,7 +192,6 @@ if __name__ == "__main__":
 
     for epoch, chunk in enumerate(pd.read_csv(os.path.join(script_dir, args.train), chunksize=args.chunk_size)):
 
-        print(f'Starting epoch {epoch}')
         # give csv chunk to loader 
         loaders.dataset.pass_dataset(chunk, graph_only=False)
         train_loader, _, test_loader = loaders.get_data()
