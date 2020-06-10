@@ -97,7 +97,7 @@ if __name__ == "__main__":
     parser.add_argument('--no_aff', action='store_false')  # No multitask aff
     parser.add_argument('--bin_affs', action='store_true')  # Binned discretized affs or true values
     
-    parser.add_argument('--GPU_id', type=int, default=0)  # run model on cuda:{id} if multiple gpus on server
+    parser.add_argument('--gpu_id', type=int, default=0)  # run model on cuda:{id} if multiple gpus on server
 
     # =======
 
@@ -143,7 +143,7 @@ if __name__ == "__main__":
                      targets=targets)
 
     # Model & hparams
-    device = 'cuda:{args.GPU_ID}' if torch.cuda.is_available() else 'cpu' # multiple GPU in argparse 
+    device = f'cuda:{args.gpu_id}' if torch.cuda.is_available() else 'cpu' # multiple GPU in argparse 
 
     params = {'features_dim': loaders.dataset.emb_size,  # node embedding dimension
               'num_rels': loaders.num_edge_types,
