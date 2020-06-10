@@ -69,8 +69,8 @@ if __name__ == "__main__":
     parser.add_argument( '--name', help="saved model weights fname. Located in saved_models subdir",
                         default='250k')
     
-    parser.add_argument('-n', "--n_steps", help="Nbr of optim steps", type=int, default=20)
-    parser.add_argument('-q', "--n_queries", help="Nbr of queries per step", type=int, default=500)
+    parser.add_argument('-n', "--n_steps", help="Nbr of optim steps", type=int, default=100)
+    parser.add_argument('-q', "--n_queries", help="Nbr of queries per step", type=int, default=100)
     
     # initial samples to use 
     parser.add_argument('--init_samples', default='250k_zinc.csv') # samples to start with // random or excape data

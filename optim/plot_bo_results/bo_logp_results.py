@@ -22,8 +22,8 @@ from data_processing.comp_metrics import cycle_score, logP, qed
 from data_processing.sascorer import calculateScore
 
 
-name = 'clogp'
-n_runs = 10 
+name = 'clogp_big'
+n_runs = 1 
 
 logP_values = np.loadtxt('../../data/latent_features_and_targets/logP_values.txt')
 SA_scores = np.loadtxt('../../data/latent_features_and_targets/SA_scores.txt')
@@ -51,7 +51,7 @@ for i in range(1,n_runs+1):
     
     samples=pd.read_csv(f'../results/{name}/simulation_{i}/samples.csv') 
     
-    Nsteps = 10
+    Nsteps = 14
     iterations = np.arange(1,Nsteps+1)
     mu, top, stds = [], [], []
     best_scores = []

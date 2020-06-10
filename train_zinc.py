@@ -48,7 +48,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--name', type=str, default='zinc')  # model name in results/saved_models/
-    parser.add_argument('--train', help="path to training dataframe", type=str, default='data/250k_zinc.csv')
+    parser.add_argument('--train', help="path to training dataframe", type=str, default='data/shuffled_whole_zinc.csv')
     parser.add_argument("--chunk_size", help="Nbr of molecules loaded simultaneously in memory (csv chunk)", type=int,
                         default=10000)
 
@@ -96,6 +96,8 @@ if __name__ == "__main__":
     parser.add_argument('--no_props', action='store_false')  # No multitask props
     parser.add_argument('--no_aff', action='store_false')  # No multitask aff
     parser.add_argument('--bin_affs', action='store_true')  # Binned discretized affs or true values
+    
+    parser.add_argument('--GPU_id', type=int, default=0)  # run model on cuda:{id} if multiple gpus on server
 
     # =======
 
@@ -141,7 +143,7 @@ if __name__ == "__main__":
                      targets=targets)
 
     # Model & hparams
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    device = 'cuda:{args.GPU_ID}' if torch.cuda.is_available() else 'cpu' # multiple GPU in argparse 
 
     params = {'features_dim': loaders.dataset.emb_size,  # node embedding dimension
               'num_rels': loaders.num_edge_types,
