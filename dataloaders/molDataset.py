@@ -156,20 +156,20 @@ class molDataset(Dataset):
         self.df = pd.read_csv(path)
         self.n = self.df.shape[0]
         self.graph_only=graph_only
-        print('New dataset columns:', self.df.columns)
+        #print('New dataset columns:', self.df.columns)
 
     def pass_dataset(self, df, graph_only = True):
         self.df = df
         self.n = df.shape[0]
         self.graph_only=graph_only
-        print('New dataset columns:', self.df.columns)
+        #print('New dataset columns:', self.df.columns)
 
     def pass_smiles_list(self, smiles):
         # pass smiles list to the model; a dataframe with unique column 'can' will be created 
         self.df = pd.DataFrame.from_dict({'smiles': smiles})
         self.n = self.df.shape[0]
         self.graph_only=True
-        print('New dataset contains only smiles // no props or affinities')
+        #print('New dataset contains only smiles // no props or affinities')
 
     def __len__(self):
         return self.n
@@ -408,8 +408,6 @@ class Loader():
 
         test_set = Subset(self.dataset, test_indices)
         print(f"Dataset contains {n} samples (train subset: {len(train_set)}, Test subset:{len(test_set)}) ")
-        print(f"Train subset contains {len(train_set)} samples")
-        print(f"Test subset contains {len(test_set)} samples")
 
         if not self.test_only:
             train_loader = DataLoader(dataset=train_set, shuffle=True, batch_size=self.batch_size,

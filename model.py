@@ -46,13 +46,18 @@ class MultiGRU(nn.Module):
 
     def __init__(self, voc_size, latent_size, h_size):
         super(MultiGRU, self).__init__()
-
+        
+        p=0.0
+        
         self.h_size = h_size
         self.dense_init = nn.Linear(latent_size, 3 * self.h_size)  # to initialise hidden state
 
         self.gru_1 = nn.GRUCell(voc_size, self.h_size)
+        self.d1 = nn.Dropout(p)
         self.gru_2 = nn.GRUCell(self.h_size, self.h_size)
+        self.d2 = nn.Dropout(p)
         self.gru_3 = nn.GRUCell(self.h_size, self.h_size)
+        self.d3 = nn.Dropout(p)
         self.linear = nn.Linear(self.h_size, voc_size)
 
     @property
@@ -64,8 +69,11 @@ class MultiGRU(nn.Module):
         x = x.view(x.shape[0], -1)  # batch_size *
         h_out = torch.zeros(h.size()).to(self.device)
         x = h_out[0] = self.gru_1(x, h[0])
+        x=self.d1(x)
         x = h_out[1] = self.gru_2(x, h[1])
+        x=self.d2(x)
         x = h_out[2] = self.gru_3(x, h[2])
+        x=self.d3(x)
         x = self.linear(x)
         return x, h_out
 
@@ -261,7 +269,8 @@ class Model(nn.Module):
         h = self.decoder.init_h(z)
 
         gen_seq = torch.zeros(batch_size, self.voc_size, seq_length).to(self.device)
-        tback = time.perf_counter()
+        
+        #tback = time.perf_counter()
         
         for step in range(seq_length):
             out, h = self.decoder(rnn_in, h)
@@ -274,9 +283,9 @@ class Model(nn.Module):
             # Input to next step: either autoregressive or Teacher forced
             rnn_in = F.one_hot(indices, self.voc_size).float()
             
-        if torch.cuda.is_available():
-            torch.cuda.synchronize()
-        print(f'time in rnn: {time.perf_counter() - tback}')
+        #if torch.cuda.is_available():
+        #    torch.cuda.synchronize()
+        #print(f'time in rnn: {time.perf_counter() - tback}')
 
         return gen_seq  # probas
 

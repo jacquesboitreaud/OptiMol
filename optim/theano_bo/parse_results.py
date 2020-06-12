@@ -20,13 +20,13 @@ from rdkit.Chem import Draw
 from rdkit.Chem import Descriptors
 
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 # Params 
 
-name = '250k_all_5ep'
-n_simulations = 3
-iteration = 5
-
+name = 'big_run'
+n_simulations = 1
+iteration = 20
 # We define the functions used to load and save objects
 
 def save_object(obj, filename):
@@ -154,16 +154,20 @@ for j in range(1, n_simulations + 1):
         
         best.append(max(scores))
         
-    fig, ax = plt.subplots(1,1)
+    fig, ax = plt.subplots(1,2)
     
-    it = np.arange(iteration)
-    ax.set_xticks(np.arange(iteration))
-    plt.errorbar(it, means, stds, linestyle='None', marker='^')
-    plt.plot(it, best, 'r*')
+    it = np.arange(iteration)+1
+    mus = np.array(means)
+    stds = np.array(stds)
+    ax[0].fill_between(it, mus+stds, mus-stds, alpha=.25)
+    sns.lineplot(it, mus, ax=ax[0])
+    ax[0].plot(it, best, 'r.')
+    ax[0].set_xlim(1,it[-1]+0.2)
     
-    plt.ylim(-20,6)
+    ax[0].set_ylim(-6.8,11.5)
     plt.xlabel('Step')
-    plt.ylabel('Score')
+    #plt.ylabel('Score')
+    sns.despine()
     plt.show()
     
     
