@@ -92,6 +92,7 @@ class RGCN(nn.Module):
 
         self.features_dim, self.h_dim = features_dim, h_dim
         self.num_layers = num_layers
+        self.p = 0.2
 
         self.num_rels = num_rels
         self.num_bases = num_bases
@@ -99,8 +100,7 @@ class RGCN(nn.Module):
         self.build_model()
         self.pool = SumPooling()
         
-        self.p = 0.2
-
+        
     def build_model(self):
         self.layers = nn.ModuleList()
         # input to hidden
