@@ -83,7 +83,6 @@ if __name__ == "__main__":
     parser.add_argument('--kl_anneal_iter', type=int, default=2000)  # update beta every _ step
 
     parser.add_argument('--print_iter', type=int, default=1000)  # print loss metrics every _ step
-    parser.add_argument('--print_smiles_iter', type=int, default=-1)  # print reconstructed smiles every _ step
     parser.add_argument('--save_iter', type=int, default=1000)  # save model weights every _ step
 
     # teacher forcing rnn schedule
@@ -248,25 +247,24 @@ if __name__ == "__main__":
                 if use_props:
                     writer.add_scalar('BatchPropMse/train', pmse.item(), total_steps)
 
-
-            if args.print_smiles_iter > 0 and total_steps % args.print_smiles_iter == 0:
-                _, out_chars = torch.max(out_smi.detach(), dim=1)
-                _, frac_valid = log_reconstruction(smiles, out_smi.detach(),
-                                                   loaders.dataset.index_to_char,
-                                                   string_type=args.decode)
-                print(f'{frac_valid} valid smiles in batch')
-                # Correctly reconstructed characters
-                differences = 1. - torch.abs(out_chars - smiles)
-                differences = torch.clamp(differences, min=0., max=1.).double()
-                quality = 100. * torch.mean(differences)
-                quality = quality.detach().cpu()
-                writer.add_scalar('quality/train', quality.item(), total_steps)
-                print('fraction of correct characters at reconstruction // train : ', quality.item())
-
             if total_steps % args.save_iter == 0:
                 model.cpu()
                 torch.save(model.state_dict(), os.path.join(modeldir, "weights.pth"))
                 model.to(device)
+                
+            # Quality of reconstruction in last batch of epoch
+            _, out_chars = torch.max(out_smi.detach(), dim=1)
+            _, frac_valid = log_reconstruction(smiles, out_smi.detach(),
+                                               loaders.dataset.index_to_char,
+                                               string_type=args.decode)
+            print(f'{frac_valid} valid smiles in batch')
+            # Correctly reconstructed characters
+            differences = 1. - torch.abs(out_chars - smiles)
+            differences = torch.clamp(differences, min=0., max=1.).double()
+            quality = 100. * torch.mean(differences)
+            quality = quality.detach().cpu()
+            writer.add_scalar('quality/train', quality.item(), total_steps)
+            print('fraction of correct characters at reconstruction // train : ', quality.item())
 
             # keep track of epoch loss
             epoch_train_rec += rec.item()

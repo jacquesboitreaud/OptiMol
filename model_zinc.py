@@ -98,18 +98,20 @@ class RGCN(nn.Module):
         # create rgcn layers
         self.build_model()
         self.pool = SumPooling()
+        
+        self.p = 0.2
 
     def build_model(self):
         self.layers = nn.ModuleList()
         # input to hidden
-        i2h = RelGraphConv(self.features_dim, self.h_dim, self.num_rels, activation=nn.ReLU())
+        i2h = RelGraphConv(self.features_dim, self.h_dim, self.num_rels, activation=nn.ReLU(), dropout = self.p )
         self.layers.append(i2h)
         # hidden to hidden
         for _ in range(self.num_layers - 2):
-            h2h = RelGraphConv(self.h_dim, self.h_dim, self.num_rels, activation=nn.ReLU())
+            h2h = RelGraphConv(self.h_dim, self.h_dim, self.num_rels, activation=nn.ReLU(), dropout = self.p)
             self.layers.append(h2h)
         # hidden to output
-        h2o = RelGraphConv(self.h_dim, self.h_dim, self.num_rels, activation=nn.ReLU())
+        h2o = RelGraphConv(self.h_dim, self.h_dim, self.num_rels, activation=nn.ReLU(), dropout = self.p)
         self.layers.append(h2o)
 
     def forward(self, g):

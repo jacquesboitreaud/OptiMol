@@ -26,6 +26,8 @@ from rdkit import Chem
 import seaborn as sns
 import matplotlib.pyplot as plt 
 
+import time
+
 
 if __name__ == "__main__":
     
@@ -40,7 +42,7 @@ if __name__ == "__main__":
     parser.add_argument('--name', help="Saved model directory, in /results/saved_models",
                         default='250k_mult')
     
-    parser.add_argument('-N', "--n_mols", help="Nbr to generate", type=int, default=20000)
+    parser.add_argument('-N', "--n_mols", help="Nbr to generate", type=int, default=1000)
     parser.add_argument('-v', '--vocab', default='selfies')  # vocab used by model
 
     parser.add_argument('-o', '--output_file', type=str, default='data/gen.txt')
@@ -67,7 +69,8 @@ if __name__ == "__main__":
         batch_size = min(args.n_mols, 100)
         n_batches = int(args.n_mols / batch_size) + 1
         print(f'>>> Sampling {args.n_mols} molecules from prior distribution in latent space')
-
+        
+        start = time.time()
         for b in range(n_batches):
 
             z = model.sample_z_prior(batch_size)
@@ -94,10 +97,13 @@ if __name__ == "__main__":
                     """
                 else:
                     cpt +=1
+    end = time.time()
 
     Ntot = len(compounds)
     unique = list(np.unique(compounds))
     N = len(unique)
+    
+    print('Time elapsed : ', end-start)
     
     print(100*cpt/Ntot, '% valid molecules' )
     print(100*N/Ntot, '% unique molecules' )
