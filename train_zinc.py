@@ -253,18 +253,22 @@ if __name__ == "__main__":
                 model.to(device)
                 
             # Quality of reconstruction in last batch of epoch
-            _, out_chars = torch.max(out_smi.detach(), dim=1)
-            _, frac_valid = log_reconstruction(smiles, out_smi.detach(),
-                                               loaders.dataset.index_to_char,
-                                               string_type=args.decode)
-            print(f'{frac_valid} valid smiles in batch')
-            # Correctly reconstructed characters
-            differences = 1. - torch.abs(out_chars - smiles)
-            differences = torch.clamp(differences, min=0., max=1.).double()
-            quality = 100. * torch.mean(differences)
-            quality = quality.detach().cpu()
-            writer.add_scalar('quality/train', quality.item(), total_steps)
-            print('fraction of correct characters at reconstruction // train : ', quality.item())
+            if batch_idx == len(train_loader):
+                _, out_chars = torch.max(out_smi.detach(), dim=1)
+                """
+                # Get 3 input -> output prints for visual check
+                _, frac_valid = log_reconstruction(smiles, out_smi.detach(),
+                                                   loaders.dataset.index_to_char,
+                                                   string_type=args.decode)
+                print(f'{frac_valid} valid smiles in batch')
+                """
+                # Correctly reconstructed characters
+                differences = 1. - torch.abs(out_chars - smiles)
+                differences = torch.clamp(differences, min=0., max=1.).double()
+                quality = 100. * torch.mean(differences)
+                quality = quality.detach().cpu()
+                writer.add_scalar('quality/train', quality.item(), total_steps)
+                print('fraction of correct characters at reconstruction // train : ', quality.item())
 
             # keep track of epoch loss
             epoch_train_rec += rec.item()
