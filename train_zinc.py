@@ -47,7 +47,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--name', type=str, default='zinc')  # model name in results/saved_models/
+    parser.add_argument('--name', type=str, default='zinc_3')  # model name in results/saved_models/
     parser.add_argument('--train', help="path to training dataframe", type=str, default='data/shuffled_whole_zinc.csv')
     parser.add_argument("--chunk_size", help="Nbr of molecules loaded simultaneously in memory (csv chunk)", type=int,
                         default=10000)
@@ -132,7 +132,8 @@ if __name__ == "__main__":
                      num_workers=args.processes,
                      batch_size=args.batch_size,
                      props=properties,
-                     targets=targets)
+                     targets=targets,
+                     redo_selfies = True) # recompute selfies in the dataloader instead of using dataframe value 
 
     # Model & hparams
     device = f'cuda:{args.gpu_id}' if torch.cuda.is_available() else 'cpu' # multiple GPU in argparse 

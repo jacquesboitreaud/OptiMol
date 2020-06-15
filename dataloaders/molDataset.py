@@ -69,9 +69,12 @@ class molDataset(Dataset):
                  props,
                  targets,
                  n_mols=-1,
-                 graph_only=False):
+                 graph_only=False, 
+                 compute_selfies = False):
         
         self.graph_only=graph_only
+        self.compute_selfies = compute_selfies 
+        
         # 0/ two options: empty loader or csv path given 
         if csv_path is None:
             print("Empty dataset initialized. Use pass_dataset or pass_dataset_path to add molecules.")
@@ -252,6 +255,19 @@ class molDataset(Dataset):
         smiles = row.smiles # needed anyway to build graph 
         m=Chem.MolFromSmiles(smiles)
         
+        if self.compute_selfies:
+            Chem.Kekulize(m)
+            k = Chem.MolToSmiles(m, isomericSmiles=False, kekuleSmiles = True) # kekuleSmiles
+            selfie = encoder(k)
+            """
+            if selfie != row.selfies:
+                print('new selfie:', selfie)
+                print('prev : ', row.selfies)
+            """
+            
+        else:
+            selfie = row.selfies
+        
         # 1 - Graph building
         if m!=None:
             graph = smiles_to_nx(smiles)
@@ -305,19 +321,17 @@ class molDataset(Dataset):
             return g_dgl, 0,0,0
 
         # 2 - Smiles / selfies to integer indices array
-        string_representation = smiles
         
         if self.language == 'selfies':
-
-            string_representation = row.selfies
-            a, valid_flag = self.selfies_to_hot(string_representation)
+            
+            a, valid_flag = self.selfies_to_hot(selfie)
             if valid_flag ==0 : # no one hot encoding for this selfie, ignore 
                 print('!!! Selfie to one-hot failed with current alphabet')
                 return None, 0,0,0
             
         else:
             a = np.zeros(self.max_len)
-            idces = [self.char_to_index[c] for c in string_representation]
+            idces = [self.char_to_index[c] for c in smiles]
             a[:len(idces)] = idces
 
         # 3 - Optional props and affinities 
@@ -350,7 +364,8 @@ class Loader():
                  batch_size=64,
                  num_workers=12,
                  graph_only=False, # Only load molecular graph (to get latent embeddings)
-                 test_only=False):
+                 test_only=False,
+                 redo_selfies = False):
         """
         Wrapper for test loader, train loader 
         Uncomment to add validation loader 
@@ -369,7 +384,8 @@ class Loader():
                                   build_alphabet = build_alphabet,
                                   alphabet_name=alphabet_name,
                                   n_mols=n_mols,
-                                  graph_only=graph_only)
+                                  graph_only=graph_only, 
+                                  compute_selfies = redo_selfies)
 
         self.num_edge_types, self.num_atom_types = self.dataset.num_edge_types, self.dataset.num_atom_types
         self.num_charges = self.dataset.num_charges
