@@ -64,8 +64,6 @@ if __name__ == "__main__":
     parser.add_argument('--load_iter', type=int, default=0)  # resume training at optimize step n°
 
     # No need to change under this
-
-    parser.add_argument('--latent_size', type=int, default=128)  # size of latent code
     
     parser.add_argument('--n_gcn_layers', type=int, default=3)  # number of gcn encoder layers (3 or 4?)
     parser.add_argument('--lr', type=float, default=1e-3)  # Initial learning rate
@@ -141,10 +139,11 @@ if __name__ == "__main__":
     params = {'features_dim': loaders.dataset.emb_size,  # node embedding dimension
               'num_rels': loaders.num_edge_types,
               'gcn_layers': args.n_gcn_layers,
-              'gcn_hdim': 64,
-              'gru_hdim':512,
+              'gcn_dropout':0.2,
+              'gcn_hdim': 32,
+              'gru_hdim':450,
               'gru_dropout':0.2,
-              'l_size': args.latent_size,
+              'l_size': 56,
               'voc_size': loaders.dataset.n_chars,
               'max_len': loaders.dataset.max_len,
               'N_properties': len(properties),
@@ -254,7 +253,7 @@ if __name__ == "__main__":
                 model.to(device)
                 
             # Quality of reconstruction in last batch of epoch
-            if batch_idx == len(train_loader):
+            if batch_idx == len(train_loader)-1:
                 _, out_chars = torch.max(out_smi.detach(), dim=1)
                 """
                 # Get 3 input -> output prints for visual check

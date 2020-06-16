@@ -51,13 +51,11 @@ class MultiGRU(nn.Module):
         
         self.h_size = h_size
         self.dense_init = nn.Linear(latent_size, 3 * self.h_size)  # to initialise hidden state
+        self.drop = nn.Dropout(p)
 
         self.gru_1 = nn.GRUCell(voc_size, self.h_size)
-        self.d1 = nn.Dropout(p)
         self.gru_2 = nn.GRUCell(self.h_size, self.h_size)
-        self.d2 = nn.Dropout(p)
         self.gru_3 = nn.GRUCell(self.h_size, self.h_size)
-        self.d3 = nn.Dropout(p)
         self.linear = nn.Linear(self.h_size, voc_size)
 
     @property
@@ -69,11 +67,8 @@ class MultiGRU(nn.Module):
         x = x.view(x.shape[0], -1)  # batch_size *
         h_out = torch.zeros(h.size()).to(self.device)
         x = h_out[0] = self.gru_1(x, h[0])
-        x=self.d1(x)
         x = h_out[1] = self.gru_2(x, h[1])
-        x=self.d2(x)
         x = h_out[2] = self.gru_3(x, h[2])
-        x=self.d3(x)
         x = self.linear(x)
         return x, h_out
 
@@ -81,18 +76,19 @@ class MultiGRU(nn.Module):
         """ Initializes hidden state for 3 layers GRU with latent vector z """
         batch_size, latent_shape = z.size()
         hidden = self.dense_init(z).view(3, batch_size, self.h_size)
+        hidden = self.drop(hidden) # Apply dropout on the hidden state initialization of RNN 
         return hidden
 
 
 class RGCN(nn.Module):
     """ RGCN encoder with num_hidden_layers + 2 RGCN layers, and sum pooling. """
 
-    def __init__(self, features_dim, h_dim, num_rels, num_layers, num_bases=-1):
+    def __init__(self, features_dim, h_dim, num_rels, num_layers, num_bases=-1, gcn_dropout = 0):
         super(RGCN, self).__init__()
 
         self.features_dim, self.h_dim = features_dim, h_dim
         self.num_layers = num_layers
-        self.p = 0.2
+        self.p = gcn_dropout
 
         self.num_rels = num_rels
         self.num_bases = num_bases
@@ -154,6 +150,7 @@ class Model(nn.Module):
         # Decoding
         self.gru_hdim = kwargs['gru_hdim']
         self.dropout = kwargs['gru_dropout']
+        self.gcn_dropout = kwargs['gcn_dropout']
         self.voc_size = voc_size
         self.max_len = max_len
         self.index_to_char = index_to_char
@@ -162,7 +159,7 @@ class Model(nn.Module):
         self.N_targets = N_targets
 
         # layers:
-        self.encoder = RGCN(self.features_dim, self.gcn_hdim, self.num_rels, self.gcn_layers, num_bases=-1)
+        self.encoder = RGCN(self.features_dim, self.gcn_hdim, self.num_rels, self.gcn_layers, num_bases=-1, gcn_dropout = self.gcn_dropout)
 
         self.encoder_mean = nn.Linear(self.gcn_hdim * self.gcn_layers, self.l_size)
         self.encoder_logv = nn.Linear(self.gcn_hdim * self.gcn_layers, self.l_size)
