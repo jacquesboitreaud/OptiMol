@@ -131,7 +131,7 @@ if __name__ == "__main__":
                      batch_size=args.batch_size,
                      props=properties,
                      targets=targets,
-                     redo_selfies = True) # recompute selfies in the dataloader instead of using dataframe value 
+                     redo_selfies = False) # recompute selfies in the dataloader instead of using dataframe value 
 
     # Model & hparams
     device = f'cuda:{args.gpu_id}' if torch.cuda.is_available() else 'cpu' # multiple GPU in argparse 
