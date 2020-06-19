@@ -40,7 +40,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--name', help="Saved model directory, in /results/saved_models",
-                        default='inference_default')
+                        default='zinc_3')
     
     parser.add_argument('-N', "--n_mols", help="Nbr to generate", type=int, default=10000)
     parser.add_argument('-v', '--vocab', default='selfies')  # vocab used by model

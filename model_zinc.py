@@ -44,7 +44,7 @@ class MultiGRU(nn.Module):
     and an output linear layer back to the size of the vocabulary
     """
 
-    def __init__(self, voc_size, latent_size, h_size, dropout_rate):
+    def __init__(self, voc_size, latent_size, h_size, dropout_rate, batchNorm):
         super(MultiGRU, self).__init__()
         
         p=dropout_rate # Decoder GRU dropout rate (after each layer)
@@ -52,11 +52,18 @@ class MultiGRU(nn.Module):
         self.h_size = h_size
         self.dense_init = nn.Linear(latent_size, 3 * self.h_size)  # to initialise hidden state
         self.drop = nn.Dropout(p)
+        
+        self.use_batchNorm = batchNorm
 
         self.gru_1 = nn.GRUCell(voc_size, self.h_size)
         self.gru_2 = nn.GRUCell(self.h_size, self.h_size)
         self.gru_3 = nn.GRUCell(self.h_size, self.h_size)
         self.linear = nn.Linear(self.h_size, voc_size)
+        
+        if self.use_batchNorm:
+            self.BN1 = nn.BatchNorm1d(self.h_size)
+            self.BN2 = nn.BatchNorm1d(self.h_size)
+            self.BN3 = nn.BatchNorm1d(self.h_size)
 
     @property
     def device(self):
@@ -67,8 +74,14 @@ class MultiGRU(nn.Module):
         x = x.view(x.shape[0], -1)  # batch_size *
         h_out = torch.zeros(h.size()).to(self.device)
         x = h_out[0] = self.gru_1(x, h[0])
+        if self.use_batchNorm:
+            x = self.BN1(x)
         x = h_out[1] = self.gru_2(x, h[1])
+        if self.use_batchNorm:
+            x = self.BN2(x)
         x = h_out[2] = self.gru_3(x, h[2])
+        if self.use_batchNorm:
+            x = self.BN3(x)
         x = self.linear(x)
         return x, h_out
 
@@ -149,8 +162,10 @@ class Model(nn.Module):
 
         # Decoding
         self.gru_hdim = kwargs['gru_hdim']
-        self.dropout = kwargs['gru_dropout']
+        self.batchNorm = kwargs['gru_hdim']
+        self.gru_dropout = kwargs['gru_dropout']
         self.gcn_dropout = kwargs['gcn_dropout']
+        
         self.voc_size = voc_size
         self.max_len = max_len
         self.index_to_char = index_to_char
@@ -165,7 +180,7 @@ class Model(nn.Module):
         self.encoder_logv = nn.Linear(self.gcn_hdim * self.gcn_layers, self.l_size)
 
         self.rnn_in = nn.Linear(self.l_size, self.voc_size)
-        self.decoder = MultiGRU(voc_size=self.voc_size, latent_size=self.l_size, h_size=self.gru_hdim, dropout_rate = self.dropout)
+        self.decoder = MultiGRU(voc_size=self.voc_size, latent_size=self.l_size, h_size=self.gru_hdim, dropout_rate = self.gru_dropout, batchNorm = self.batchNorm)
 
         # MOLECULAR PROPERTY REGRESSOR
         self.MLP = nn.Sequential(

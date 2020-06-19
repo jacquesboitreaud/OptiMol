@@ -47,7 +47,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--name', type=str, default='zinc_3')  # model name in results/saved_models/
+    parser.add_argument('--name', type=str, default='zinc')  # model name in results/saved_models/
     parser.add_argument('--train', help="path to training dataframe", type=str, default='data/shuffled_whole_zinc.csv')
     parser.add_argument("--chunk_size", help="Nbr of molecules loaded simultaneously in memory (csv chunk)", type=int,
                         default=10000)
@@ -63,37 +63,49 @@ if __name__ == "__main__":
     parser.add_argument('--load_name', type=str, default='default')  # name of model to load from
     parser.add_argument('--load_iter', type=int, default=0)  # resume training at optimize step n°
 
-    # No need to change under this
-    
+    # Model architecture 
     parser.add_argument('--n_gcn_layers', type=int, default=3)  # number of gcn encoder layers (3 or 4?)
+    parser.add_argument('--gcn_dropout', type=float, default=0.2)
+    parser.add_argument('--gcn_hdim', type=int, default=32)
+    parser.add_argument('--latent_size', type=int, default=56) # jtvae uses 56
+    parser.add_argument('--gru_hdim', type=int, default=450)
+    parser.add_argument('--gru_dropout', type=float, default=0.2)
+    parser.add_argument('--use_batchNorm', type=bool, default=True)
+
+    # Training schedule params :
+    
+    parser.add_argument('--batch_size', type=int, default=64)
     parser.add_argument('--lr', type=float, default=1e-3)  # Initial learning rate
+    parser.add_argument('--anneal_rate', type=float, default=0.9)  # Learning rate annealing
+    parser.add_argument('--anneal_iter', type=int, default=40000)  # update learning rate every _ step
+    
     parser.add_argument('--clip_norm', type=float, default=50.0)  # Gradient clipping max norm
+    
+    # Kl weight schedule 
     parser.add_argument('--beta', type=float, default=0.0)  # initial KL annealing weight
     parser.add_argument('--step_beta', type=float, default=0.002)  # beta increase per step
     parser.add_argument('--max_beta', type=float, default=0.5)  # maximum KL annealing weight
     parser.add_argument('--warmup', type=int, default=40000)  # number of steps with only reconstruction loss (beta=0)
-
-    parser.add_argument('--processes', type=int, default=20)  # num workers
-
-    parser.add_argument('--batch_size', type=int, default=64)
-    parser.add_argument('--anneal_rate', type=float, default=0.9)  # Learning rate annealing
-    parser.add_argument('--anneal_iter', type=int, default=40000)  # update learning rate every _ step
     parser.add_argument('--kl_anneal_iter', type=int, default=2000)  # update beta every _ step
 
+
+    # Logging :
     parser.add_argument('--print_iter', type=int, default=1000)  # print loss metrics every _ step
     parser.add_argument('--save_iter', type=int, default=1000)  # save model weights every _ step
 
     # teacher forcing rnn schedule
-    parser.add_argument('--tf_init', type=float, default=1.0)
+    parser.add_argument('--tf_init', type=float, default=1.0) # teacher forcing fraction at the start of training 
     parser.add_argument('--tf_step', type=float, default=0.002)  # step decrease
-    parser.add_argument('--tf_end', type=float, default=0)  # final tf frequency
+    parser.add_argument('--tf_end', type=float, default=1.0)  # final tf frequency
     parser.add_argument('--tf_anneal_iter', type=int, default=1000)  # nbr of iters between each annealing
-    parser.add_argument('--tf_warmup', type=int, default=100000)  # nbr of steps at tf_init
+    parser.add_argument('--tf_warmup', type=int, default=100000)  # nbr of steps before tf starts to decrease 
 
     # Multitask :
     parser.add_argument('--no_props', action='store_false')  # No multitask props
     
+    # Other : 
     parser.add_argument('--gpu_id', type=int, default=0)  # run model on cuda:{id} if multiple gpus on server
+    parser.add_argument('--processes', type=int, default=20)  # num workers
 
     # =======
 
@@ -139,11 +151,12 @@ if __name__ == "__main__":
     params = {'features_dim': loaders.dataset.emb_size,  # node embedding dimension
               'num_rels': loaders.num_edge_types,
               'gcn_layers': args.n_gcn_layers,
-              'gcn_dropout':0.2,
-              'gcn_hdim': 32,
-              'gru_hdim':450,
-              'gru_dropout':0.2,
-              'l_size': 56,
+              'gcn_dropout':args.gcn_dropout,
+              'gcn_hdim': args.gcn_hdim,
+              'gru_hdim':args.gru_hdim,
+              'gru_dropout': args.gru_dropout,
+              'batchNorm': args.use_batchNorm, 
+              'l_size': args.latent_size,
               'voc_size': loaders.dataset.n_chars,
               'max_len': loaders.dataset.max_len,
               'N_properties': len(properties),

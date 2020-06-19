@@ -225,6 +225,11 @@ class molDataset(Dataset):
         """
         # integer encode input smile
         len_of_molecule=len(molecule)-len(molecule.replace('[',''))
+        
+        if len_of_molecule >= self.max_len:
+            valid_flag = 0
+            return 0, valid_flag
+            
         for _ in range(self.max_len - len_of_molecule): # selfies padding 
             molecule+='[epsilon]'
     

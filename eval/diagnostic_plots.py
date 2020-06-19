@@ -39,11 +39,11 @@ from sklearn.decomposition import PCA
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--name', help="Name of saved model directory, in /results/saved_models",
-                    default='250k')
+                    default='zinc_3')
 parser.add_argument('-i', '--test_set', help="Test molecules file, in /data",
                     default='250k_zinc.csv')
 parser.add_argument('-a', '--alphabet', help="Test molecules file, in /data",
-                    default='250k_alphabets.json')
+                    default='zinc_alphabets.json')
 
 parser.add_argument('-N', '--n_mols', help="Number of molecules, set to -1 for all in csv ", type=int,
                     default=1000)
@@ -105,6 +105,9 @@ if __name__ == "__main__":
 
     with torch.no_grad():
         for batch_idx, (graph, smiles, p_target, a_target) in enumerate(test_loader):
+            
+            print(smiles.shape)
+            
             graph = send_graph_to_device(graph, device)
             smiles = smiles.to(device)
 
@@ -162,9 +165,13 @@ if __name__ == "__main__":
         # ===================================================================
         reconstruction_dataframe, frac_valid, frac_id = log_smiles_from_indices(smi_all, out_all,
                                                                                 loaders.dataset.index_to_char)
-        # only for smiles
-        # print("Fraction of molecules decoded into a valid smiles: ", frac_valid)
-        # print("Fraction of perfectly reconstructed mols ", frac_id)
+        
+        differences = 1. - torch.abs(torch.from_numpy(out_all) - torch.from_numpy(smi_all))
+        differences = torch.clamp(differences, min=0., max=1.).double()
+        quality = 100. * torch.mean(differences)
+        quality = quality.detach().cpu()
+        print('fraction of correct characters at reconstruction: ', quality.item())
+
         smiles = [decoder(s) for s in reconstruction_dataframe['output smiles']]
 
         # ===================================================================
