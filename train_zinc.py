@@ -65,6 +65,7 @@ if __name__ == "__main__":
 
     # Model architecture 
     parser.add_argument('--n_gcn_layers', type=int, default=3)  # number of gcn encoder layers (3 or 4?)
+    parser.add_argument('--n_gru_layers', type=int, default=4)  # number of gcn encoder layers (3 or 4?)
     parser.add_argument('--gcn_dropout', type=float, default=0.2)
     parser.add_argument('--gcn_hdim', type=int, default=32)
     parser.add_argument('--latent_size', type=int, default=56) # jtvae uses 56
@@ -110,6 +111,9 @@ if __name__ == "__main__":
     # =======
 
     args, _ = parser.parse_known_args()
+    
+    if args.n_gru_layers ==4 :
+        from model_zinc_4layers import Model
 
     logdir, modeldir = setup(args.name, permissive=True)
     dumper = ModelDumper(dumping_path=os.path.join(modeldir, 'params.json'), argparse=args)

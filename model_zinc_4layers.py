@@ -50,7 +50,7 @@ class MultiGRU(nn.Module):
         p=dropout_rate # Decoder GRU dropout rate (after each layer)
         
         self.h_size = h_size
-        self.dense_init = nn.Linear(latent_size, 3 * self.h_size)  # to initialise hidden state
+        self.dense_init = nn.Linear(latent_size, 4 * self.h_size)  # to initialise hidden state
         self.drop = nn.Dropout(p)
         
         self.use_batchNorm = batchNorm
@@ -65,6 +65,7 @@ class MultiGRU(nn.Module):
             self.BN1 = nn.BatchNorm1d(self.h_size)
             self.BN2 = nn.BatchNorm1d(self.h_size)
             self.BN3 = nn.BatchNorm1d(self.h_size)
+            self.BN4 = nn.BatchNorm1d(self.h_size)
 
     @property
     def device(self):
@@ -83,13 +84,16 @@ class MultiGRU(nn.Module):
         x = h_out[2] = self.gru_3(x, h[2])
         if self.use_batchNorm:
             x = self.BN3(x)
+        x = h_out[3] = self.gru_4(x, h[3])   
+        if self.use_batchNorm:
+            x = self.BN4(x)
         x = self.linear(x)
         return x, h_out
 
     def init_h(self, z):
         """ Initializes hidden state for 3 layers GRU with latent vector z """
         batch_size, latent_shape = z.size()
-        hidden = self.dense_init(z).view(3, batch_size, self.h_size)
+        hidden = self.dense_init(z).view(4, batch_size, self.h_size)
         hidden = self.drop(hidden) # Apply dropout on the hidden state initialization of RNN 
         return hidden
 
