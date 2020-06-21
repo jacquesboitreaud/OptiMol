@@ -50,7 +50,7 @@ class MultiGRU(nn.Module):
         p=dropout_rate # Decoder GRU dropout rate (after each layer)
         
         self.h_size = h_size
-        self.dense_init = nn.Linear(latent_size, 4 * self.h_size)  # to initialise hidden state
+        self.dense_init = nn.Linear(latent_size, self.h_size)  # to initialise hidden state
         self.drop = nn.Dropout(p)
         
         self.use_batchNorm = batchNorm
