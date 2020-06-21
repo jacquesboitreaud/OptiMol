@@ -58,7 +58,6 @@ class MultiGRU(nn.Module):
         self.gru_1 = nn.GRUCell(voc_size, self.h_size)
         self.gru_2 = nn.GRUCell(self.h_size, self.h_size)
         self.gru_3 = nn.GRUCell(self.h_size, self.h_size)
-        self.gru_4 = nn.GRUCell(self.h_size, self.h_size)
         self.linear = nn.Linear(self.h_size, voc_size)
         
         if self.use_batchNorm:
@@ -84,7 +83,7 @@ class MultiGRU(nn.Module):
         x = h_out[2] = self.gru_3(x, h[2])
         if self.use_batchNorm:
             x = self.BN3(x)
-        x = h_out[3] = self.gru_4(x, h[3])   
+        x = h_out[3] = self.gru_4(x, h[3])
         if self.use_batchNorm:
             x = self.BN4(x)
         x = self.linear(x)
@@ -93,7 +92,7 @@ class MultiGRU(nn.Module):
     def init_h(self, z):
         """ Initializes hidden state for 3 layers GRU with latent vector z """
         batch_size, latent_shape = z.size()
-        hidden = self.dense_init(z).view(4, batch_size, self.h_size)
+        hidden = self.dense_init(z).repeat(4, 1, 1) # 3 hidden states to initialize 
         hidden = self.drop(hidden) # Apply dropout on the hidden state initialization of RNN 
         return hidden
 

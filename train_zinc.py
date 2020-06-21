@@ -81,7 +81,6 @@ if __name__ == "__main__":
     parser.add_argument('--anneal_iter', type=int, default=40000)  # update learning rate every _ step
     
     parser.add_argument('--clip_norm', type=float, default=50.0)  # Gradient clipping max norm
-    
     # Kl weight schedule 
     parser.add_argument('--beta', type=float, default=0.0)  # initial KL annealing weight
     parser.add_argument('--step_beta', type=float, default=0.002)  # beta increase per step
