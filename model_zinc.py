@@ -163,7 +163,7 @@ class Model(nn.Module):
 
         # Decoding
         self.gru_hdim = kwargs['gru_hdim']
-        self.batchNorm = kwargs['gru_hdim']
+        self.batchNorm = kwargs['batchNorm']
         self.gru_dropout = kwargs['gru_dropout']
         self.gcn_dropout = kwargs['gcn_dropout']
         

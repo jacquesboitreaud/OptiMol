@@ -33,7 +33,7 @@ if __name__ == "__main__":
     
     from dataloaders.molDataset import molDataset, Loader
     from data_processing.rdkit_to_nx import smiles_to_nx
-    from model import Model, model_from_json
+    from model_zinc import Model, model_from_json
     from utils import *
     from selfies import decoder, encoder
     from data_processing.get_selfies import clean_smiles
@@ -50,7 +50,7 @@ if __name__ == "__main__":
     
     parser.add_argument( '--qed', action='store_true', help="plot qed distrib")
     
-    parser.add_argument('--reencode', action='store_false')
+    parser.add_argument('--reencode', action='store_true')
 
     args, _ = parser.parse_known_args()
 
