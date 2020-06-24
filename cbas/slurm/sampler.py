@@ -49,8 +49,9 @@ def get_samples(prior_model, search_model, max):
         _, sample_indices = torch.max(gen_seq, dim=1)
 
         # Compute weights while we have indices and store them: p(x|z, theta)/p(x|z, phi)
-        batch_weights = GenProb(sample_indices, samples_z, prior_model) / \
-                        GenProb(sample_indices, samples_z, search_model)
+        prior_prob = GenProb(sample_indices, samples_z, prior_model)
+        search_prob = GenProb(sample_indices, samples_z, search_model)
+        batch_weights = torch.exp(prior_prob - search_prob)
 
         # Check the novelty
         new_ones = 0
