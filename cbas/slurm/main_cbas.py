@@ -33,7 +33,7 @@ if __name__ == '__main__':
 
     # SAMPLER
     parser.add_argument('--max_samples', type=int, default=2000)  # Nbr of samples at each iter
-    parser.add_argument('--diversity_picker', type=int, default=500)  # Select a number of diverse samples in max_samples. 
+    parser.add_argument('--diversity_picker', type=int, default=-1)  # Select a number of diverse samples in max_samples.
     # if diversity_picker == max_samples, default behaviour of cbas: finetuning on all samples 
 
     # DOCKER
