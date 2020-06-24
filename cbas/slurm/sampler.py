@@ -78,18 +78,17 @@ def main(prior_name, name, max_samples, diversity_picker, oracle):
     search_model.load(model_weights_path)
 
     samples, weights = get_samples(prior_model, search_model, max=max_samples)
-    
+
     # if diversity picker < max_samples, we subsample with rdkit picker : 
-    if diversity_picker < max_samples : 
-    
+    if 0 < diversity_picker < max_samples:
         mols = [Chem.MolFromSmiles(s) for s in samples]
-        fps = [GetMorganFingerprint(x,3) for x in mols]
+        fps = [GetMorganFingerprint(x, 3) for x in mols]
         picker = MaxMinPicker()
-        
-        def distij(i,j,fps=fps):
-            return 1-DataStructs.DiceSimilarity(fps[i],fps[j])
-        
-        pickIndices = picker.LazyPick(distij,max_samples,diversity_picker)
+
+        def distij(i, j, fps=fps):
+            return 1 - DataStructs.DiceSimilarity(fps[i], fps[j])
+
+        pickIndices = picker.LazyPick(distij, max_samples, diversity_picker)
         idces = list(pickIndices)
         samples = [samples[i] for i in idces]
         weights = [weights[i] for i in idces]
@@ -139,7 +138,8 @@ if __name__ == '__main__':
     parser.add_argument('--prior_name', type=str, default='inference_default')  # the prior VAE (pretrained)
     parser.add_argument('--name', type=str, default='search_vae')  # the prior VAE (pretrained)
     parser.add_argument('--max_samples', type=int, default=1000)  # samples drawn from model
-    parser.add_argument('--diversity_picker', type=int, default=100)  # diverse samples subset size. if = max_samples, all selected
+    parser.add_argument('--diversity_picker', type=int,
+                        default=-1)  # diverse samples subset size. if negative, all selected
     parser.add_argument('--oracle', type=str)  # 'qed' or 'docking' or 'qsar'
     # =======
 
@@ -148,5 +148,5 @@ if __name__ == '__main__':
     main(prior_name=args.prior_name,
          name=args.name,
          max_samples=args.max_samples,
-         diversity_picker = args.diversity_picker,
+         diversity_picker=args.diversity_picker,
          oracle=args.oracle)

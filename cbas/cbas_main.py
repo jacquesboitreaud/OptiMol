@@ -64,7 +64,7 @@ if __name__ == '__main__':
     prior_model.to(device)
 
     # Initialize search vae q
-    savepath = os.path.join(script_dir,'..', 'results/saved_models', args.search_name)
+    savepath = os.path.join(script_dir, '..', 'results/saved_models', args.search_name)
     prior_model_init = model_from_json(args.prior_name)
     searchTrainer = GenTrain(prior_model_init, savepath, epochs=args.epochs, device=device,
                              lr=args.learning_rate, clip_grad=args.clip_grad_norm, beta=args.beta,
@@ -92,9 +92,9 @@ if __name__ == '__main__':
             sample_selfies += searchTrainer.model.indices_to_smiles(sample_indices)
 
             # Compute weights while we have indices and store them: p(x|z, theta)/p(x|z, phi)
-            weights.append(
-                GenProb(sample_indices, batch_z, prior_model) / GenProb(sample_indices, batch_z, searchTrainer.model))
-
+            prior_prob = GenProb(sample_indices, batch_z, prior_model)
+            search_prob = GenProb(sample_indices, batch_z, searchTrainer.model)
+            weights.append(torch.exp(prior_prob - search_prob))
         samples = [decoder(s) for s in sample_selfies]
         unique_samples = np.unique(samples)
         print(f'{unique_samples.shape[0]}/{args.M} unique smiles sampled')
