@@ -32,7 +32,9 @@ if __name__ == '__main__':
     parser.add_argument('--oracle', type=str, default='qed')  # 'qed' or 'docking' or 'qsar' or 'clogp' or 'cqed'
 
     # SAMPLER
-    parser.add_argument('--max_samples', type=int, default=1000)  # Nbr of samples at each iter
+    parser.add_argument('--max_samples', type=int, default=2000)  # Nbr of samples at each iter
+    parser.add_argument('--diversity_picker', type=int, default=500)  # Select a number of diverse samples in max_samples. 
+    # if diversity_picker == max_samples, default behaviour of cbas: finetuning on all samples 
 
     # DOCKER
     parser.add_argument('--server', type=str, default='pasteur', help='server to run on')  # the prior VAE (pretrained)
@@ -84,7 +86,7 @@ if __name__ == '__main__':
                        'processes': args.procs,
                        'optimizer': args.opti,
                        'scheduler': args.sched,
-                       'alphabet_name': args.alphabet_name,
+                       'alphabet_name': args.alphabet,
                        'gamma': -1000,
                        'DEBUG': True}
     dumper = Dumper(dumping_path=os.path.join(savepath, 'params_gentrain.json'), dic=params_gentrain)
@@ -98,6 +100,7 @@ if __name__ == '__main__':
         sampler_main(prior_name=args.prior_name,
                      name=args.name,
                      max_samples=args.max_samples,
+                     diversity_picker = args.diversity_picker,
                      oracle=args.oracle)
 
         # DOCKING
