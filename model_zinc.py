@@ -58,7 +58,6 @@ class MultiGRU(nn.Module):
         self.gru_1 = nn.GRUCell(voc_size, self.h_size)
         self.gru_2 = nn.GRUCell(self.h_size, self.h_size)
         self.gru_3 = nn.GRUCell(self.h_size, self.h_size)
-        self.gru_4 = nn.GRUCell(self.h_size, self.h_size)
         self.linear = nn.Linear(self.h_size, voc_size)
         
         if self.use_batchNorm:
