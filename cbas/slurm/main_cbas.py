@@ -35,6 +35,8 @@ if __name__ == '__main__':
     parser.add_argument('--max_samples', type=int, default=1000)  # Nbr of samples at each iter
     parser.add_argument('--diversity_picker', type=int, default=-1)  # Select a number of diverse samples in max_samples. 
     # if diversity_picker == max_samples, default behaviour of cbas: finetuning on all samples 
+    
+    parser.add_argument('--cap_weights', type=float, default = -1)  # min value to cap weights. Ignored if set to -1.
 
     # DOCKER
     parser.add_argument('--server', type=str, default='pasteur', help='server to run on')  # the prior VAE (pretrained)
@@ -101,7 +103,8 @@ if __name__ == '__main__':
                      name=args.name,
                      max_samples=args.max_samples,
                      diversity_picker = args.diversity_picker,
-                     oracle=args.oracle)
+                     oracle=args.oracle, 
+                     w_min = args.cap_weights)
 
         # DOCKING
         docker_main(server=args.server,

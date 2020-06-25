@@ -20,13 +20,14 @@ from rdkit import DataStructs
 from rdkit.SimDivFilters.rdSimDivPickers import MaxMinPicker
 
 
-def get_samples(prior_model, search_model, max):
+def get_samples(prior_model, search_model, max, w_min):
     """
     Take initial samples from a prior model. Computes importance sampling weights
     This will try to produce new ones up until a certain limit of tries is reached
     :param prior_model:
     :param search_model:
     :param max:
+    :param w_min: minimum value to cap weights p(x;prior)/p(x;search model)
     :return:
     """
     sample_selfies = []
@@ -51,8 +52,11 @@ def get_samples(prior_model, search_model, max):
         # Compute weights while we have indices and store them: p(x|z, theta)/p(x|z, phi)
         prior_prob = GenProb(sample_indices, samples_z, prior_model)
         search_prob = GenProb(sample_indices, samples_z, search_model)
-        batch_weights = 100*torch.exp(prior_prob - search_prob)
-        print('Mean weights : ', torch.mean(batch_weights))
+        batch_weights = torch.exp(prior_prob - search_prob)
+        
+        if 0 < w_min : # cap the weights tensor 
+            batch_weights = batch_weights.clamp(min = w_min)
+        print('Mean of weights tensor: ', torch.mean(batch_weights).item())
 
         # Check the novelty
         new_ones = 0
@@ -69,7 +73,7 @@ def get_samples(prior_model, search_model, max):
     return sample_selfies, weights
 
 
-def main(prior_name, name, max_samples, diversity_picker, oracle):
+def main(prior_name, name, max_samples, diversity_picker, oracle, w_min):
     prior_model = model_from_json(prior_name)
 
     # We start by creating another prior instance, then replace it with the actual weights
@@ -78,7 +82,7 @@ def main(prior_name, name, max_samples, diversity_picker, oracle):
     model_weights_path = os.path.join(script_dir, 'results', name, 'weights.pth')
     search_model.load(model_weights_path)
 
-    samples, weights = get_samples(prior_model, search_model, max=max_samples)
+    samples, weights = get_samples(prior_model, search_model, max=max_samples, w_min = w_min)
 
     # if diversity picker < max_samples, we subsample with rdkit picker : 
     if 0 < diversity_picker < max_samples:
@@ -142,6 +146,7 @@ if __name__ == '__main__':
     parser.add_argument('--diversity_picker', type=int,
                         default=-1)  # diverse samples subset size. if negative, all selected
     parser.add_argument('--oracle', type=str)  # 'qed' or 'docking' or 'qsar'
+    parser.add_argument('--cap_weights', type=float, default = -1)  # min value to cap weights. Ignored if set to -1. 
     # =======
 
     args, _ = parser.parse_known_args()
@@ -150,4 +155,5 @@ if __name__ == '__main__':
          name=args.name,
          max_samples=args.max_samples,
          diversity_picker=args.diversity_picker,
-         oracle=args.oracle)
+         oracle=args.oracle, 
+         w_min = args.cap_weights)
