@@ -98,7 +98,7 @@ if __name__ == "__main__":
     parser.add_argument('--tf_step', type=float, default=0.002)  # step decrease
     parser.add_argument('--tf_end', type=float, default=1.0)  # final tf frequency
     parser.add_argument('--tf_anneal_iter', type=int, default=1000)  # nbr of iters between each annealing
-    parser.add_argument('--tf_warmup', type=int, default=100000)  # nbr of steps before tf starts to decrease 
+    parser.add_argument('--tf_warmup', type=int, default=70000)  # nbr of steps before tf starts to decrease 
 
     # Multitask :
     parser.add_argument('--no_props', action='store_false')  # No multitask props
@@ -193,9 +193,12 @@ if __name__ == "__main__":
 
     if args.load_model:
         total_steps = args.load_iter
+        beta = min(args.beta - args.step_beta*(total_steps-args.warmup)/args.kl_anneal_iter, args.max_beta) # resume at coherent beta, cap at max_beta. 
+        print(f'Training resuming at step {total_steps}, beta = {beta}')
     else:
         total_steps = 0
-    beta = args.beta
+        beta = args.beta
+        
     tf_proba = args.tf_init
     start = time() # get training start time 
 
@@ -249,7 +252,9 @@ if __name__ == "__main__":
                 beta = min(args.max_beta, beta + args.step_beta)
 
             if total_steps % args.tf_anneal_iter == 0 and total_steps >= args.tf_warmup:
-                tf = max(args.tf_end, tf_proba - args.tf_step)  # tf decreases until reaches tf_end
+                tf_proba = max(args.tf_end, tf_proba - args.tf_step)  # tf decreases until reaches tf_end
+                print('Updated tf rate: ', tf_proba)
+                writer.add_scalar('tf_proba/train', tf_proba, total_steps)
 
             # logs and monitoring
             if total_steps % args.print_iter == 0:
