@@ -245,7 +245,7 @@ if __name__ == "__main__":
                 beta = min(args.max_beta, beta + args.step_beta)
 
             if total_steps % args.tf_anneal_iter == 0 and total_steps >= args.tf_warmup:
-                tf = min(args.tf_end, tf_proba - args.tf_step)  # tf decrease
+                tf_proba = min(args.tf_end, tf_proba - args.tf_step)  # tf decrease
 
             # logs and monitoring
             if total_steps % args.print_iter == 0:
