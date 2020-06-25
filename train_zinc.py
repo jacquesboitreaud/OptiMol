@@ -193,7 +193,7 @@ if __name__ == "__main__":
 
     if args.load_model:
         total_steps = args.load_iter
-        beta = min(args.beta - args.step_beta*(total_steps-args.warmup)/args.kl_anneal_iter, args.max_beta) # resume at coherent beta, cap at max_beta. 
+        beta = min(args.beta + args.step_beta*(total_steps-args.warmup)/args.kl_anneal_iter, args.max_beta) # resume at coherent beta, cap at max_beta. 
         print(f'Training resuming at step {total_steps}, beta = {beta}')
     else:
         total_steps = 0
