@@ -37,6 +37,114 @@ from dgl.nn.pytorch.conv import GATConv, RelGraphConv
 from utils import *
 from dgl_utils import send_graph_to_device
 
+import torch.jit as jit
+from torch.nn import Parameter
+import numbers
+
+
+class LayerNorm(jit.ScriptModule):
+    def __init__(self, normalized_shape):
+        super(LayerNorm, self).__init__()
+        if isinstance(normalized_shape, numbers.Integral):
+            normalized_shape = (normalized_shape,)
+        normalized_shape = torch.Size(normalized_shape)
+
+        # XXX: This is true for our LSTM / NLP use case and helps simplify code
+        assert len(normalized_shape) == 1
+
+        self.weight = Parameter(torch.ones(normalized_shape))
+        self.bias = Parameter(torch.zeros(normalized_shape))
+        self.normalized_shape = normalized_shape
+
+    @jit.script_method
+    def compute_layernorm_stats(self, input):
+        mu = input.mean(-1, keepdim=True)
+        sigma = input.std(-1, keepdim=True, unbiased=False)
+        return mu, sigma
+
+    @jit.script_method
+    def forward(self, input):
+        mu, sigma = self.compute_layernorm_stats(input)
+        return (input - mu) / sigma * self.weight + self.bias
+
+
+class LayerNormLSTMCell(jit.ScriptModule):
+    def __init__(self, input_size, hidden_size, decompose_layernorm=False):
+        super(LayerNormLSTMCell, self).__init__()
+        self.input_size = input_size
+        self.hidden_size = hidden_size
+        self.weight_ih = Parameter(torch.randn(4 * hidden_size, input_size))
+        self.weight_hh = Parameter(torch.randn(4 * hidden_size, hidden_size))
+        # The layernorms provide learnable biases
+
+        if decompose_layernorm:
+            ln = LayerNorm
+        else:
+            ln = nn.LayerNorm
+
+        self.layernorm_i = ln(4 * hidden_size)
+        self.layernorm_h = ln(4 * hidden_size)
+        self.layernorm_c = ln(hidden_size)
+
+    @jit.script_method
+    def forward(self, input, state):
+        # type: (Tensor, Tuple[Tensor, Tensor]) -> Tuple[Tensor, Tuple[Tensor, Tensor]]
+        hx, cx = state
+        igates = self.layernorm_i(torch.mm(input, self.weight_ih.t()))
+        hgates = self.layernorm_h(torch.mm(hx, self.weight_hh.t()))
+        gates = igates + hgates
+        ingate, forgetgate, cellgate, outgate = gates.chunk(4, 1)
+
+        ingate = torch.sigmoid(ingate)
+        forgetgate = torch.sigmoid(forgetgate)
+        cellgate = torch.tanh(cellgate)
+        outgate = torch.sigmoid(outgate)
+
+        cy = self.layernorm_c((forgetgate * cx) + (ingate * cellgate))
+        hy = outgate * torch.tanh(cy)
+
+        return hy, (hy, cy)
+
+
+class MultiLSTM(nn.Module):
+
+    def __init__(self, voc_size, latent_size, h_size, dropout_rate, n_layers=3):
+        super(MultiLSTM, self).__init__()
+
+        p = dropout_rate  # Decoder GRU dropout rate (after each layer)
+
+        self.h_size = h_size
+        self.dense_init = nn.Linear(latent_size, 2 * n_layers * self.h_size)  # to initialise hidden state
+        self.drop = nn.Dropout(p)
+
+        self.gru_1 = LayerNormLSTMCell(voc_size, self.h_size)
+        self.gru_2 = LayerNormLSTMCell(self.h_size, self.h_size)
+        self.gru_3 = LayerNormLSTMCell(self.h_size, self.h_size)
+        self.linear = nn.Linear(self.h_size, voc_size)
+        self.n_layers = n_layers
+
+    @property
+    def device(self):
+        return next(self.parameters()).device
+
+    def forward(self, x, h):
+        """ Forward pass to 3-layer GRU. Output =  output, hidden state of layer 3 """
+        x = x.view(x.shape[0], -1)  # batch_size *
+        h_out = [0]*3
+
+        x, h_out[0] = self.gru_1(x, h[0])
+        x, h_out[1] = self.gru_2(x, h[1])
+        x, h_out[2] = self.gru_3(x, h[2])
+        x = self.linear(x)
+        return x, h_out
+
+    def init_h(self, z):
+        """ Initializes hidden state for 3 layers GRU with latent vector z """
+        batch_size, latent_shape = z.size()
+        hidden = self.dense_init(z).view(self.n_layers, 2, batch_size, self.h_size)
+        # hidden = self.drop(hidden)  # Apply dropout on the hidden state initialization of RNN
+        return hidden
+
 
 class MultiGRU(nn.Module):
     """ 
@@ -46,20 +154,20 @@ class MultiGRU(nn.Module):
 
     def __init__(self, voc_size, latent_size, h_size, dropout_rate, batchNorm):
         super(MultiGRU, self).__init__()
-        
-        p=dropout_rate # Decoder GRU dropout rate (after each layer)
-        
+
+        p = dropout_rate  # Decoder GRU dropout rate (after each layer)
+
         self.h_size = h_size
         self.dense_init = nn.Linear(latent_size, 3 * self.h_size)  # to initialise hidden state
         self.drop = nn.Dropout(p)
-        
+
         self.use_batchNorm = batchNorm
 
         self.gru_1 = nn.GRUCell(voc_size, self.h_size)
         self.gru_2 = nn.GRUCell(self.h_size, self.h_size)
         self.gru_3 = nn.GRUCell(self.h_size, self.h_size)
         self.linear = nn.Linear(self.h_size, voc_size)
-        
+
         if self.use_batchNorm:
             self.BN1 = nn.BatchNorm1d(self.h_size)
             self.BN2 = nn.BatchNorm1d(self.h_size)
@@ -89,14 +197,14 @@ class MultiGRU(nn.Module):
         """ Initializes hidden state for 3 layers GRU with latent vector z """
         batch_size, latent_shape = z.size()
         hidden = self.dense_init(z).view(3, batch_size, self.h_size)
-        hidden = self.drop(hidden) # Apply dropout on the hidden state initialization of RNN 
+        hidden = self.drop(hidden)  # Apply dropout on the hidden state initialization of RNN
         return hidden
 
 
 class RGCN(nn.Module):
     """ RGCN encoder with num_hidden_layers + 2 RGCN layers, and sum pooling. """
 
-    def __init__(self, features_dim, h_dim, num_rels, num_layers, num_bases=-1, gcn_dropout = 0):
+    def __init__(self, features_dim, h_dim, num_rels, num_layers, num_bases=-1, gcn_dropout=0):
         super(RGCN, self).__init__()
 
         self.features_dim, self.h_dim = features_dim, h_dim
@@ -108,19 +216,18 @@ class RGCN(nn.Module):
         # create rgcn layers
         self.build_model()
         self.pool = SumPooling()
-        
-        
+
     def build_model(self):
         self.layers = nn.ModuleList()
         # input to hidden
-        i2h = RelGraphConv(self.features_dim, self.h_dim, self.num_rels, activation=nn.ReLU(), dropout = self.p )
+        i2h = RelGraphConv(self.features_dim, self.h_dim, self.num_rels, activation=nn.ReLU(), dropout=self.p)
         self.layers.append(i2h)
         # hidden to hidden
         for _ in range(self.num_layers - 2):
-            h2h = RelGraphConv(self.h_dim, self.h_dim, self.num_rels, activation=nn.ReLU(), dropout = self.p)
+            h2h = RelGraphConv(self.h_dim, self.h_dim, self.num_rels, activation=nn.ReLU(), dropout=self.p)
             self.layers.append(h2h)
         # hidden to output
-        h2o = RelGraphConv(self.h_dim, self.h_dim, self.num_rels, activation=nn.ReLU(), dropout = self.p)
+        h2o = RelGraphConv(self.h_dim, self.h_dim, self.num_rels, activation=nn.ReLU(), dropout=self.p)
         self.layers.append(h2o)
 
     def forward(self, g):
@@ -148,7 +255,9 @@ class Model(nn.Module):
                  index_to_char,
                  **kwargs):
         super(Model, self).__init__()
-
+        # TODO FIX
+        self.decoder = 'GRU'
+        self.decoder = 'LSTM'
         # params:
 
         # Encoding
@@ -165,7 +274,7 @@ class Model(nn.Module):
         self.batchNorm = kwargs['batchNorm']
         self.gru_dropout = kwargs['gru_dropout']
         self.gcn_dropout = kwargs['gcn_dropout']
-        
+
         self.voc_size = voc_size
         self.max_len = max_len
         self.index_to_char = index_to_char
@@ -174,13 +283,20 @@ class Model(nn.Module):
         self.N_targets = N_targets
 
         # layers:
-        self.encoder = RGCN(self.features_dim, self.gcn_hdim, self.num_rels, self.gcn_layers, num_bases=-1, gcn_dropout = self.gcn_dropout)
+        self.encoder = RGCN(self.features_dim, self.gcn_hdim, self.num_rels, self.gcn_layers, num_bases=-1,
+                            gcn_dropout=self.gcn_dropout)
 
         self.encoder_mean = nn.Linear(self.gcn_hdim * self.gcn_layers, self.l_size)
         self.encoder_logv = nn.Linear(self.gcn_hdim * self.gcn_layers, self.l_size)
 
         self.rnn_in = nn.Linear(self.l_size, self.voc_size)
-        self.decoder = MultiGRU(voc_size=self.voc_size, latent_size=self.l_size, h_size=self.gru_hdim, dropout_rate = self.gru_dropout, batchNorm = self.batchNorm)
+
+        if self.decoder == 'GRU':
+            self.decoder = MultiGRU(voc_size=self.voc_size, latent_size=self.l_size, h_size=self.gru_hdim,
+                                    dropout_rate=self.gru_dropout, batchNorm=self.batchNorm)
+        else:
+            self.decoder = MultiLSTM(voc_size=self.voc_size, latent_size=self.l_size, h_size=self.gru_hdim,
+                                     dropout_rate=self.gru_dropout)
 
         # MOLECULAR PROPERTY REGRESSOR
         self.MLP = nn.Sequential(
@@ -189,7 +305,6 @@ class Model(nn.Module):
             nn.Linear(32, 16),
             nn.ReLU(),
             nn.Linear(16, self.N_properties))
-
 
     @property
     def device(self):
@@ -245,25 +360,26 @@ class Model(nn.Module):
             Unrolls decoder RNN to generate a batch of sequences, using teacher forcing
             Args:
                 z: (batch_size * latent_shape) : a sampled vector in latent space
-                x_true: (batch_size * sequence_length ) a batch of indices of sequences 
+                x_true: (batch_size * sequence_length ) a batch of indices of sequences
             Outputs:
                 gen_seq : (batch_size * voc_size* seq_length) a batch of generated sequences (probas)
-                
+
         """
         batch_size = z.shape[0]
         # ls= z.shape[1]
         # print('batch size is', batch_size, 'latent size is ', ls)
         seq_length = self.max_len
         # Create first input to RNN : start token is full of zeros
-        start_token = self.rnn_in(z).view(batch_size, 1, self.voc_size)
+        start_token = self.rnn_in(z).view(batch_size, self.voc_size)
+        # start_token = self.rnn_in(z).view(batch_size, 1, self.voc_size)
         rnn_in = start_token.to(self.device)
-        # Init hidden with z sampled in latent space 
+        # Init hidden with z sampled in latent space
         h = self.decoder.init_h(z)
 
         gen_seq = torch.zeros(batch_size, self.voc_size, seq_length).to(self.device)
-        
-        #tback = time.perf_counter()
-        
+
+        # tback = time.perf_counter()
+
         for step in range(seq_length):
             out, h = self.decoder(rnn_in, h)
             gen_seq[:, :, step] = out
@@ -274,10 +390,10 @@ class Model(nn.Module):
                 v, indices = torch.max(gen_seq[:, :, step], dim=1)  # get char indices with max probability
             # Input to next step: either autoregressive or Teacher forced
             rnn_in = F.one_hot(indices, self.voc_size).float()
-            
-        #if torch.cuda.is_available():
+
+        # if torch.cuda.is_available():
         #    torch.cuda.synchronize()
-        #print(f'time in rnn: {time.perf_counter() - tback}')
+        # print(f'time in rnn: {time.perf_counter() - tback}')
 
         return gen_seq  # probas
 
@@ -325,10 +441,10 @@ class Model(nn.Module):
     def decode_beam(self, z, k=3, cutoff_mols=None):
         """
         Input:
-            z = torch.tensor type, (N_mols*l_size)  
+            z = torch.tensor type, (N_mols*l_size)
             k : beam param
-        Decodes a batch, molecule by molecule, using beam search of width k 
-        Output: 
+        Decodes a batch, molecule by molecule, using beam search of width k
+        Output:
             a list of lists of k best sequences for each molecule.
         """
         N = z.shape[0]
@@ -396,7 +512,7 @@ class Model(nn.Module):
         else:
             dec = self.decode(samples)
 
-        # props ad affinity if requested 
+        # props ad affinity if requested
         p, a = 0, 0
         if props:
             p = self.props(samples)
@@ -485,7 +601,7 @@ class Model(nn.Module):
         return z_all
 
     def load_no_multitask(self, state_dict):
-        # Workaround to be able to load a model with not same size of affinity predictor... 
+        # Workaround to be able to load a model with not same size of affinity predictor...
         pretrained_dict = torch.load(state_dict)
         model_dict = self.state_dict()
         # 1. filter out unnecessary keys
