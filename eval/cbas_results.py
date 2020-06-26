@@ -28,7 +28,7 @@ from data_processing.comp_metrics import cycle_score, logP, qed
 from data_processing.sascorer import calculateScore
     
 
-name = 'adam_nosched'
+name = 'cap'
 
 norm_scores = False # set to true for clogp
 
