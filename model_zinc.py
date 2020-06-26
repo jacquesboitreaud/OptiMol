@@ -379,7 +379,7 @@ class Model(nn.Module):
 
         gen_seq = torch.zeros(batch_size, self.voc_size, seq_length).to(self.device)
 
-        tback = time.perf_counter()
+        # tback = time.perf_counter()
 
         for step in range(seq_length):
             out, h = self.decoder(rnn_in, h)
@@ -392,9 +392,9 @@ class Model(nn.Module):
             # Input to next step: either autoregressive or Teacher forced
             rnn_in = F.one_hot(indices, self.voc_size).float()
 
-        if torch.cuda.is_available():
-            torch.cuda.synchronize()
-        print(f'time in rnn: {time.perf_counter() - tback}')
+        # if torch.cuda.is_available():
+        #   torch.cuda.synchronize()
+        # print(f'time in rnn: {time.perf_counter() - tback}')
 
         return gen_seq  # probas
 

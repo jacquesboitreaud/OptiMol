@@ -57,7 +57,7 @@ def get_samples(prior_model, search_model, max, w_min):
         if 0 < w_min : # cap the weights tensor 
             batch_weights = batch_weights.clamp(min = w_min)
         print('Mean of weights tensor: ', torch.mean(batch_weights).item())
-
+        batch_weights = batch_weights / torch.mean(batch_weights)
         # Check the novelty
         new_ones = 0
         batch_selfies = search_model.indices_to_smiles(sample_indices)
