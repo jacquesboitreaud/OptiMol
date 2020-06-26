@@ -29,6 +29,7 @@ if __name__ == '__main__':
 
     # SAMPLER
     parser.add_argument('--max_samples', type=int, default=3000)  # Nbr of samples at each iter
+    parser.add_argument('--cap_weights', type=float, default=-1)  # clamping value to use
 
     # DOCKER
     parser.add_argument('--server', type=str, default='pasteur', help='server to run on')  # the prior VAE (pretrained)
@@ -113,7 +114,7 @@ if __name__ == '__main__':
         # AGGREGATION AND TRAINING
         slurm_trainer_path = os.path.join(script_dir, 'slurm_trainer.sh')
         cmd = f'sbatch --depend=afterany:{id_dock} {slurm_trainer_path}'
-        extra_args = f' {args.prior_name} {args.name} {iteration} {args.quantile} {args.uncertainty} {args.oracle}'
+        extra_args = f' {args.prior_name} {args.name} {iteration} {args.quantile} {args.uncertainty} {args.oracle} {args.cap_weights}'
         cmd = cmd + extra_args
         a = subprocess.run(cmd.split(), stdout=subprocess.PIPE).stdout.decode('utf-8')
         id_train = a.split()[3]
