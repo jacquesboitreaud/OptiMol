@@ -19,16 +19,16 @@ from rdkit.Chem.Fingerprints import FingerprintMols
 
 from sklearn.decomposition import PCA
 
-rc = {'figure.figsize':(10,5),
-      'axes.facecolor':'white',
-      'axes.grid' : True,
-      'lines.linewidth' : 4,
+rc = {'figure.figsize': (10, 5),
+      'axes.facecolor': 'white',
+      'axes.grid': True,
+      'lines.linewidth': 4,
       'grid.color': '.8',
-      'font.size' : 12}
+      'font.size': 12}
 plt.rcParams.update(rc)
 
 
-def plot_csvs(dir_paths, ylim=(0.6,1), plot_best=False, return_best=False, use_norm_score = False):
+def plot_csvs(dir_paths, ylim=(-5, 20), plot_best=False, return_best=False, use_norm_score=False):
     """
     get scores in successive dfs.
     Expect the names to be in format *_iteration.csv
@@ -56,12 +56,12 @@ def plot_csvs(dir_paths, ylim=(0.6,1), plot_best=False, return_best=False, use_n
             # Check scores
             news = 0
             df = pd.read_csv(os.path.join(dir_path, name))
-            if use_norm_score :
+            if use_norm_score:
                 values = df['norm_score']
             else:
                 values = df['score']
             mus.append(np.mean(values))
-            best.append(np.max(values)) # Careful : may need to change to min for the docking objective ? 
+            best.append(np.max(values))  # Careful : may need to change to min for the docking objective ?
             stds.append(np.std(values))
             i_best = np.argmax(values)
 
@@ -73,54 +73,55 @@ def plot_csvs(dir_paths, ylim=(0.6,1), plot_best=False, return_best=False, use_n
                     olds.add(smile)
                     news += 1
             newslist.append(news)
-
-            if batch_size is None:
-                batch_size = len(smiles)
         if batch_size is None:
             batch_size = 1000  # default
+        newslist = [min(batch_size, new_ones) for new_ones in newslist]
         title = dir_path.split("/")[-1]
-        
+
         return iterations, mus, stds, batch_size, newslist, title, best, best_smiles
 
-    if not isinstance(dir_paths, list): # plot only one cbas 
+    if not isinstance(dir_paths, list):  # plot only one cbas
         print(dir_paths)
         fig, ax = plt.subplots(1, 2)
-        iterations, mus, stds, batch_size, newslist, title, best_scores, best_smiles = plot_one(dir_paths, use_norm_score)
+        iterations, mus, stds, batch_size, newslist, title, best_scores, best_smiles = plot_one(dir_paths,
+                                                                                                use_norm_score)
         mus = np.array(mus)
         stds = np.array(stds)
-        ax[0].fill_between(iterations, mus+stds, mus-stds, alpha=.25)
+        ax[0].fill_between(iterations, mus + stds, mus - stds, alpha=.25)
         sns.lineplot(iterations, mus, ax=ax[0])
-        
-        if plot_best :
+
+        if plot_best:
             ax[0].plot(iterations, best_scores, 'r.')
         ax[0].set_ylim(ylim[0], ylim[1])
-        ax[0].set_xlim(1,iterations[-1]+0.2)
+        ax[0].set_xlim(1, iterations[-1] + 0.2)
 
         ax[1].set_ylim(0, batch_size + 100)
         ax[1].plot(iterations, newslist)
         sns.despine()
 
-    else: # plot multiple 
+    else:  # plot multiple
         fig, ax = plt.subplots(2, len(dir_paths))
         for i, dir_path in enumerate(dir_paths):
-            iterations, mus, stds, batch_size, newslist, title, best_scores, best_smiles = plot_one(dir_path, use_norm_score)
+            iterations, mus, stds, batch_size, newslist, title, best_scores, best_smiles = plot_one(dir_path,
+                                                                                                    use_norm_score)
             mus = np.array(mus)
             stds = np.array(stds)
-            ax[0,i].fill_between(iterations, mus - stds, mus+stds)
-            
-            if plot_best :
-                ax[0].plot(iterations, best_scores, 'r*')
-            ax[0, i].set_ylim(0.75, 0.95)
-            ax[0,i].set_xlim(1,iterations[-1]+0.5)
-            #ax[0, i].set_title(title)
+            ax[0, i].fill_between(iterations, mus - stds, mus + stds, alpha=.25)
+            sns.lineplot(iterations, mus, ax=ax[0, i])
+
+            if plot_best:
+                ax[0, i].plot(iterations, best_scores, 'r*')
+            ax[0, i].set_ylim(*ylim)
+            ax[0, i].set_xlim(1, iterations[-1] + 0.5)
+            # ax[0, i].set_title(title)
 
             ax[1, i].set_ylim(0, batch_size + 100)
             ax[1, i].plot(iterations, newslist)
 
     plt.savefig("cbas_fig.pdf", format="pdf")
     plt.show()
-    
-    if return_best :
+
+    if return_best:
         return best_smiles
 
 
@@ -207,7 +208,10 @@ if __name__ == '__main__':
     # plot_csvs('plot/more_epochs')
     # plot_csvs(['plot/more_lr', 'plot/gamma'])
     # plot_csvs('plot/more_both')
-    plot_csvs('plot/q07')
+    # plot_csvs('plot/clogp_adam_small')
+    # plot_csvs('plot/zinc1')
+    # plot_csvs('plot/zinc2')
+    plot_csvs(['plot/zinc1', 'plot/zinc2'])
     # plot_csvs(['plot/large_samples', 'plot/gpu_test'])
     # plot_csvs('plot/gamma_lr')
     # plot_csvs('plot/adam_nosched')
