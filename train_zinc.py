@@ -50,7 +50,7 @@ if __name__ == "__main__":
     parser.add_argument('--name', type=str, default='zinc')  # model name in results/saved_models/
     parser.add_argument('--train', help="path to training dataframe", type=str, default='data/shuffled_whole_zinc.csv')
     parser.add_argument("--chunk_size", help="Nbr of molecules loaded simultaneously in memory (csv chunk)", type=int,
-                        default=1000)
+                        default=10000)
 
     # Alphabets params 
     parser.add_argument('--decode', type=str, default='selfies')  # language used : 'smiles' or 'selfies'
@@ -65,7 +65,7 @@ if __name__ == "__main__":
 
     # Model architecture 
     parser.add_argument('--n_gcn_layers', type=int, default=3)  # number of gcn encoder layers (3 or 4?)
-    parser.add_argument('--n_gru_layers', type=int, default=3)  # number of gcn encoder layers (3 or 4?)
+    parser.add_argument('--n_gru_layers', type=int, default=4)  # number of gcn encoder layers (3 or 4?)
     parser.add_argument('--gcn_dropout', type=float, default=0.2)
     parser.add_argument('--gcn_hdim', type=int, default=32)
     parser.add_argument('--latent_size', type=int, default=56) # jtvae uses 56
@@ -75,7 +75,7 @@ if __name__ == "__main__":
 
     # Training schedule params :
     
-    parser.add_argument('--batch_size', type=int, default=8)
+    parser.add_argument('--batch_size', type=int, default=64)
     parser.add_argument('--lr', type=float, default=1e-3)  # Initial learning rate
     parser.add_argument('--anneal_rate', type=float, default=0.9)  # Learning rate annealing
     parser.add_argument('--anneal_iter', type=int, default=40000)  # update learning rate every _ step
