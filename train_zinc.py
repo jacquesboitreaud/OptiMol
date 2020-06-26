@@ -71,7 +71,8 @@ if __name__ == "__main__":
     parser.add_argument('--latent_size', type=int, default=56) # jtvae uses 56
     parser.add_argument('--gru_hdim', type=int, default=450)
     parser.add_argument('--gru_dropout', type=float, default=0.2)
-    parser.add_argument('--use_batchNorm', type=bool, default=True)
+    
+    parser.add_argument('--use_batchNorm', action='store_true') # default uses batchnorm tobe coherent with before 
 
     # Training schedule params :
     
