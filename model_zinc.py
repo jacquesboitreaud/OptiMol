@@ -253,7 +253,7 @@ class Model(nn.Module):
                  N_properties,
                  N_targets,
                  index_to_char,
-                 decoder='GRU',
+                 decoder_type='GRU',
                  **kwargs):
         super(Model, self).__init__()
         # TODO FIX
