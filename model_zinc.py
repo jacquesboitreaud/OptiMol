@@ -130,7 +130,7 @@ class MultiLSTM(nn.Module):
     def forward(self, x, h):
         """ Forward pass to 3-layer GRU. Output =  output, hidden state of layer 3 """
         x = x.view(x.shape[0], -1)  # batch_size *
-        h_out = [0]*3
+        h_out = [0] * 3
 
         x, h_out[0] = self.gru_1(x, h[0])
         x, h_out[1] = self.gru_2(x, h[1])
@@ -253,11 +253,12 @@ class Model(nn.Module):
                  N_properties,
                  N_targets,
                  index_to_char,
+                 decoder='GRU',
                  **kwargs):
         super(Model, self).__init__()
         # TODO FIX
-        self.decoder = 'GRU'
-        self.decoder = 'LSTM'
+        self.decoder = decoder
+
         # params:
 
         # Encoding
@@ -392,7 +393,7 @@ class Model(nn.Module):
             rnn_in = F.one_hot(indices, self.voc_size).float()
 
         if torch.cuda.is_available():
-           torch.cuda.synchronize()
+            torch.cuda.synchronize()
         print(f'time in rnn: {time.perf_counter() - tback}')
 
         return gen_seq  # probas

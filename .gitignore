@@ -1,5 +1,6 @@
 __pycache__
 *.csv
+*.pdf
 data_curation
 eval/plots
 data/

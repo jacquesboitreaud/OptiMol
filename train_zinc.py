@@ -63,7 +63,8 @@ if __name__ == "__main__":
     parser.add_argument('--load_name', type=str, default='default')  # name of model to load from
     parser.add_argument('--load_iter', type=int, default=0)  # resume training at optimize step n°
 
-    # Model architecture 
+    # Model architecture
+    parser.add_argument('--decoder_type', type=str, default='GRU')  # name of model to load from
     parser.add_argument('--n_gcn_layers', type=int, default=3)  # number of gcn encoder layers (3 or 4?)
     parser.add_argument('--n_gru_layers', type=int, default=4)  # number of gcn encoder layers (3 or 4?)
     parser.add_argument('--gcn_dropout', type=float, default=0.2)
