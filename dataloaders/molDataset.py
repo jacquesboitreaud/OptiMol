@@ -428,7 +428,7 @@ class Loader():
         train_set = Subset(self.dataset, train_indices)
 
         test_set = Subset(self.dataset, test_indices)
-        print(f"Dataset contains {n} samples (train subset: {len(train_set)}, Test subset:{len(test_set)}) ")
+        #print(f"Dataset contains {n} samples (train subset: {len(train_set)}, Test subset:{len(test_set)}) ")
 
         if not self.test_only:
             train_loader = DataLoader(dataset=train_set, shuffle=True, batch_size=self.batch_size,
