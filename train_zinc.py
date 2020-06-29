@@ -21,6 +21,7 @@ import argparse
 import sys, os
 import torch
 import numpy as np
+import csv 
 
 import pandas as pd
 import torch.utils.data
@@ -40,6 +41,8 @@ from dgl_utils import send_graph_to_device
 from model_zinc import Model
 from loss_func import VAELoss, weightedPropsLoss, affsRegLoss, affsClassifLoss
 from dataloaders.molDataset import molDataset, Loader
+
+from selfies import decoder
 
 from time import time
 
@@ -94,6 +97,7 @@ if __name__ == "__main__":
     # Logging :
     parser.add_argument('--print_iter', type=int, default=1000)  # print loss metrics every _ step
     parser.add_argument('--save_iter', type=int, default=1000)  # save model weights every _ step
+    parser.add_argument('--sample_iter', type=int, default=1000)  # Draw samples every _steps (save to csv)
 
     # teacher forcing rnn schedule
     parser.add_argument('--tf_init', type=float, default=1.0) # teacher forcing fraction at the start of training 
@@ -114,10 +118,15 @@ if __name__ == "__main__":
     args, _ = parser.parse_known_args()
     
     if args.n_gru_layers ==4 :
-        from model_zinc_4layers import Model
+        raise NotImplementedError
 
     logdir, modeldir = setup(args.name, permissive=True)
     dumper = ModelDumper(dumping_path=os.path.join(modeldir, 'params.json'), argparse=args)
+    
+    save_csv = os.path.join(modeldir, 'samples.csv') # csv to write samples and their score 
+    header = ['step', 'smiles']
+    with open(save_csv, 'w', newline='') as csvfile:
+        csv.writer(csvfile).writerow(header)
 
     use_props, use_affs = True, False
     if args.no_props:
@@ -133,7 +142,6 @@ if __name__ == "__main__":
 
     targets = []
     
-
     writer = SummaryWriter(logdir)
     disable_rdkit_logging()  # function from utils to disable rdkit logs
 
@@ -224,7 +232,7 @@ if __name__ == "__main__":
                 p_target = p_target.to(device).view(-1, len(properties))
 
             # Forward passs
-            mu, logv, _, out_smi, out_p = model(graph, smiles, tf=tf_proba)
+            mu, logv, _, out_smi, out_p = model(graph, smiles, tf=tf_proba, mean_only = False) # stochastic sampling 
 
             # Compute loss terms : change according to multitask setting
             rec, kl = VAELoss(out_smi, smiles, mu, logv)
@@ -280,7 +288,7 @@ if __name__ == "__main__":
             if batch_idx == len(train_loader)-1:
                 _, out_chars = torch.max(out_smi.detach(), dim=1)
                 """
-                # Get 3 input -> output prints for visual check
+                # Get 3 (input -> output) prints for visual check
                 _, frac_valid = log_reconstruction(smiles, out_smi.detach(),
                                                    loaders.dataset.index_to_char,
                                                    string_type=args.decode)
@@ -293,13 +301,27 @@ if __name__ == "__main__":
                 quality = quality.detach().cpu()
                 writer.add_scalar('quality/train', quality.item(), total_steps)
                 print('fraction of correct characters at reconstruction // train : ', quality.item())
+                
+            if total_steps % args.sample_iter == 0 : 
+                # Draw samples and save to csv 
+                
+                with torch.no_grad():
+                    samples_z = model.sample_z_prior(n_mols=200)
+                    gen_seq = model.decode(samples_z)
+                    _, sample_indices = torch.max(gen_seq, dim=1)
+                    batch_selfies = model.indices_to_smiles(sample_indices)
+                    smiles = [decoder(s) for s in batch_selfies]
+                
+                with open(save_csv, 'a', newline='') as csvfile:
+                    for s in smiles:
+                        csv.writer(csvfile).writerow([total_steps, s])
 
             # keep track of epoch loss
             epoch_train_rec += rec.item()
             epoch_train_kl += kl.item()
             epoch_train_pmse += pmse.item()
 
-        # Validation pass
+        # Validation pass : No teacher forcing for decoding (sampling mode)
         model.eval()
         val_rec, val_kl, val_amse, val_pmse = 0, 0, 0, 0
         with torch.no_grad():
@@ -311,7 +333,7 @@ if __name__ == "__main__":
                 if use_props:
                     p_target = p_target.to(device).view(-1, len(properties))
 
-                mu, logv, z, out_smi, out_p= model(graph, smiles, tf=tf_proba)
+                mu, logv, z, out_smi, out_p= model(graph, smiles, tf=0.0, mean_only=True) # no gaussian sampling here 
 
                 # Compute loss : change according to multitask
 

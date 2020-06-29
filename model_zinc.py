@@ -257,7 +257,7 @@ class Model(nn.Module):
                  **kwargs):
         super(Model, self).__init__()
         # TODO FIX
-        self.decoder = decoder
+        self.decoder = decoder_type
 
         # params:
 
@@ -321,12 +321,12 @@ class Model(nn.Module):
 
     # ======================== Model pass functions ==========================
 
-    def forward(self, g, smiles, tf):
+    def forward(self, g, smiles, tf, mean_only=False): # Gaussian sampling activated by default
         # print('edge data size ', g.edata['one_hot'].size())
         e_out = self.encoder(g)
         mu, logv = self.encoder_mean(e_out), self.encoder_logv(e_out)
-        z = self.sample(mu, logv, mean_only=False).squeeze()  # stochastic sampling
-        out = self.decode(z, smiles, teacher_forced=tf)  # teacher forced decoding
+        z = self.sample(mu, logv, mean_only=mean_only).squeeze()
+        out = self.decode(z, smiles, teacher_forced=tf)  
         properties = self.MLP(z)
 
         return mu, logv, z, out, properties
@@ -404,8 +404,12 @@ class Model(nn.Module):
         v, indices = torch.max(gen_seq, dim=1)
         indices = indices.cpu().numpy()
         smiles = []
-        for i in range(N):
-            smiles.append(''.join([self.index_to_char[str(idx)] for idx in indices[i]]).rstrip())
+        if type(list(self.index_to_char.keys())[0]) == str: # to handle json-loaded dicts with int keys getting converted to str... 
+            for i in range(N):
+                smiles.append(''.join([self.index_to_char[str(idx)] for idx in indices[i]]).rstrip())
+        else:
+            for i in range(N):
+                smiles.append(''.join([self.index_to_char[idx] for idx in indices[i]]).rstrip())
         return smiles
 
     def fix_index_to_char(self):
@@ -420,8 +424,13 @@ class Model(nn.Module):
         except:
             pass
         smiles = []
-        for i in range(N):
-            smiles.append(''.join([self.index_to_char[str(idx)] for idx in indices[i]]).rstrip())
+        if type(list(self.index_to_char.keys())[0]) == str: # to handle json-loaded dicts with int keys getting converted to str... 
+            for i in range(N):
+                smiles.append(''.join([self.index_to_char[str(idx)] for idx in indices[i]]).rstrip())
+        else:
+            for i in range(N):
+                smiles.append(''.join([self.index_to_char[idx] for idx in indices[i]]).rstrip())
+                
         return smiles
 
     def beam_out_to_smiles(self, indices):
