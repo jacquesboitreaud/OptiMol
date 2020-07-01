@@ -28,7 +28,7 @@ rc = {'figure.figsize': (10, 5),
 plt.rcParams.update(rc)
 
 
-def plot_csvs(dir_paths, ylim=(-5, 20), plot_best=False, return_best=False, use_norm_score=False):
+def plot_csvs(dir_paths, ylim=(-12, -6), plot_best=False, return_best=False, use_norm_score=False):
     """
     get scores in successive dfs.
     Expect the names to be in format *_iteration.csv
@@ -210,8 +210,8 @@ if __name__ == '__main__':
     # plot_csvs('plot/more_both')
     # plot_csvs('plot/clogp_adam_small')
     # plot_csvs('plot/zinc1')
-    # plot_csvs('plot/zinc2')
-    plot_csvs('plot/clogp_adam_clamp_avged', plot_best=True)
+    plot_csvs('plot/zinc3_run')
+    # plot_csvs('plot/clogp_adam_clamp_avged', plot_best=True)
     # plot_csvs(['plot/zinc1', 'plot/zinc2'])
     # plot_csvs(['plot/large_samples', 'plot/gpu_test'])
     # plot_csvs('plot/gamma_lr')

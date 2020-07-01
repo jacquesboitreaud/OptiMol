@@ -83,7 +83,8 @@ def dock(smile, unique_id, pythonsh=None, vina=None, parallel=True, exhaustivene
         dump_pdbqt_path = os.path.join(tmp_path, 'ligand.pdbqt')
         mol.write('mol2', dump_mol2_path, overwrite=True)
         prepare_ligand = os.path.join(script_dir, 'prepare_ligand4.py')
-        subprocess.run(f'{pythonsh} {prepare_ligand} -l {dump_mol2_path} -o {dump_pdbqt_path} -A hydrogens'.split())
+        subprocess.run(f'{pythonsh} {prepare_ligand} -l {dump_mol2_path} -o {dump_pdbqt_path} -A hydrogens'.split(),
+                       timeout=100)
 
         start = time()
         # DOCK
@@ -91,10 +92,10 @@ def dock(smile, unique_id, pythonsh=None, vina=None, parallel=True, exhaustivene
             f' --config {CONF_PATH} --exhaustiveness {exhaustiveness} --log log.txt'
         if parallel:
             # print(cmd)
-            subprocess.run(cmd.split())
+            subprocess.run(cmd.split(), timeout=1200)
         else:
             cmd += ' --cpu 1'
-            subprocess.run(cmd.split())
+            subprocess.run(cmd.split(), timeout=1200)
         delta_t = time() - start
         print("Docking time :", delta_t)
 
@@ -153,7 +154,7 @@ def load_csv(path='to_dock_shuffled.csv'):
     actives = df['active'].values
     px50 = df['affinity'].values
     return smiles, actives, px50
-    
+
 
 if __name__ == '__main__':
     pass
@@ -165,15 +166,15 @@ if __name__ == '__main__':
 
     PYTHONSH, VINA = set_path(args.server)
 
-    #==========SLURM for experimental=============
+    # ==========SLURM for experimental=============
     proc_id, num_procs = int(sys.argv[1]), int(sys.argv[2])
-    
+
     dirname = os.path.join(script_dir, 'docking_results')
     if not os.path.isdir(dirname):
-       try:
-         os.mkdir(dirname)
-       except:
-         pass
+        try:
+            os.mkdir(dirname)
+        except:
+            pass
 
     list_smiles, list_active, list_px50 = load_csv(os.path.join(script_dir, 'scores_archive/to_dock.csv'))
     N = len(list_smiles)
@@ -183,10 +184,10 @@ if __name__ == '__main__':
     list_data = list_smiles[chunk_min:chunk_max], list_active[chunk_min:chunk_max], list_px50[chunk_min:chunk_max]
 
     one_slurm_experimental(list_data,
-            id=proc_id,
-            path=os.path.join(dirname, f"{proc_id}.csv"),
-            parallel=False,
-            exhaustiveness=args.ex)
+                           id=proc_id,
+                           path=os.path.join(dirname, f"{proc_id}.csv"),
+                           parallel=False,
+                           exhaustiveness=args.ex)
 
     # one_slurm(['toto','tata','titi'], 1, 'zztest')
     # dock('CC1C2CCC(C2)C1CN(CCO)C(=O)c1ccc(Cl)cc1', unique_id=2, exhaustiveness=args.ex)

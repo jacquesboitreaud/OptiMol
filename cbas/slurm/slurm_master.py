@@ -98,7 +98,7 @@ if __name__ == '__main__':
             cmd = f'sbatch {slurm_sampler_path}'
         else:
             cmd = f'sbatch --depend=afterany:{id_train} {slurm_sampler_path}'
-        extra_args = f' {args.prior_name} {args.name} {args.max_samples} {args.oracle}'
+        extra_args = f' {args.prior_name} {args.name} {args.max_samples} {args.oracle} {args.cap_weights}'
         cmd = cmd + extra_args
         a = subprocess.run(cmd.split(), stdout=subprocess.PIPE).stdout.decode('utf-8')
         id_sample = a.split()[3]
@@ -114,7 +114,7 @@ if __name__ == '__main__':
         # AGGREGATION AND TRAINING
         slurm_trainer_path = os.path.join(script_dir, 'slurm_trainer.sh')
         cmd = f'sbatch --depend=afterany:{id_dock} {slurm_trainer_path}'
-        extra_args = f' {args.prior_name} {args.name} {iteration} {args.quantile} {args.uncertainty} {args.oracle} {args.cap_weights}'
+        extra_args = f' {args.prior_name} {args.name} {iteration} {args.quantile} {args.uncertainty} {args.oracle}'
         cmd = cmd + extra_args
         a = subprocess.run(cmd.split(), stdout=subprocess.PIPE).stdout.decode('utf-8')
         id_train = a.split()[3]
