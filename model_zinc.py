@@ -311,13 +311,13 @@ class Model(nn.Module):
     def device(self):
         return next(self.parameters()).device
 
-    def load(self, trained_path, aff_net=False):
+    def load(self, trained_path, permissive=True):
         # Loads trained model weights, with or without the affinity predictor
-        if aff_net:
-            self.load_state_dict(torch.load(trained_path))
+        if permissive:
+            self.load_permissive(trained_path)
         else:
-            self.load_no_multitask(trained_path)
-        # print(f'Loaded weights from {trained_path}')
+            self.load_state_dict(torch.load(trained_path))
+            
 
     # ======================== Model pass functions ==========================
 
@@ -610,13 +610,24 @@ class Model(nn.Module):
         z_all = torch.cat(z_all, dim=0).numpy()
         return z_all
 
-    def load_no_multitask(self, state_dict):
-        # Workaround to be able to load a model with not same size of affinity predictor...
+    def load_permissive(self, state_dict):
+        # Workaround to be able to load a model with not same size of affinity predictor... // load only compatible layers. 
+        print('Careful, Using permissive load weights function')
         pretrained_dict = torch.load(state_dict)
         model_dict = self.state_dict()
+        
+        # Find model layers that cant be loaded
+        compatibility_issues = [k for k, v in model_dict.items() if
+                           k not in pretrained_dict or v.size() != pretrained_dict[k].size()]
+        
+        if len(compatibility_issues) >0 :     
+            print('Failed loading weights for the following layers : ',)
+            for k in compatibility_issues :
+                print(k)
         # 1. filter out unnecessary keys
         pretrained_dict = {k: v for k, v in pretrained_dict.items() if
                            k in model_dict and v.size() == model_dict[k].size()}
+        
         # 2. overwrite entries in the existing state dict
         model_dict.update(pretrained_dict)
         # 3. load the new state dict
