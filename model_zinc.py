@@ -352,7 +352,7 @@ class Model(nn.Module):
             affs = self.aff_net(z)
             return mu, logv, z, out, properties, affs
         else:
-            return mu, logv, z, out, properties
+            return mu, logv, z, out, properties, None
 
     def sample(self, mean, logv, mean_only):
         """

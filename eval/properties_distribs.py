@@ -84,7 +84,7 @@ plt.title(name)
 
 df = pd.read_csv('../results/saved_models/ln_sched_big/samples.csv')
 
-steps = np.arange(211000,225000, 2000)
+steps = np.arange(251000,331000, 10000)
 
 qeds_training , sas_training = {}, {}
 
@@ -109,8 +109,9 @@ for t in steps :
                 qeds_training[t].append(QED)
                 sas_training[t].append(SA)
 
-sns.distplot(qeds, label = 'QED')
+#sns.distplot(qeds, label = 'QED')
 for t in steps: 
     sns.distplot(qeds_training[t], label = f'step_{t}', hist = False)
 plt.legend()
+plt.xlim(0,1)
 plt.title(name)

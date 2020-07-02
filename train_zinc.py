@@ -232,7 +232,7 @@ if __name__ == "__main__":
                 p_target = p_target.to(device).view(-1, len(properties))
 
             # Forward passs
-            mu, logv, _, out_smi, out_p = model(graph, smiles, tf=tf_proba, mean_only = False) # stochastic sampling 
+            mu, logv, _, out_smi, out_p, _ = model(graph, smiles, tf=tf_proba, mean_only = False) # stochastic sampling 
 
             # Compute loss terms : change according to multitask setting
             rec, kl = VAELoss(out_smi, smiles, mu, logv)
@@ -333,7 +333,7 @@ if __name__ == "__main__":
                 if use_props:
                     p_target = p_target.to(device).view(-1, len(properties))
 
-                mu, logv, z, out_smi, out_p= model(graph, smiles, tf=0.0, mean_only=True) # no gaussian sampling here 
+                mu, logv, z, out_smi, out_p, _= model(graph, smiles, tf=0.0, mean_only=True) # no gaussian sampling here 
 
                 # Compute loss : change according to multitask
 
