@@ -36,7 +36,7 @@ if __name__=='__main__':
 
 from utils import ModelDumper, disable_rdkit_logging, setup, log_reconstruction
 from dgl_utils import send_graph_to_device
-from model import Model
+from model_zinc import Model
 from loss_func import VAELoss, weightedPropsLoss, affsRegLoss, affsClassifLoss
 from dataloaders.molDataset import molDataset, Loader
 
@@ -58,24 +58,33 @@ if __name__ == "__main__":
     parser.add_argument('--load_name', type=str, default='default')  # name of model to load from
     parser.add_argument('--load_iter', type=int, default=0)  # resume training at optimize step n°
 
-    
-    # No need to change under this 
 
-    parser.add_argument('--latent_size', type=int, default=56)  # size of latent code
+    # Model architecture 
+    parser.add_argument('--decoder_type', type=str, default='GRU')  # name of model to load from
     parser.add_argument('--n_gcn_layers', type=int, default=3)  # number of gcn encoder layers (3 or 4?)
+    parser.add_argument('--n_gru_layers', type=int, default=4)  # number of gcn encoder layers (3 or 4?)
+    parser.add_argument('--gcn_dropout', type=float, default=0.2)
+    parser.add_argument('--gcn_hdim', type=int, default=32)
+    parser.add_argument('--latent_size', type=int, default=56) # jtvae uses 56
+    parser.add_argument('--gru_hdim', type=int, default=450)
+    parser.add_argument('--gru_dropout', type=float, default=0.2)
+    
+    parser.add_argument('--use_batchNorm', action='store_true') # default uses batchnorm tobe coherent with before 
+
+    # Training schedule params :
+
+    parser.add_argument('--epochs', type=int, default=50)
+    parser.add_argument('--batch_size', type=int, default=64)
     parser.add_argument('--lr', type=float, default=1e-3)  # Initial learning rate
+    parser.add_argument('--anneal_rate', type=float, default=0.9)  # Learning rate annealing
+    parser.add_argument('--anneal_iter', type=int, default=40000)  # update learning rate every _ step
     parser.add_argument('--clip_norm', type=float, default=50.0)  # Gradient clipping max norm
+    
+    # Kl weight schedule 
     parser.add_argument('--beta', type=float, default=0.0)  # initial KL annealing weight
     parser.add_argument('--step_beta', type=float, default=0.002)  # beta increase per step
     parser.add_argument('--max_beta', type=float, default=0.5)  # maximum KL annealing weight
     parser.add_argument('--warmup', type=int, default=40000)  # number of steps with only reconstruction loss (beta=0)
-
-    parser.add_argument('--processes', type=int, default=20)  # num workers
-
-    parser.add_argument('--batch_size', type=int, default=64)
-    parser.add_argument('--epochs', type=int, default=50)  # nbr training epochs
-    parser.add_argument('--anneal_rate', type=float, default=0.9)  # Learning rate annealing
-    parser.add_argument('--anneal_iter', type=int, default=40000)  # update learning rate every _ step
     parser.add_argument('--kl_anneal_iter', type=int, default=2000)  # update beta every _ step
 
     parser.add_argument('--print_iter', type=int, default=1000)  # print loss metrics every _ step
@@ -93,6 +102,8 @@ if __name__ == "__main__":
     parser.add_argument('--no_props', action='store_false')  # No multitask props
     parser.add_argument('--no_aff', action='store_false')  # No multitask aff
     parser.add_argument('--bin_affs', action='store_true')  # Binned discretized affs or true values
+    
+    parser.add_argument('--processes', type=int, default=20)  # num workers
 
     # =======
 
@@ -146,13 +157,17 @@ if __name__ == "__main__":
     params = {'features_dim': loaders.dataset.emb_size,  # node embedding dimension
               'num_rels': loaders.num_edge_types,
               'gcn_layers': args.n_gcn_layers,
-              'gcn_hdim': 32,
+              'gcn_dropout':args.gcn_dropout,
+              'gcn_hdim': args.gcn_hdim,
+              'gru_hdim':args.gru_hdim,
+              'decoder_type': args.decoder_type,
+              'gru_dropout': args.gru_dropout,
+              'batchNorm': args.use_batchNorm,
               'l_size': args.latent_size,
               'voc_size': loaders.dataset.n_chars,
               'max_len': loaders.dataset.max_len,
               'N_properties': len(properties),
               'N_targets': len(targets),
-              'binned_scores': args.bin_affs,
               'device': device,
               'index_to_char': loaders.dataset.index_to_char,
               'props': properties,

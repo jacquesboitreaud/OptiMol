@@ -306,6 +306,26 @@ class Model(nn.Module):
             nn.Linear(32, 16),
             nn.ReLU(),
             nn.Linear(16, self.N_properties))
+        
+        
+# =============================================================================
+        # Affinities predictor (regression)
+#         if not self.binned_scores:
+#             self.aff_net = nn.Sequential(
+#                 nn.Linear(self.l_size, 32),
+#                 nn.ReLU(),
+#                 nn.Linear(32, 16),
+#                 nn.ReLU(),
+#                 nn.Linear(16, self.N_targets))
+#         else:
+#             self.aff_net = nn.Sequential(
+#                 nn.Linear(self.l_size, 32),
+#                 nn.ReLU(),
+#                 nn.Linear(32, 16),
+#                 nn.ReLU(),
+#                 nn.Linear(16, 3),
+#                 nn.LogSoftmax(dim=1))  # 3 bins
+# =============================================================================
 
     @property
     def device(self):
@@ -321,15 +341,18 @@ class Model(nn.Module):
 
     # ======================== Model pass functions ==========================
 
-    def forward(self, g, smiles, tf, mean_only=False): # Gaussian sampling activated by default
+    def forward(self, g, smiles, tf, mean_only=False, multitask_aff = False): # Gaussian sampling activated by default
         # print('edge data size ', g.edata['one_hot'].size())
         e_out = self.encoder(g)
         mu, logv = self.encoder_mean(e_out), self.encoder_logv(e_out)
         z = self.sample(mu, logv, mean_only=mean_only).squeeze()
         out = self.decode(z, smiles, teacher_forced=tf)  
         properties = self.MLP(z)
-
-        return mu, logv, z, out, properties
+        if multitask_aff : 
+            affs = self.aff_net(z)
+            return mu, logv, z, out, properties, affs
+        else:
+            return mu, logv, z, out, properties
 
     def sample(self, mean, logv, mean_only):
         """
@@ -621,9 +644,12 @@ class Model(nn.Module):
                            k not in pretrained_dict or v.size() != pretrained_dict[k].size()]
         
         if len(compatibility_issues) >0 :     
-            print('Failed loading weights for the following layers : ',)
+            print('>>> Failed loading weights for the following layers : ',)
             for k in compatibility_issues :
                 print(k)
+        else:
+            print(">>> All trainable params loaded successfully")
+                
         # 1. filter out unnecessary keys
         pretrained_dict = {k: v for k, v in pretrained_dict.items() if
                            k in model_dict and v.size() == model_dict[k].size()}

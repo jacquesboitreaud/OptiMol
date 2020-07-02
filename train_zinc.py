@@ -179,7 +179,7 @@ if __name__ == "__main__":
               'index_to_char': loaders.dataset.index_to_char,
               'props': properties,
               'targets': targets}
-    # pickle.dump(params, open('saved_models/model_params.pickle', 'wb'))
+
     dumper.dic.update(params)
     dumper.dump()
 
