@@ -98,7 +98,7 @@ class GenTrain():
                 w_i = w_i.to(self.device)
 
                 # Forward pass
-                mu, logv, z, out_smi, out_p, out_a = self.model(graph, smiles, tf=self.teacher_forcing)  # no tf
+                mu, logv, z, out_smi, out_p, _ = self.model(graph, smiles, tf=self.teacher_forcing)  # no tf
                 # plot_kde(z.cpu().detach().numpy())
 
                 # Compute CbAS loss with samples weights 

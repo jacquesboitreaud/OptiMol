@@ -38,7 +38,7 @@ if __name__ == '__main__':
 
 from utils import ModelDumper, disable_rdkit_logging, setup, log_reconstruction
 from dgl_utils import send_graph_to_device
-from model_zinc import Model
+from model import Model
 from loss_func import VAELoss, weightedPropsLoss, affsRegLoss, affsClassifLoss
 from dataloaders.molDataset import molDataset, Loader
 
@@ -179,7 +179,7 @@ if __name__ == "__main__":
               'index_to_char': loaders.dataset.index_to_char,
               'props': properties,
               'targets': targets}
-    # pickle.dump(params, open('saved_models/model_params.pickle', 'wb'))
+
     dumper.dic.update(params)
     dumper.dump()
 
@@ -232,7 +232,7 @@ if __name__ == "__main__":
                 p_target = p_target.to(device).view(-1, len(properties))
 
             # Forward passs
-            mu, logv, _, out_smi, out_p = model(graph, smiles, tf=tf_proba, mean_only = False) # stochastic sampling 
+            mu, logv, _, out_smi, out_p, _ = model(graph, smiles, tf=tf_proba, mean_only = False) # stochastic sampling 
 
             # Compute loss terms : change according to multitask setting
             rec, kl = VAELoss(out_smi, smiles, mu, logv)
@@ -333,7 +333,7 @@ if __name__ == "__main__":
                 if use_props:
                     p_target = p_target.to(device).view(-1, len(properties))
 
-                mu, logv, z, out_smi, out_p= model(graph, smiles, tf=0.0, mean_only=True) # no gaussian sampling here 
+                mu, logv, z, out_smi, out_p, _= model(graph, smiles, tf=0.0, mean_only=True) # no gaussian sampling here 
 
                 # Compute loss : change according to multitask
 

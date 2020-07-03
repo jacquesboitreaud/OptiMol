@@ -33,16 +33,16 @@ if __name__ == "__main__":
     
     from dataloaders.molDataset import molDataset, Loader
     from data_processing.rdkit_to_nx import smiles_to_nx
-    from model_zinc import Model, model_from_json
+    from model import Model, model_from_json
     from utils import *
     from selfies import decoder, encoder
     from data_processing.get_selfies import clean_smiles
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--name', help="Saved model directory, in /results/saved_models",
-                        default='big_zinc_tf')
+                        default='LN_08sched')
     
-    parser.add_argument('-N', "--n_mols", help="Nbr to generate", type=int, default=10000)
+    parser.add_argument('-N', "--n_mols", help="Nbr to generate", type=int, default=20000)
     parser.add_argument('-v', '--vocab', default='selfies')  # vocab used by model
 
     parser.add_argument('-o', '--output_file', type=str, default='data/gen.txt')

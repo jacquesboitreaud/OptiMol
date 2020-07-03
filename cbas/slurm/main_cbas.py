@@ -27,7 +27,7 @@ if __name__ == '__main__':
     parser.add_argument('--prior_name', type=str, default='inference_default')  # the prior VAE (pretrained)
     parser.add_argument('--alphabet', type=str, default='moses_alphabets.json')  # the json with selfies alphabet and max selfies len. 
     
-    parser.add_argument('-n', '--name', type=str, default='q07')  # the name of the experiment
+    parser.add_argument('-n', '--name', type=str, default='cbas_run')  # the name of the experiment
     parser.add_argument('--iters', type=int, default=20)  # Number of iterations
     parser.add_argument('--oracle', type=str, default='qed')  # 'qed' or 'docking' or 'qsar' or 'clogp' or 'cqed'
 

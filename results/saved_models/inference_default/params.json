@@ -88,5 +88,9 @@
     "load_name": "default",
     "no_props": false,
     "no_aff": false,
-    "gcn_hdim": 32
+    "gcn_hdim": 32,
+    "gru_hdim":450,
+    "gru_dropout":0.0,
+    "gcn_dropout":0.0,
+    "batchNorm":false
 }
