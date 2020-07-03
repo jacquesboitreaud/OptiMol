@@ -8,7 +8,7 @@ Compute distributions of QED & SA for samples from a model and training set
 """
 
 from rdkit import Chem
-from rdkit.Chem import Draw
+from rdkit.Chem import Draw, QED
 import pickle
 import pandas as pd
 import numpy as np
@@ -25,12 +25,12 @@ from data_processing.sascorer import calculateScore
 
 
 
-## Training set 
-name = 'step_10'
+## Plot samples in csv  
+name = 'shuffled_whole_zinc'
 
 df = pd.read_csv(f'../data/{name}.csv', nrows = 20000)
 
-smiles = df.smile
+smiles = df.smiles # some csvs (cbas especially) use 'smile' as a header instead. 
 
 qeds, sas = [], []
 
@@ -38,10 +38,10 @@ for s in smiles :
     
     m= Chem.MolFromSmiles(s)
     if m is not None:
-        QED = Chem.QED.qed(m)
+        q = QED.qed(m)
         SA = calculateScore(m)
         
-        qeds.append(QED)
+        qeds.append(q)
         sas.append(SA)
     
 
@@ -82,9 +82,9 @@ plt.title(name)
 # Samples taken during training : 
 
 
-df = pd.read_csv('../results/saved_models/ln_sched_big/samples.csv')
+df = pd.read_csv('../results/saved_models/LN_08sched/samples.csv')
 
-steps = np.arange(251000,331000, 10000)
+steps = np.arange(10000,370000, 10000)
 
 qeds_training , sas_training = {}, {}
 
@@ -103,15 +103,17 @@ for t in steps :
             
             if m is not None:
             
-                QED = Chem.QED.qed(m)
+                q = Chem.QED.qed(m)
                 SA = calculateScore(m)
             
-                qeds_training[t].append(QED)
+                qeds_training[t].append(q)
                 sas_training[t].append(SA)
 
 #sns.distplot(qeds, label = 'QED')
-for t in steps: 
+plt.figure()
+for t in steps[15:20]: 
     sns.distplot(qeds_training[t], label = f'step_{t}', hist = False)
 plt.legend()
 plt.xlim(0,1)
+plt.title('')
 plt.title(name)

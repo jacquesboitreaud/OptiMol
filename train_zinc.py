@@ -38,7 +38,7 @@ if __name__ == '__main__':
 
 from utils import ModelDumper, disable_rdkit_logging, setup, log_reconstruction
 from dgl_utils import send_graph_to_device
-from model_zinc import Model
+from model import Model
 from loss_func import VAELoss, weightedPropsLoss, affsRegLoss, affsClassifLoss
 from dataloaders.molDataset import molDataset, Loader
 
