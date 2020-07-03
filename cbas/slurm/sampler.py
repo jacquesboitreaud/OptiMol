@@ -32,12 +32,12 @@ def get_samples(prior_model, search_model, max, w_min):
     :return:
     """
 
-    max_SA = None
-    min_QED = None
+    max_SA = 10
+    min_QED = 0
 
     sample_selfies = []
     weights = []
-    sample_selfies_set = set()
+    sample_can_smiles_set = set()
     tries = 0
     batch_size = 100
 
@@ -50,8 +50,12 @@ def get_samples(prior_model, search_model, max, w_min):
 
     # Importance weights
     while (tries * batch_size) < (10 * max) and len(sample_selfies) < max:
-
         tries += 1
+
+        # TIMING ON GPU:
+        # Time to get to the for loop ~0.5s
+        # Time to decode selfies ~3s:
+        # Time to compute qed and sa ~0.2s
 
         # Get raw samples
         samples_z = search_model.sample_z_prior(n_mols=batch_size)
@@ -76,10 +80,14 @@ def get_samples(prior_model, search_model, max, w_min):
         batch_selfies = search_model.indices_to_smiles(sample_indices)
         for i, s in enumerate(batch_selfies):
             new_selfie = decoder(s)
-            if new_selfie in sample_selfies_set:
+            m = Chem.MolFromSmiles(new_selfie)
+            if m is None:
+                continue
+            can_smile = Chem.MolToSmiles(m)
+            if can_smile in sample_can_smiles_set:
                 continue
             if max_SA is not None or min_QED is not None:
-                m = Chem.MolFromSmiles(new_selfie)
+                a = time.perf_counter()
             # sys.exit()
             if max_SA is not None and calculateScore(m) > max_SA:
                 filtered_sa += 1
@@ -89,7 +97,7 @@ def get_samples(prior_model, search_model, max, w_min):
                 continue
 
             new_ones += 1
-            sample_selfies_set.add(new_selfie)
+            sample_can_smiles_set.add(can_smile)
             sample_selfies.append(new_selfie)
             weights.append(batch_weights[i])
 
