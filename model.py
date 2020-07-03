@@ -538,6 +538,7 @@ def model_from_json(name='inference_default', load_weights=True, default_dir=Tru
         try:
             if default_dir:
                 model.load(os.path.join(path_to_dir, "weights.pth"))
+                print(f'loaded {name}')
             else:
                 model.load(weights_path)
 

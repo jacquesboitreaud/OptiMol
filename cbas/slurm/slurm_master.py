@@ -17,7 +17,7 @@ import subprocess
 import torch
 
 from utils import Dumper, soft_mkdir
-from model import model_from_json
+from model_zinc import model_from_json
 
 if __name__ == '__main__':
 
@@ -88,6 +88,7 @@ if __name__ == '__main__':
     dumper.dump()
 
     prior_model_init = model_from_json(args.prior_name)
+    print(prior_model_init)
     torch.save(prior_model_init.state_dict(), os.path.join(savepath, "weights.pth"))
     id_train = None
 

@@ -9,7 +9,7 @@ import argparse
 
 from cbas.gen_prob import GenProb
 from utils import *
-from model import model_from_json
+from model_zinc import model_from_json
 
 import pickle
 
@@ -40,6 +40,9 @@ def get_samples(prior_model, search_model, max, w_min):
     search_model.to(device)
     prior_model.to(device)
 
+    # print(search_model)
+    # print(prior_model)
+
     # Importance weights
     while (tries * batch_size) < (10 * max) and len(sample_selfies) < max:
         tries += 1
@@ -53,9 +56,10 @@ def get_samples(prior_model, search_model, max, w_min):
         prior_prob = GenProb(sample_indices, samples_z, prior_model)
         search_prob = GenProb(sample_indices, samples_z, search_model)
         batch_weights = torch.exp(prior_prob - search_prob)
-        
-        if 0 < w_min : # cap the weights tensor 
-            batch_weights = batch_weights.clamp(min = w_min)
+        # print(prior_prob)
+        # print(search_prob)
+        if 0 < w_min:  # cap the weights tensor
+            batch_weights = batch_weights.clamp(min=w_min)
         print('Mean of weights tensor: ', torch.mean(batch_weights).item())
         # batch_weights = batch_weights / torch.mean(batch_weights)
 
@@ -83,7 +87,7 @@ def main(prior_name, name, max_samples, diversity_picker, oracle, w_min):
     model_weights_path = os.path.join(script_dir, 'results', name, 'weights.pth')
     search_model.load(model_weights_path)
 
-    samples, weights = get_samples(prior_model, search_model, max=max_samples, w_min = w_min)
+    samples, weights = get_samples(prior_model, search_model, max=max_samples, w_min=w_min)
 
     # if diversity picker < max_samples, we subsample with rdkit picker : 
     if 0 < diversity_picker < max_samples:
@@ -142,12 +146,12 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--prior_name', type=str, default='inference_default')  # the prior VAE (pretrained)
-    parser.add_argument('--name', type=str, default='search_vae')  # the prior VAE (pretrained)
+    parser.add_argument('--name', type=str, default='search_vae')  # the query model name
     parser.add_argument('--max_samples', type=int, default=1000)  # samples drawn from model
     parser.add_argument('--diversity_picker', type=int,
                         default=-1)  # diverse samples subset size. if negative, all selected
     parser.add_argument('--oracle', type=str)  # 'qed' or 'docking' or 'qsar'
-    parser.add_argument('--cap_weights', type=float, default = -1)  # min value to cap weights. Ignored if set to -1. 
+    parser.add_argument('--cap_weights', type=float, default=-1)  # min value to cap weights. Ignored if set to -1.
     # =======
 
     args, _ = parser.parse_known_args()
@@ -156,5 +160,5 @@ if __name__ == '__main__':
          name=args.name,
          max_samples=args.max_samples,
          diversity_picker=args.diversity_picker,
-         oracle=args.oracle, 
-         w_min = args.cap_weights)
+         oracle=args.oracle,
+         w_min=args.cap_weights)

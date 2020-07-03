@@ -11,7 +11,7 @@ import shutil
 
 from cbas.gen_train import GenTrain
 from cbas.oracles import deterministic_one, normal_cdf_oracle
-from model import model_from_json
+from model_zinc import model_from_json
 from utils import *
 
 
@@ -40,8 +40,8 @@ def gather_scores(iteration, name):
 
     molecules = merged['smile']
     scores = merged['score']
-
-    return dict(zip(molecules, scores))
+    dict_scores = dict(zip(molecules, scores))
+    return {mol: score for mol, score in dict_scores.items() if score != 0}
 
 
 def process_samples(score_dict, samples, weights, quantile, prev_gamma=-1000, uncertainty='binary', threshold=0.05,
@@ -148,6 +148,7 @@ def main(iteration, quantile, uncertainty, prior_name, name, oracle):
     # Add model dumping at each epoch
     weights_path = os.path.join(search_trainer.savepath, f"weights_{iteration}.pth")
     torch.save(search_trainer.model.state_dict(), weights_path)
+
 
 if __name__ == '__main__':
     pass
