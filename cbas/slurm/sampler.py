@@ -9,7 +9,7 @@ import argparse
 
 from cbas.gen_prob import GenProb
 from utils import *
-from model_zinc import model_from_json
+from model import model_from_json
 
 import pickle
 

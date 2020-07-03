@@ -11,7 +11,7 @@ import shutil
 
 from cbas.gen_train import GenTrain
 from cbas.oracles import deterministic_one, normal_cdf_oracle
-from model_zinc import model_from_json
+from model import model_from_json
 from utils import *
 
 

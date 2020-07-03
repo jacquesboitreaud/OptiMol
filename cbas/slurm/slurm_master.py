@@ -17,7 +17,7 @@ import subprocess
 import torch
 
 from utils import Dumper, soft_mkdir
-from model_zinc import model_from_json
+from model import model_from_json
 
 if __name__ == '__main__':
 
