@@ -1,23 +1,24 @@
 import os
 import sys
 
-script_dir = os.path.dirname(os.path.realpath(__file__))
-if __name__ == '__main__':
-    sys.path.append(os.path.join(script_dir, '..', '..'))
-
-import argparse
-
-from cbas.gen_prob import GenProb
-from utils import *
-from model import model_from_json
-
 import pickle
+import argparse
+import time
 
-# rdkit for diversity picker 
+# rdkit for diversity picker
 from rdkit import Chem
 from rdkit.Chem.rdMolDescriptors import GetMorganFingerprint
 from rdkit import DataStructs
 from rdkit.SimDivFilters.rdSimDivPickers import MaxMinPicker
+
+script_dir = os.path.dirname(os.path.realpath(__file__))
+if __name__ == '__main__':
+    sys.path.append(os.path.join(script_dir, '..', '..'))
+
+from cbas.gen_prob import GenProb
+from utils import *
+from model import model_from_json
+from data_processing.sascorer import calculateScore
 
 
 def get_samples(prior_model, search_model, max, w_min):
@@ -30,9 +31,13 @@ def get_samples(prior_model, search_model, max, w_min):
     :param w_min: minimum value to cap weights p(x;prior)/p(x;search model)
     :return:
     """
+
+    max_SA = 10
+    min_QED = 0
+
     sample_selfies = []
     weights = []
-    sample_selfies_set = set()
+    sample_can_smiles_set = set()
     tries = 0
     batch_size = 100
 
@@ -46,6 +51,11 @@ def get_samples(prior_model, search_model, max, w_min):
     # Importance weights
     while (tries * batch_size) < (10 * max) and len(sample_selfies) < max:
         tries += 1
+
+        # TIMING ON GPU:
+        # Time to get to the for loop ~0.5s
+        # Time to decode selfies ~3s:
+        # Time to compute qed and sa ~0.2s
 
         # Get raw samples
         samples_z = search_model.sample_z_prior(n_mols=batch_size)
@@ -65,16 +75,34 @@ def get_samples(prior_model, search_model, max, w_min):
 
         # Check the novelty
         new_ones = 0
+        filtered_sa = 0
+        filtered_qed = 0
         batch_selfies = search_model.indices_to_smiles(sample_indices)
         for i, s in enumerate(batch_selfies):
             new_selfie = decoder(s)
-            if new_selfie not in sample_selfies_set:
-                new_ones += 1
-                sample_selfies_set.add(new_selfie)
-                sample_selfies.append(new_selfie)
-                weights.append(batch_weights[i])
+            m = Chem.MolFromSmiles(new_selfie)
+            if m is None:
+                continue
+            can_smile = Chem.MolToSmiles(m)
+            if can_smile in sample_can_smiles_set:
+                continue
+            if max_SA is not None or min_QED is not None:
+                a = time.perf_counter()
+            # sys.exit()
+            if max_SA is not None and calculateScore(m) > max_SA:
+                filtered_sa += 1
+                continue
+            if min_QED is not None and Chem.QED.qed(m) < min_QED:
+                filtered_qed += 1
+                continue
 
-        print(f'{tries} : {new_ones}/{batch_size} unique smiles sampled')
+            new_ones += 1
+            sample_can_smiles_set.add(can_smile)
+            sample_selfies.append(new_selfie)
+            weights.append(batch_weights[i])
+
+        print(
+            f'{tries} : ({new_ones} molecules sampled, {filtered_sa} discarded on sa, {filtered_qed} on qed )/{batch_size}')
     return sample_selfies, weights
 
 
