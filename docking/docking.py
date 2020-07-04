@@ -69,7 +69,7 @@ def dock(smile, unique_id, pythonsh=None, vina=None, parallel=True, exhaustivene
         global VINA
         vina = VINA
 
-    soft_mkdir('tmp')
+    #soft_mkdir('tmp') # tmp is always there and never removed 
     tmp_path = f'tmp/{unique_id}'
     soft_mkdir(tmp_path)
 

@@ -40,12 +40,12 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--name', help="Saved model directory, in /results/saved_models",
-                        default='LN_08sched')
+                        default='cbas_control')
     
-    parser.add_argument('-N', "--n_mols", help="Nbr to generate", type=int, default=20000)
+    parser.add_argument('-N', "--n_mols", help="Nbr to generate", type=int, default=10000)
     parser.add_argument('-v', '--vocab', default='selfies')  # vocab used by model
 
-    parser.add_argument('-o', '--output_file', type=str, default='data/gen.txt')
+    parser.add_argument('-o', '--output_file', type=str, default='data/gen_2.txt')
     parser.add_argument('-b', '--use_beam', action='store_true', help="use beam search (slow!)")
     
     parser.add_argument( '--qed', action='store_true', help="plot qed distrib")

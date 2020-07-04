@@ -39,7 +39,8 @@ if __name__ == '__main__':
     parser.add_argument('--cap_weights', type=float, default = -1)  # min value to cap weights. Ignored if set to -1.
 
     # DOCKER
-    parser.add_argument('--server', type=str, default='pasteur', help='server to run on')  # the prior VAE (pretrained)
+    parser.add_argument('--server', type=str, default='pasteur', help='server to run on')  
+    # server : 'rup', 'mac', 'pasteur', 'cedar'
     parser.add_argument('--ex', type=int, default=16)  # Nbr of samples at each iter
 
     # TRAINER
