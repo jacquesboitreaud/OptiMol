@@ -78,7 +78,8 @@ if __name__ == '__main__':
             f.write('#SBATCH --job-name=sampler\n') 
             f.write('#SBATCH --output=out_slurm/sampler_%A.out\n')
             f.write('#SBATCH --error=out_slurm/sampler_%A.err\n')
-            f.write('#SBATCH --gres=gpu:1\n') # gpu request   
+            f.write('#SBATCH --gres=gpu:1\n') # gpu request
+            f.write('#SBATCH --mem=4000M\n')  # memory (per node))
             f.write('python sampler.py --prior_name $1 --name $2 --max_samples $3 --oracle $4 --cap_weights $5\n')
             
         # Docker 
@@ -101,7 +102,8 @@ if __name__ == '__main__':
             f.write('#SBATCH --job-name=trainer\n') 
             f.write('#SBATCH --output=out_slurm/trainer_%A.out\n')
             f.write('#SBATCH --error=out_slurm/trainer_%A.err\n')
-            f.write('#SBATCH --gres=gpu:1\n') # gpu request   
+            f.write('#SBATCH --gres=gpu:1\n') # gpu request  
+            f.write('#SBATCH --mem=4000M\n')  # memory (per node))
             f.write('python trainer.py --prior_name $1 --name $2 --iteration $3 --quantile $4 --uncertainty $5 --oracle $6')
         
     if args.server == 'cedar':
