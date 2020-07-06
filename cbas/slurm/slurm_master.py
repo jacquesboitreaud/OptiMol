@@ -67,6 +67,46 @@ if __name__ == '__main__':
     setup()
     savepath = os.path.join(script_dir, 'results', args.name)
     soft_mkdir(savepath)
+    
+    def dump_sh():
+        """ Writes slurm sh scripts for CEDAR that will be called to launch slurm processes """
+        # Sampler 
+        with open(os.path.join(script_dir, 'slurm_sampler.sh'), 'w') as f :
+            f.write('#!/bin/sh')
+            f.write('#SBATCH --account=def-jeromew')
+            f.write('#SBATCH --time=00:05:00')
+            f.write('#SBATCH --job-name=sampler') 
+            f.write('#SBATCH --output=out_slurm/sampler_%A.out')
+            f.write('#SBATCH --error=out_slurm/sampler_%A.err')
+            f.write('#SBATCH --gres=gpu:1') # gpu request   
+            f.write('python sampler.py --prior_name $1 --name $2 --max_samples $3 --oracle $4 --cap_weights $5')
+            
+        # Docker 
+        with open(os.path.join(script_dir, 'slurm_docker.sh'), 'w') as f :
+            f.write('#!/bin/sh')
+            f.write('#SBATCH --account=def-jeromew')
+            f.write('#SBATCH --time=20:00:00')
+            f.write('#SBATCH --job-name=docker') 
+            f.write('#SBATCH --output=out_slurm/docker_%A.out')
+            f.write('#SBATCH --error=out_slurm/docker_%A.err')
+            f.write('#SBATCH --cpus-per-task=1')
+            f.write('#SBATCH --array=0-199')
+            f.write('python docker.py $SLURM_ARRAY_TASK_ID 200 --server $1 --exhaustiveness $2 --name $3 --oracle $4')
+        
+        # Trainer
+        with open(os.path.join(script_dir, 'slurm_trainer.sh'), 'w') as f :
+            f.write('#!/bin/sh')
+            f.write('#SBATCH --account=def-jeromew')
+            f.write('#SBATCH --time=00:10:00')
+            f.write('#SBATCH --job-name=trainer') 
+            f.write('#SBATCH --output=out_slurm/trainer_%A.out')
+            f.write('#SBATCH --error=out_slurm/trainer_%A.err')
+            f.write('#SBATCH --gres=gpu:1') # gpu request   
+            f.write('python trainer.py --prior_name $1 --name $2 --iteration $3 --quantile $4 --uncertainty $5 --oracle $6')
+        
+    if args.server == 'cedar':
+        dump_sh()
+
 
     # Save experiment parameters
     dumper = Dumper(dumping_path=os.path.join(savepath, 'experiment.json'), dic=args.__dict__)
