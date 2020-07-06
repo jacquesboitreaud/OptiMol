@@ -28,12 +28,12 @@ from data_processing.sascorer import calculateScore
 
     
 
-name = 'qed_ln_nosched_midlr'
+name = 'docking_new_lr'
 
 norm_scores = False # set to true for clogp
 
 # Plot individual run results 
-smiles = plot_csvs(f'../cbas/slurm/results/{name}/docking_results', ylim=(0.5,1), plot_best = True, return_best=True, use_norm_score = norm_scores)
+smiles = plot_csvs(f'../cbas/slurm/results/{name}/docking_results', ylim=(-12,-6), plot_best = True, return_best=True, use_norm_score = norm_scores)
 scores = [t[1] for t in smiles]
 
 img=Draw.MolsToGridImage([Chem.MolFromSmiles(t[0]) for t in smiles], legends = [f'step {i}: {sc:.2f}' for i,sc in enumerate(scores)])

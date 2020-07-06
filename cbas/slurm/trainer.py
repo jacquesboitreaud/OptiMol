@@ -25,6 +25,8 @@ def gather_scores(iteration, name):
     dirname = os.path.join(script_dir, 'results', name, 'docking_small_results')
     dfs = [pd.read_csv(os.path.join(dirname, csv_file)) for csv_file in os.listdir(dirname)]
     merged = pd.concat(dfs)
+    # remove zero scored molecules : 
+    merged = merged[merged['score']!=0]
     dump_path = os.path.join(script_dir, 'results', name, 'docking_results', f'{iteration}.csv')
     merged.to_csv(dump_path)
 
@@ -41,7 +43,7 @@ def gather_scores(iteration, name):
     molecules = merged['smile']
     scores = merged['score']
     dict_scores = dict(zip(molecules, scores))
-    return {mol: score for mol, score in dict_scores.items() if score != 0}
+    return dict_scores
 
 
 def process_samples(score_dict, samples, weights, quantile, prev_gamma=-1000, uncertainty='binary', threshold=0.05,
