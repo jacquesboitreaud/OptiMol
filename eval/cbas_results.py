@@ -33,32 +33,45 @@ name = 'multiobj_qed4'
 norm_scores = False # set to true for clogp
 
 # Plot individual run results 
-smiles = plot_csvs(f'../cbas/slurm/results/{name}/docking_results', ylim=(-12,-6), plot_best = True, return_best=True, use_norm_score = norm_scores)
+smiles = plot_csvs(f'../cbas/slurm/results/{name}/docking_results', ylim=(-12,-6), plot_best = True, return_best=True, 
+                   use_norm_score = norm_scores, obj = 'docking')
 scores = [t[1] for t in smiles]
+mols = [Chem.MolFromSmiles(t[0]) for t in smiles]
+qeds = np.array([Chem.QED.qed(m) for m in mols])
 
-img=Draw.MolsToGridImage([Chem.MolFromSmiles(t[0]) for t in smiles], legends = [f'step {i}: {sc:.2f}' for i,sc in enumerate(scores)])
+img=Draw.MolsToGridImage(mols, legends = [f'step {i}: {sc:.2f}, QED = {q:.2f}' for i,(sc,q) in enumerate(zip(scores, qeds))])
+
     
 
 
-### Get top 3 at last step 
-step = 20
+### Get QED distribution at different steps of CbAS
+
+for step in np.arange(1,10,2):
+
+    samples = pd.read_csv(f'../cbas/slurm/results/{name}/docking_results/{step}.csv')
+    smiles = samples.smile
+    mols = [Chem.MolFromSmiles(s) for s in smiles]
+    qeds = np.array([Chem.QED.qed(m) for m in mols])
+    sns.distplot(qeds, label = f'step {step}', hist = False)
+    plt.legend()
+
+
+# Top mols at step : 
+
+step = 8
+N_top = 10
+
 samples = pd.read_csv(f'../cbas/slurm/results/{name}/docking_results/{step}.csv')
-if norm_scores :
-    samples = samples.sort_values('norm_score')
-else:
-    samples = samples.sort_values('score')
-smiles = list(samples[-3:].smile)
-smiles.reverse()
-if norm_scores :
-    scores = list(samples[-3:].norm_score)
-else:
-    scores = list(samples[-3:].score)
+samples = samples.sort_values('score')
 
-scores.reverse()
+smiles = samples.smile
+scores = samples.score
+mols = [Chem.MolFromSmiles(s) for s in smiles]
 
-img=Draw.MolsToGridImage([Chem.MolFromSmiles(s) for s in smiles], molsPerRow= 1, legends = [f'{sc:.2f}' for i,sc in enumerate(scores)])
+mols = mols[:N_top]
+scores = scores[:N_top]
 
-
+img=Draw.MolsToGridImage(mols, molsPerRow= int(N_top/2), legends = [f'{sc:.2f}' for i,sc in enumerate(scores)])
 soft_mkdir('plots')
 img.save(f'plots/cbas_{name}_mols_{step}.png')
 
@@ -92,20 +105,6 @@ img.save(f'plots/cbas_{name}_mols_{step}.png')
 #     scores = list(samples[-3:].score)
 #
 # scores.reverse()
-
-# FILTER ZEROES
-# for index in range(1, 26):
-#     samples = pd.read_csv(f'plot/robust_run/{index}.csv')
-#     smiles = samples['smile']
-#     scores = samples['score']
-#     filter_smile = list()
-#     filter_score = list()
-#     for i, sc in enumerate(scores):
-#         if sc != 0:
-#             filter_score.append(sc)
-#             filter_smile.append(smiles[i])
-#     df = pd.DataFrame({'smile': filter_smile, 'score':filter_score})
-#     df.to_csv(f'plot/robust_run/{index}.csv')
 
 
 samples = pd.read_csv(f'carlos/docking/30.csv')

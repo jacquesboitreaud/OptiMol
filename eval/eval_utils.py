@@ -28,7 +28,7 @@ rc = {'figure.figsize': (10, 5),
 plt.rcParams.update(rc)
 
 
-def plot_csvs(dir_paths, ylim=(-12, -6), plot_best=False, return_best=False, use_norm_score=False):
+def plot_csvs(dir_paths, ylim=(-12, -6), plot_best=False, return_best=False, use_norm_score=False, obj='logp'):
     """
     get scores in successive dfs.
     Expect the names to be in format *_iteration.csv
@@ -40,7 +40,7 @@ def plot_csvs(dir_paths, ylim=(-12, -6), plot_best=False, return_best=False, use
     :return:
     """
 
-    def plot_one(dir_path, use_norm_score=False):
+    def plot_one(dir_path, use_norm_score=False, obj='logp'):
         # 2,3,23 not 2,23,3
         names = os.listdir(dir_path)
         numbers = [int(name.split('_')[-1].split('.')[0]) for name in names]
@@ -62,10 +62,14 @@ def plot_csvs(dir_paths, ylim=(-12, -6), plot_best=False, return_best=False, use
             else:
                 values = df['score']
             mus.append(np.mean(values))
-            best.append(np.max(values))  # Careful : may need to change to min for the docking objective ?
             stds.append(np.std(values))
-            i_best = np.argmax(values)
-
+            if obj == 'docking': # lowest docking score is better 
+                i_best = np.argmin(values)
+                best.append(np.min(values))
+            else:
+                i_best = np.argmax(values)
+                best.append(np.max(values))
+                
             # Check novelty
             smiles = df['smile']
             best_smiles.append((smiles[i_best], values[i_best]))
@@ -85,7 +89,7 @@ def plot_csvs(dir_paths, ylim=(-12, -6), plot_best=False, return_best=False, use
         print(dir_paths)
         fig, ax = plt.subplots(1, 2)
         iterations, mus, stds, batch_size, newslist, title, best_scores, best_smiles = plot_one(dir_paths,
-                                                                                                use_norm_score)
+                                                                                                use_norm_score, obj)
         mus = np.array(mus)
         stds = np.array(stds)
         ax[0].fill_between(iterations, mus + stds, mus - stds, alpha=.25)
@@ -104,7 +108,7 @@ def plot_csvs(dir_paths, ylim=(-12, -6), plot_best=False, return_best=False, use
         fig, ax = plt.subplots(2, len(dir_paths))
         for i, dir_path in enumerate(dir_paths):
             iterations, mus, stds, batch_size, newslist, title, best_scores, best_smiles = plot_one(dir_path,
-                                                                                                    use_norm_score)
+                                                                                                    use_norm_score, obj)
             mus = np.array(mus)
             stds = np.array(stds)
             ax[0, i].fill_between(iterations, mus - stds, mus + stds, alpha=.25)
