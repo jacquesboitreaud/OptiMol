@@ -56,6 +56,7 @@ def plot_csvs(dir_paths, ylim=(-12, -6), plot_best=False, return_best=False, use
             # Check scores
             news = 0
             df = pd.read_csv(os.path.join(dir_path, name))
+            df=df[df['score']!=0]
             if use_norm_score:
                 values = df['norm_score']
             else:

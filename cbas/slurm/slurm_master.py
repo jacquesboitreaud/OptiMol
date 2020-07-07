@@ -74,7 +74,7 @@ if __name__ == '__main__':
         with open(os.path.join(script_dir, 'slurm_sampler.sh'), 'w') as f :
             f.write('#!/bin/sh\n')
             f.write('#SBATCH --account=def-jeromew\n')
-            f.write('#SBATCH --time=00:05:00\n')
+            f.write('#SBATCH --time=01:00:00\n')
             f.write('#SBATCH --job-name=sampler\n') 
             f.write('#SBATCH --output=out_slurm/sampler_%A.out\n')
             f.write('#SBATCH --error=out_slurm/sampler_%A.err\n')
@@ -86,7 +86,7 @@ if __name__ == '__main__':
         with open(os.path.join(script_dir, 'slurm_docker.sh'), 'w') as f :
             f.write('#!/bin/sh\n')
             f.write('#SBATCH --account=def-jeromew\n')
-            f.write('#SBATCH --time=20:00:00\n')
+            f.write('#SBATCH --time=02:00:00\n')
             f.write('#SBATCH --job-name=docker\n') 
             f.write('#SBATCH --output=out_slurm/docker_%A.out\n')
             f.write('#SBATCH --error=out_slurm/docker_%A.err\n')
@@ -98,7 +98,7 @@ if __name__ == '__main__':
         with open(os.path.join(script_dir, 'slurm_trainer.sh'), 'w') as f :
             f.write('#!/bin/sh\n')
             f.write('#SBATCH --account=def-jeromew\n')
-            f.write('#SBATCH --time=00:10:00\n')
+            f.write('#SBATCH --time=00:40:00\n')
             f.write('#SBATCH --job-name=trainer\n') 
             f.write('#SBATCH --output=out_slurm/trainer_%A.out\n')
             f.write('#SBATCH --error=out_slurm/trainer_%A.err\n')

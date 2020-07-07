@@ -28,7 +28,7 @@ from data_processing.sascorer import calculateScore
 
     
 
-name = 'docking_new_lr'
+name = 'multiobj_qed4'
 
 norm_scores = False # set to true for clogp
 
