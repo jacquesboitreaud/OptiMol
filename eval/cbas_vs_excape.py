@@ -50,35 +50,46 @@ a_fps = [AllChem.GetMorganFingerprintAsBitVect(m , 3, nBits=2048) for m in a_mol
 
 a_fps = np.array(a_fps)
 
+# ===========================================
+
+step = 17 # The CBAS step to analyze 
 
 topN = 10 # find closest for top ... samples
 
-### For different steps of CbAS
-for step in np.arange(1,2):
 
-    samples = pd.read_csv(f'../cbas/slurm/results/{name}/docking_results/{step}.csv')
-    samples = samples.sort_values('score')
-    samples = samples[:topN]
-    smiles = samples.smile
-    smiles = [s for s in smiles if Chem.MolFromSmiles(s) is not None]
-    mols = [Chem.MolFromSmiles(s) for s in smiles]
-    fps = [AllChem.GetMorganFingerprintAsBitVect(m , 3, nBits=2048) for m in mols]
+samples = pd.read_csv(f'../cbas/slurm/results/{name}/docking_results/{step}.csv')
+samples = samples.sort_values('score')
+samples = samples[:topN]
+smiles = samples.smile
+smiles = [s for s in smiles if Chem.MolFromSmiles(s) is not None]
+mols = [Chem.MolFromSmiles(s) for s in smiles]
+fps = [AllChem.GetMorganFingerprintAsBitVect(m , 3, nBits=2048) for m in mols]
+
+fps= np.array(fps)
+
+# Pairwise distances with actives fps 
+
+closest = []
+for i in range(fps.shape[0]):
+    maximum = 0
+    closest_active = 0
+    print(f'>>> finding closest active to sample {i}')
+    for j in range(a_fps.shape[0]):
+        tanim = 1-jaccard(fps[i], a_fps[j]) # similarity
+        if tanim > maximum:
+            maximum = tanim
+            closest_active = j
+    closest.append((smiles[i],a_smiles[closest_active],tanim))
+    print('tanimoto sim : ', tanim)
     
-    fps= np.array(fps)
-    
-    # Pairwise distances with actives fps 
-    
-    closest = []
-    for i in range(fps.shape[0]):
-        minimum = 1
-        print(f'>>> finding closest active to sample {i}')
-        for j in range(a_fps.shape[0]):
-            tanim = jaccard(fps[i], a_fps[j])
-            if tanim < minimum:
-                minimum = tanim
-                closest_active = j
-        closest.append((a_smiles[j],tanim))
-        print('tanimoto sim : ', tanim)
-    
+imgs = []
+for tup in closest : 
+    sample_m = Chem.MolFromSmiles(tup[0])
+    active_m = Chem.MolFromSmiles(tup[1])
+    pair = [sample_m, active_m]
+    imgs.append(Draw.MolsToGridImage(pair, molsPerRow= 2, legends = ['sample', f'active, sim = {tup[2]:.2f}']))
+
+idx_to_show = 4
+imgs[idx_to_show]
 
 
