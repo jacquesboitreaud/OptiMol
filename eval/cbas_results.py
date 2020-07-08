@@ -14,8 +14,10 @@ from rdkit import Chem
 from rdkit.Chem import Draw
 
 import matplotlib.pyplot as plt
+import seaborn as sns
 import numpy as np
 import pandas as pd
+
 
 script_dir = os.path.dirname(os.path.realpath(__file__))
 if __name__ == "__main__":
@@ -28,12 +30,12 @@ from data_processing.sascorer import calculateScore
 
     
 
-name = 'multiobj_qed4'
+name = 'docking_new_lr'
 
 norm_scores = False # set to true for clogp
 
 # Plot individual run results 
-smiles = plot_csvs(f'../cbas/slurm/results/{name}/docking_results', ylim=(-12,-6), plot_best = True, return_best=True, 
+smiles = plot_csvs(f'../cbas/slurm/results/{name}/docking_results', ylim=(-13.5,-6), plot_best = True, return_best=True, 
                    use_norm_score = norm_scores, obj = 'docking')
 scores = [t[1] for t in smiles]
 mols = [Chem.MolFromSmiles(t[0]) for t in smiles]
@@ -46,7 +48,7 @@ img=Draw.MolsToGridImage(mols, legends = [f'step {i}: {sc:.2f}, QED = {q:.2f}' f
 
 ### Get QED distribution at different steps of CbAS
 
-for step in np.arange(1,10,2):
+for step in np.arange(1,20,4):
 
     samples = pd.read_csv(f'../cbas/slurm/results/{name}/docking_results/{step}.csv')
     smiles = samples.smile
@@ -58,7 +60,7 @@ for step in np.arange(1,10,2):
 
 # Top mols at step : 
 
-step = 8
+step = 15
 N_top = 10
 
 samples = pd.read_csv(f'../cbas/slurm/results/{name}/docking_results/{step}.csv')
@@ -67,11 +69,13 @@ samples = samples.sort_values('score')
 smiles = samples.smile
 scores = samples.score
 mols = [Chem.MolFromSmiles(s) for s in smiles]
+qeds = np.array([Chem.QED.qed(m) for m in mols])
 
 mols = mols[:N_top]
 scores = scores[:N_top]
+qeds = qeds[:N_top]
 
-img=Draw.MolsToGridImage(mols, molsPerRow= int(N_top/2), legends = [f'{sc:.2f}' for i,sc in enumerate(scores)])
+img=Draw.MolsToGridImage(mols, molsPerRow= int(N_top/2), legends = [f'{sc:.2f}, {q:.2f}' for i,(sc,q) in enumerate(zip(scores,qeds))])
 soft_mkdir('plots')
 img.save(f'plots/cbas_{name}_mols_{step}.png')
 
