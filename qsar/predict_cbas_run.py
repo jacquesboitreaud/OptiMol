@@ -42,7 +42,7 @@ def process_one(s):
 if __name__=='__main__':
     
     run = 'multiobj_qed4'
-    N_steps = 20
+    N_steps = 30
     
     run_dir = os.path.join(script_dir,'..', 'cbas','slurm', 'results', run)
     
@@ -50,7 +50,7 @@ if __name__=='__main__':
         clf = pickle.load(f)
     print('Loaded svm ')
     
-    for step in range(1,N_steps+1):
+    for step in range(20,N_steps+1):
         
         df = pd.read_csv(os.path.join(run_dir,f'docking_results/{step}.csv'))
         print(f'>>> computing fps for samples at step {step}')

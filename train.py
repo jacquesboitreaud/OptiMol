@@ -45,12 +45,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--name', type=str, default='default') # model name in results/saved_models/
-    parser.add_argument('--train', help="path to training dataframe", type=str, default='data/250k_zinc.csv')
+    parser.add_argument('--train', help="path to training dataframe", type=str, default='data/moses_train.csv')
     parser.add_argument("--cutoff", help="Max number of molecules to use. Set to -1 for all in csv", type=int, default=-1)
     
     # Alphabets params 
     parser.add_argument('--decode', type=str, default='selfies')  # language used : 'smiles' or 'selfies'
-    parser.add_argument('--alphabet_name', type=str, default='250k_alphabets.json') # name of alphabets json file, in map_files dir 
+    parser.add_argument('--alphabet_name', type=str, default='moses_alphabets.json') # name of alphabets json file, in map_files dir 
     parser.add_argument('--build_alphabet', action='store_true')  # use params.json alphabet
 
     # If we start from a pretrained model : 
@@ -62,7 +62,7 @@ if __name__ == "__main__":
     # Model architecture 
     parser.add_argument('--decoder_type', type=str, default='GRU')  # name of model to load from
     parser.add_argument('--n_gcn_layers', type=int, default=3)  # number of gcn encoder layers (3 or 4?)
-    parser.add_argument('--n_gru_layers', type=int, default=4)  # number of gcn encoder layers (3 or 4?)
+    parser.add_argument('--n_gru_layers', type=int, default=3)  # number of gcn encoder layers (3 or 4?)
     parser.add_argument('--gcn_dropout', type=float, default=0.2)
     parser.add_argument('--gcn_hdim', type=int, default=32)
     parser.add_argument('--latent_size', type=int, default=56) # jtvae uses 56
@@ -96,7 +96,7 @@ if __name__ == "__main__":
     parser.add_argument('--tf_step', type=float, default=0.002)  # step decrease
     parser.add_argument('--tf_end', type=float, default=0)  # final tf frequency
     parser.add_argument('--tf_anneal_iter', type=int, default=1000)  # nbr of iters between each annealing
-    parser.add_argument('--tf_warmup', type=int, default=100000)  # nbr of steps at tf_init
+    parser.add_argument('--tf_warmup', type=int, default=70000)  # nbr of steps at tf_init
 
     # Multitask :
     parser.add_argument('--no_props', action='store_false')  # No multitask props
