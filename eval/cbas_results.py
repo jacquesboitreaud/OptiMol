@@ -30,7 +30,7 @@ from data_processing.sascorer import calculateScore
 
     
 
-name = 'docking_new_lr'
+name = 'multiobj_qed4'
 
 norm_scores = False # set to true for clogp
 
@@ -48,7 +48,7 @@ img=Draw.MolsToGridImage(mols, legends = [f'step {i}: {sc:.2f}, QED = {q:.2f}' f
 
 ### Get QED distribution at different steps of CbAS
 
-for step in np.arange(1,20,4):
+for step in np.arange(1,31,4):
 
     samples = pd.read_csv(f'../cbas/slurm/results/{name}/docking_results/{step}.csv')
     smiles = samples.smile
@@ -60,7 +60,7 @@ for step in np.arange(1,20,4):
 
 # Top mols at step : 
 
-step = 15
+step = 30
 N_top = 10
 
 samples = pd.read_csv(f'../cbas/slurm/results/{name}/docking_results/{step}.csv')
@@ -75,7 +75,7 @@ mols = mols[:N_top]
 scores = scores[:N_top]
 qeds = qeds[:N_top]
 
-img=Draw.MolsToGridImage(mols, molsPerRow= int(N_top/2), legends = [f'{sc:.2f}, {q:.2f}' for i,(sc,q) in enumerate(zip(scores,qeds))])
+img=Draw.MolsToGridImage(mols, molsPerRow= 4, legends = [f'{sc:.2f}, {q:.2f}' for i,(sc,q) in enumerate(zip(scores,qeds))])
 soft_mkdir('plots')
 img.save(f'plots/cbas_{name}_mols_{step}.png')
 

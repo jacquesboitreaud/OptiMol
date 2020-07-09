@@ -34,7 +34,9 @@ from data_processing.sascorer import calculateScore
 
     
 
-name = 'docking_new_lr'
+name = 'multiobj_qed4'
+step = 17 # The CBAS step to analyze 
+topN = 10 # find closest for top ... samples
 
 # Fps of ExCAPE actives 
 
@@ -51,11 +53,6 @@ a_fps = [AllChem.GetMorganFingerprintAsBitVect(m , 3, nBits=2048) for m in a_mol
 a_fps = np.array(a_fps)
 
 # ===========================================
-
-step = 17 # The CBAS step to analyze 
-
-topN = 10 # find closest for top ... samples
-
 
 samples = pd.read_csv(f'../cbas/slurm/results/{name}/docking_results/{step}.csv')
 samples = samples.sort_values('score')
