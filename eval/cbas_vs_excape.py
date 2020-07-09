@@ -34,7 +34,7 @@ from data_processing.sascorer import calculateScore
 
     
 
-name = 'multiobj_qed4'
+name = 'docking_new_lr'
 step = 17 # The CBAS step to analyze 
 topN = 10 # find closest for top ... samples
 
@@ -48,6 +48,8 @@ print(f'{len(a_smiles)} actives from ExCAPE loaded')
 
 a_smiles = [s for s in a_smiles if Chem.MolFromSmiles(s) is not None]
 a_mols = [Chem.MolFromSmiles(s) for s in a_smiles]
+a_qeds = [Chem.QED.qed(m) for m in a_mols]
+
 a_fps = [AllChem.GetMorganFingerprintAsBitVect(m , 3, nBits=2048) for m in a_mols]
 
 a_fps = np.array(a_fps)
@@ -56,6 +58,22 @@ a_fps = np.array(a_fps)
 
 samples = pd.read_csv(f'../cbas/slurm/results/{name}/docking_results/{step}.csv')
 samples = samples.sort_values('score')
+
+# QEDs
+all_smiles = samples.smile
+mols = [Chem.MolFromSmiles(s) for s in all_smiles]
+qeds = [Chem.QED.qed(m) for m in mols]
+qeds_tops = qeds[:100]
+# plot comparative with excape
+plt.xlim(0,1)
+sns.distplot(a_qeds, color = 'g', label = 'excape actives')
+sns.distplot(qeds, label = f'step {step}')
+sns.distplot(qeds_tops, color='r', label = f'Top 100 at step {step}')
+plt.legend()
+
+
+# Finding close actives to top samples 
+
 samples = samples[:topN]
 smiles = samples.smile
 smiles = [s for s in smiles if Chem.MolFromSmiles(s) is not None]
