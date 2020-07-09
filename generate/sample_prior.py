@@ -64,13 +64,16 @@ if __name__ == "__main__":
     cpt = 0
     b=0
 
+    # keep order of compounds
+    list_all = list()
+
     with torch.no_grad():
         batch_size = min(args.n_mols, 100)
         n_batches = int(args.n_mols / batch_size) + 1
         print(f'>>> Sampling {args.n_mols} molecules from prior distribution in latent space')
 
         start = time.time()
-        while b < 10 * n_batches and len(set_compounds) < args.nmols:
+        while b < 10 * n_batches and len(set_compounds) < args.n_mols:
             b+=1
             z = model.sample_z_prior(batch_size)
             gen_seq = model.decode(z)
@@ -92,13 +95,20 @@ if __name__ == "__main__":
                 else:
                     cpt += 1
                     can_smile.append(Chem.MolToSmiles(m))
+            list_all.extend(can_smile)
             set_can = set(can_smile)
             set_compounds = set_compounds.union(set_can)
 
     end = time.time()
 
+    ordered_unique = list()
+    for com in list_all:
+        if com in set_compounds:
+            set_compounds.remove(com)
+            ordered_unique.append(com)
+
     Ntot = cpt
-    unique = len(set_compounds)
+    unique = len(ordered_unique)
 
     print('Time elapsed : ', end - start)
 
@@ -112,7 +122,7 @@ if __name__ == "__main__":
 
     out = os.path.join(script_dir, '..', args.output_file)
     with open(out, 'w') as f:
-        for s in set_compounds:
+        for s in ordered_unique:
             f.write(s)
             f.write('\n')
     print(f'wrote {unique} unique compounds / {Ntot} to {args.output_file}')
