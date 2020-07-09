@@ -25,6 +25,7 @@ import pandas as pd
 import argparse
 
 from rdkit import Chem
+from rdkit.Chem import QED
 from rdkit.Chem import Draw
 from rdkit import DataStructs
 from rdkit.Chem import AllChem
@@ -36,15 +37,16 @@ from eval.eval_utils import plot_csvs
 from utils import soft_mkdir
 from data_processing.comp_metrics import cycle_score, logP, qed
 from data_processing.sascorer import calculateScore
+from multiprocessing import Pool
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--csv_name', type=str, default='data/cbas_samples.csv') # model name in results/saved_models/
+parser.add_argument('--csv_name', type=str, default='data/diverse_samples.csv') # model name in results/saved_models/
 # =======
 
 args, _ = parser.parse_known_args()
 
-samples = pd.read_csv(os.path.join(script_dir,args.csv_name))
+samples = pd.read_csv(os.path.join(script_dir,'..', args.csv_name))
     
 percentage_cutoff = 0.1 # compute intdiv on top 10% molecules in the samples 
 N = int(samples.shape[0]*percentage_cutoff)
@@ -56,7 +58,13 @@ mols = [Chem.MolFromSmiles(s) for s in smiles]
 ### Get QED distribution at different steps of CbAS
 print('>>> QED distrib')
 
-q = [Chem.QED.qed(m) for m in mols]
+def process_one(m):
+    q = QED.default(m)
+    return q
+
+pool = Pool()
+q = pool.map(process_one, mols)
+sns.distplot(q)
 
 ### Tanimoto pairwise distances 
 print('>>> diversity')
@@ -77,6 +85,16 @@ except :
     sys.exit()
     
 sns.distplot(scores)
+
+samples = samples.sort_values('score')
+smiles, scores = samples.smile, samples.score
+
+smiles = smiles[:50]
+scores = scores[:50]
+mols = [Chem.MolFromSmiles(s) for s in smiles]
+
+img = Draw.MolsToGridImage(mols, molsPerRow= 5, legends = [f'{sc:.2f}' for sc in scores])
+
 
     
 
