@@ -62,6 +62,7 @@ if __name__ == "__main__":
 
     set_compounds = set()
     cpt = 0
+    b=0
 
     with torch.no_grad():
         batch_size = min(args.n_mols, 100)
@@ -69,8 +70,8 @@ if __name__ == "__main__":
         print(f'>>> Sampling {args.n_mols} molecules from prior distribution in latent space')
 
         start = time.time()
-        for b in range(n_batches):
-
+        while b < 10 * n_batches and len(set_compounds) < args.nmols:
+            b+=1
             z = model.sample_z_prior(batch_size)
             gen_seq = model.decode(z)
 
@@ -103,7 +104,6 @@ if __name__ == "__main__":
 
     print(100 * cpt / Ntot, '% valid molecules')
     print(100 * unique / Ntot, '% unique molecules')
-
 
     if args.qed:
         qed = [Chem.QED.qed(m) for m in mols]
