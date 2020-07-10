@@ -30,7 +30,7 @@ from data_processing.sascorer import calculateScore
 
     
 
-name = 'multiobj_qed4'
+name = 'big_new_lr'
 
 norm_scores = False # set to true for clogp
 
@@ -60,7 +60,7 @@ for step in np.arange(1,31,4):
 
 # Top mols at step : 
 
-step = 30
+step = 15
 N_top = 10
 
 samples = pd.read_csv(f'../cbas/slurm/results/{name}/docking_results/{step}.csv')
@@ -76,6 +76,7 @@ scores = scores[:N_top]
 qeds = qeds[:N_top]
 
 img=Draw.MolsToGridImage(mols, molsPerRow= 4, legends = [f'{sc:.2f}, {q:.2f}' for i,(sc,q) in enumerate(zip(scores,qeds))])
+
 soft_mkdir('plots')
 img.save(f'plots/cbas_{name}_mols_{step}.png')
 
