@@ -12,7 +12,7 @@ import pandas as pd
 import os, sys
 
 name = 'to_dock'
-df = pd.read_csv(f'slurm/results/{name}/docking_small_results/ordered.csv', header = None )
+df = pd.read_csv(f'slurm/results/{name}/ordered.csv', header = None )
 
 smiles = list(df.iloc[:,0])
 
@@ -28,6 +28,6 @@ to_dock_mols+=smiles[-N:]
 
 print(len(to_dock_mols), ' selected for docking')
 
-with open(os.path.join(f'slurm/results/{name}/docking_small_results','docker_samples.p'), 'wb') as f: 
-    pickle.dump(smiles, f)
+with open(os.path.join(f'slurm/results/{name}','docker_samples.p'), 'wb') as f: 
+    pickle.dump(to_dock_mols, f)
 print('Saved smiles to pickle in the same directory')
