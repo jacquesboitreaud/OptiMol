@@ -49,9 +49,11 @@ if __name__ == "__main__":
     gianni =  pd.read_csv(os.path.join(script_dir,'..', 'data/fabritiis_docked.csv'))
     zinc = pd.read_csv(os.path.join(script_dir,'..', 'data/zinc_docked.csv'))
     
+    threshold = 0.05
+    
     def qeds(df):
         N=df.shape[0]
-        n =int(N*0.1)
+        n =int(N*threshold)
         df=df.sort_values('score')
         df=df[:n] # top 10 % statistics 
         smiles= df.smile
@@ -63,7 +65,7 @@ if __name__ == "__main__":
     
     def sas(df):
         N=df.shape[0]
-        n =int(N*0.1)
+        n =int(N*threshold)
         df=df.sort_values('score')
         df=df[:n]
         smiles= df.smile
@@ -75,7 +77,7 @@ if __name__ == "__main__":
     
     def docking(df): 
         N=df.shape[0]
-        n =int(N*0.1)
+        n =int(N*threshold)
         df=df.sort_values('score')
         df=df[:n] # top 10 % statistics 
         scores = df.score
@@ -83,7 +85,7 @@ if __name__ == "__main__":
     
     def tanim_dist(df):
         N=df.shape[0]
-        n =int(N*0.1)
+        n =int(N*threshold)
         df=df.sort_values('score')
         df=df[:n] # top 10 % statistics 
         smiles= df.smile
@@ -173,7 +175,17 @@ if __name__ == "__main__":
     mols = [Chem.MolFromSmiles(s) for s in smiles]
     
     img = Draw.MolsToGridImage(mols, molsPerRow= 5, legends = [f'{sc:.2f}' for sc in scores])
+    img.save('top50.png')
 
-
+    # Top molecules multiobj
+    samples = multiobj.sort_values('score')
+    smiles, scores = samples.smile, samples.score
+    
+    smiles = smiles[:50]
+    scores = scores[:50]
+    mols = [Chem.MolFromSmiles(s) for s in smiles]
+    
+    img = Draw.MolsToGridImage(mols, molsPerRow= 5, legends = [f'{sc:.2f}' for sc in scores])
+    img.save('top50_multiobj.png')
     
 
