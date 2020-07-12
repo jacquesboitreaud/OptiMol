@@ -33,6 +33,10 @@ from scipy.spatial.distance import jaccard
 
 from sklearn.metrics import pairwise_distances
 
+from cairosvg import svg2pdf
+
+
+
 from eval.eval_utils import plot_csvs
 from utils import soft_mkdir
 from data_processing.comp_metrics import cycle_score, logP, qed
@@ -41,15 +45,15 @@ from multiprocessing import Pool
 
 if __name__ == "__main__":
     
-    optimol = pd.read_csv(os.path.join(script_dir,'..', 'cbas/slurm/results/big_new_lr/5k_samples_scored.csv'))
+    optimol = pd.read_csv(os.path.join(script_dir,'..', 'cbas/slurm/results/big_new_lr/optimol_scored.csv'))
     try:
-        multiobj = pd.read_csv(os.path.join(script_dir,'..', 'cbas/slurm/results/multiobj_big/5k_samples_scored.csv'))
+        multiobj = pd.read_csv(os.path.join(script_dir,'..', 'cbas/slurm/results/multiobj_big/multiobj_scored.csv'))
     except:
         pass
     gianni =  pd.read_csv(os.path.join(script_dir,'..', 'data/fabritiis_docked.csv'))
     zinc = pd.read_csv(os.path.join(script_dir,'..', 'data/zinc_docked.csv'))
     
-    threshold = 0.05
+    threshold = 0.01
     
     def qeds(df):
         N=df.shape[0]
@@ -98,7 +102,7 @@ if __name__ == "__main__":
         return (np.mean(D), np.std(D))
     
     # ZINC : 
-    
+    """
     print('*********** ZINC ********')
     
     qed_zinc = qeds(zinc)
@@ -145,7 +149,6 @@ if __name__ == "__main__":
     print(div_m)
     
     
-    """
     ### Searching for actives : 
     
     actives = pd.read_csv(os.path.join(script_dir,'..','data','excape_drd3.csv'))
@@ -166,26 +169,39 @@ if __name__ == "__main__":
     print(found)
     """
     
+    # Plot : 2500 first : 
+    optimol = pd.read_csv(os.path.join(script_dir,'..', 'cbas/slurm/results/big_new_lr/optimol_scored.csv'))
+    optimol = optimol[:10000]
+    optimol = optimol.sample(24)
+    
+    
     # Top molecules 
     samples = optimol.sort_values('score')
     smiles, scores = samples.smile, samples.score
     
-    smiles = smiles[:50]
-    scores = scores[:50]
+    smiles = smiles[:24]
     mols = [Chem.MolFromSmiles(s) for s in smiles]
+    qeds = np.array([QED.default(m) for m in mols])
+    sas = [calculateScore(m) for m in mols]
+    scores = scores[:24]
     
-    img = Draw.MolsToGridImage(mols, molsPerRow= 5, legends = [f'{sc:.2f}' for sc in scores])
-    img.save('top50.png')
+    
+    img = Draw.MolsToGridImage(mols, molsPerRow= 3, useSVG=True, legends = [f'{sc:.2f}, QED = {q:.2f}, SA = {s:.2f}' for sc,q,s in zip(scores,qeds, sas)])
+    svg2pdf(str(img),write_to='optimol_samp_2.pdf')
 
     # Top molecules multiobj
+    multiobj = pd.read_csv(os.path.join(script_dir,'..', 'cbas/slurm/results/multiobj_big/multiobj_scored.csv'))
+    multiobj = multiobj[:2500]
+    multiobj = multiobj.sample(24)
+    
     samples = multiobj.sort_values('score')
     smiles, scores = samples.smile, samples.score
     
-    smiles = smiles[:50]
-    scores = scores[:50]
+    smiles = smiles[:24]
     mols = [Chem.MolFromSmiles(s) for s in smiles]
+    qeds = np.array([QED.default(m) for m in mols])
+    sas = [calculateScore(m) for m in mols]
+    scores = scores[:24]
     
-    img = Draw.MolsToGridImage(mols, molsPerRow= 5, legends = [f'{sc:.2f}' for sc in scores])
-    img.save('top50_multiobj.png')
-    
-
+    img = Draw.MolsToGridImage(mols, molsPerRow= 3, useSVG=True, legends = [f'{sc:.2f}, QED = {q:.2f}, SA = {s:.2f}' for sc,q,s in zip(scores,qeds,sas)])
+    svg2pdf(str(img),write_to='multiobj_samp_2.pdf')
