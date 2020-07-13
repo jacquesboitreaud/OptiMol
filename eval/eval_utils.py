@@ -118,25 +118,71 @@ def plot_csvs(dir_paths, ylim=(-12, -6), plot_best=False, return_best=False, use
         fig.tight_layout(pad=2.0)
         fig.align_labels()
     else:  # plot multiple
-        fig, ax = plt.subplots(2, len(dir_paths))
-        for i, dir_path in enumerate(dir_paths):
-            iterations, mus, stds, batch_size, newslist, title, best_scores, best_smiles = plot_one(dir_path,
+
+        # DEBUG for figure production
+        if True:
+            fig, ax = plt.subplots(1, len(dir_paths))
+
+            bo, cbas = dir_paths
+            iterations, mus, stds, batch_size, newslist, title, best_scores, best_smiles = plot_one(bo,
+                                                                                                    use_norm_score,
+                                                                                                    obj,
+                                                                                                    successive=successive)
+            mus = -np.array(mus)
+            stds = -np.array(stds)
+
+            ax[0].fill_between(iterations, mus + stds, mus - stds, alpha=.25)
+            sns.lineplot(iterations, mus, ax=ax[0])
+            if plot_best:
+                ax[0].plot(iterations, best_scores, 'r.')
+            ax[0].set_ylim(ylim[0], ylim[1])
+
+            print(best_scores)
+
+            ax[0].set_xlabel('Iterations')
+            ax[0].set_ylabel('cLogP Score')
+
+            iterations, mus, stds, batch_size, newslist, title, best_scores, best_smiles = plot_one(cbas,
                                                                                                     use_norm_score,
                                                                                                     obj,
                                                                                                     successive=successive)
             mus = np.array(mus)
             stds = np.array(stds)
-            ax[0, i].fill_between(iterations, mus - stds, mus + stds, alpha=.25)
-            sns.lineplot(iterations, mus, ax=ax[0, i])
 
+            ax[1].fill_between(iterations, mus + stds, mus - stds, alpha=.25)
+            sns.lineplot(iterations, mus, ax=ax[1])
             if plot_best:
-                ax[0, i].plot(iterations, best_scores, 'r*')
-            ax[0, i].set_ylim(*ylim)
-            ax[0, i].set_xlim(1, iterations[-1] + 0.5)
-            # ax[0, i].set_title(title)
+                ax[1].plot(iterations, best_scores, 'r.')
+            ax[1].set_ylim(ylim[0], ylim[1])
 
-            ax[1, i].set_ylim(0, batch_size + 100)
-            ax[1, i].plot(iterations, newslist)
+            ax[1].set_xlabel('Iterations')
+
+            # fig.tight_layout(pad=2.0)
+            fig.align_labels()
+        else :
+            for i, dir_path in enumerate(dir_paths):
+                iterations, mus, stds, batch_size, newslist, title, best_scores, best_smiles = plot_one(dir_path,
+                                                                                                        use_norm_score,
+                                                                                                        obj,
+                                                                                                        successive=successive)
+                mus = np.array(mus)
+                stds = np.array(stds)
+                # ax[0, i].fill_between(iterations, mus - stds, mus + stds, alpha=.25)
+                # sns.lineplot(iterations, mus, ax=ax[0, i])
+                #
+                # if plot_best:
+                #     ax[0, i].plot(iterations, best_scores, 'r*')
+                # ax[0, i].set_ylim(*ylim)
+                # ax[0, i].set_xlim(1, iterations[-1] + 0.5)
+                # # ax[0, i].set_title(title)
+                #
+                # ax[1, i].set_ylim(0, batch_size + 100)
+                # ax[1, i].plot(iterations, newslist)
+                #
+                # ax[0].fill_between(iterations, mus + stds, mus - stds, alpha=.25)
+                # sns.lineplot(iterations, mus, ax=ax[0])
+
+
 
     plt.savefig("cbas_fig.pdf", format="pdf")
     plt.show()
@@ -236,10 +282,12 @@ if __name__ == '__main__':
     # plot_csvs('plot/big_lnnosched')
     # plot_csvs('plot/big_newlr2', successive=False)
     # plot_csvs('plot/clogp_adam_clamp_avged', plot_best=True)
-    # plot_csvs(['plot/zinc1', 'plot/zinc2'])
     # plot_csvs(['plot/large_samples', 'plot/gpu_test'])
     # plot_csvs('plot/gamma_lr')
     # plot_csvs('plot/adam_nosched')
     # plot_csvs('plot/multi')
     # plot_csvs('plot/big_newlr2')
-    plot_csvs('plot/multi',successive=False)
+    # plot_csvs('plot/multi',successive=False)
+
+
+    plot_csvs(['plot/bo_clogp', 'plot/cbas_clogp'],  ylim=(-6, 12.5), plot_best=True)
