@@ -34,8 +34,8 @@ from data_processing.sascorer import calculateScore
 
     
 
-name = 'docking_new_lr'
-step = 17 # The CBAS step to analyze 
+name = 'big_new_lr'
+step = 15 # The CBAS step to analyze 
 topN = 10 # find closest for top ... samples
 
 # Fps of ExCAPE actives 
