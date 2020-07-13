@@ -46,8 +46,8 @@ def plot_csvs(dir_paths, ylim=(-12, -6), plot_best=False, return_best=False, use
         names = os.listdir(dir_path)
         numbers = [int(name.split('_')[-1].split('.')[0]) for name in names]
         asort = np.argsort(np.array(numbers))
-        iterations = np.array(numbers)[asort]
-        sorted_names = np.array(names)[asort]
+        iterations = np.array(numbers)[asort][:21]
+        sorted_names = np.array(names)[asort][:21]
 
         batch_size = None  # default
         mus, stds, best, best_smiles = list(), list(), list(), list()
@@ -73,6 +73,8 @@ def plot_csvs(dir_paths, ylim=(-12, -6), plot_best=False, return_best=False, use
 
             # Check novelty
             smiles = df['smile']
+            # print(values[3])
+            # print(smiles)
             best_smiles.append((smiles[i_best], values[i_best]))
             for smile in smiles:
                 if smile not in olds:
@@ -109,7 +111,12 @@ def plot_csvs(dir_paths, ylim=(-12, -6), plot_best=False, return_best=False, use
         ax[1].set_ylim(0, batch_size + 100)
         ax[1].plot(iterations, newslist)
         sns.despine()
-
+        ax[0].set_xlabel('Iterations')
+        ax[0].set_ylabel('Docking Score (kcal/mol)')
+        ax[1].set_xlabel('Iterations')
+        ax[1].set_ylabel('Novel samples')
+        fig.tight_layout(pad=2.0)
+        fig.align_labels()
     else:  # plot multiple
         fig, ax = plt.subplots(2, len(dir_paths))
         for i, dir_path in enumerate(dir_paths):
@@ -214,6 +221,7 @@ def pca_plot_hue(z, pca, variable, label):
 
 
 if __name__ == '__main__':
+    pass
     # plot_csvs('plot/long_gaussian')
     # plot_csvs('plot/gpu_test')
     # plot_csvs('plot/sgd')
@@ -224,10 +232,14 @@ if __name__ == '__main__':
     # plot_csvs('plot/clogp_adam_small')
     # plot_csvs('plot/qed_ln_nosched_big_lesslr', ylim=(0.5, 1))
     # plot_csvs(['plot/robust_run2','plot/qed_ln_nosched_big'], ylim=(0.5, 1))
-    plot_csvs('plot/big_newlr')
-    plot_csvs('plot/big_newlr', successive=False)
+    # plot_csvs(['plot/big_newlr2','plot/big_lnnosched'])
+    # plot_csvs('plot/big_lnnosched')
+    # plot_csvs('plot/big_newlr2', successive=False)
     # plot_csvs('plot/clogp_adam_clamp_avged', plot_best=True)
     # plot_csvs(['plot/zinc1', 'plot/zinc2'])
     # plot_csvs(['plot/large_samples', 'plot/gpu_test'])
     # plot_csvs('plot/gamma_lr')
     # plot_csvs('plot/adam_nosched')
+    # plot_csvs('plot/multi')
+    # plot_csvs('plot/big_newlr2')
+    plot_csvs('plot/multi',successive=False)
