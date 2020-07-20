@@ -44,11 +44,11 @@ if __name__ == '__main__':
 
     parser.add_argument('-i', '--input', help="path to csv containing molecules", type=str, default='data/250k_zinc.csv')
     
-    parser.add_argument('--obj', help="BO objective", type=str, default='qed')
+    parser.add_argument('--obj', help="BO objective", type=str, default='logp') # qed or logp (composite)
     
-    parser.add_argument('-n', "--cutoff", help="Number of molecules to embed. -1 for all", type=int, default=50000)
+    parser.add_argument('-n', "--cutoff", help="Number of molecules to embed. -1 for all", type=int, default=-1)
     
-    parser.add_argument('-name', '--name', type=str, default='250k') 
+    parser.add_argument('-name', '--name', type=str, default='250k') # model name 
     
     parser.add_argument('-t', '--target_only', action='store_true') # do not recompute latent features, only target scores
     # careful : cutoff should be same as before, otherwise will result in shape mismatch of features and targets 

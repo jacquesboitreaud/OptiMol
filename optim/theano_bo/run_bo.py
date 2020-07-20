@@ -51,6 +51,8 @@ from time import time
 
 parser = argparse.ArgumentParser()
 
+parser.add_argument('--name', type = str ,  default='benchmark') # name of model to use 
+
 parser.add_argument('--seed', type = int ,  default=1) # random seed (simulation id for multiple runs)
 parser.add_argument('--model', type = str ,  default='250k') # name of model to use 
 
@@ -59,7 +61,7 @@ parser.add_argument('--obj', type = str ,  default='logp') # objective : logp (c
 parser.add_argument('--n_iters', type = int ,  default=20) # Number of iterations
 parser.add_argument('--epochs', type = int ,  default=20) # Number of training epochs for gaussian process 
 
-parser.add_argument('--bo_batch_size', type = int ,  default=500) # Number of new samples per batch 
+parser.add_argument('--bo_batch_size', type = int ,  default=50) # Number of new samples per batch 
 parser.add_argument('--n_init', type = int ,  default=10000) # Number of initial points
 
 args, _ = parser.parse_known_args()
@@ -69,6 +71,8 @@ args, _ = parser.parse_known_args()
 
 # Params 
 random_seed = args.seed # random seed 
+soft_mkdir('results')
+soft_mkdir(f'results/{args.name}')
 soft_mkdir(f'results/simulation_{random_seed}')
 
 print(f'>>> Running with {args.n_init} init samples and {args.bo_batch_size} batch size')
@@ -298,7 +302,7 @@ while iteration < args.n_iters:
     print(valid_smiles_final)
     print(scores)
 
-    save_object(scores, f"results/simulation_{random_seed}/scores_{iteration}.dat")
+    save_object(scores, f"results/{args.name}/simulation_{random_seed}/scores_{iteration}.dat")
 
     if len(new_features) > 0:
         X_train = np.concatenate([ X_train, new_features ], 0)
@@ -310,7 +314,7 @@ while iteration < args.n_iters:
     duration = end-start
     # write running time 
     print('Step time: ', duration)
-    with open(f"results/simulation_{random_seed}/time.txt", 'w') as f :
+    with open(f"results/{args.name}/simulation_{random_seed}/time.txt", 'w') as f :
         f.write(str(duration))
         
     print(iteration)

@@ -22,11 +22,21 @@ from rdkit.Chem import Descriptors
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+import argparse
+
 # Params 
 
-name = 'big_run'
-n_simulations = 1
-iteration = 20
+parser = argparse.ArgumentParser()
+
+parser.add_argument('--name', type = str ,  default='benchmark') # run name 
+parser.add_argument('--n_sim', type = int ,  default=1) # number of stochastic runs 
+parser.add_argument('--n_iters', type = int ,  default=20) # number of stochastic runs
+
+args, _ = parser.parse_known_args()
+
+name = args.name
+n_simulations = args.n_sim
+iteration = args.n_iters
 # We define the functions used to load and save objects
 
 def save_object(obj, filename):

@@ -1,4 +1,4 @@
-# graph2smiles
+# graph2selfies
 
 Molecular graph to SELFIES VAE. 
 
@@ -14,7 +14,6 @@ Required :
  ```
 conda env create -f ymls/cpu.yml 
 ```
- 
 
 ### Data loading
 
@@ -81,6 +80,21 @@ Arguments :
 - -m : path to .pth file containing trained model weights (default is 'saved_model_w/baseline.pth')
 - -v : 'smiles' or 'selfies', the type of output the model was trained for 
 - -o : path to write output text file. Default is './data/gen.txt'
+
+### Moses metrics 
+
+To compute the Moses benchmark metrics for the samples (recommended 30k samples), run 
+```
+python eval/moses_metrics.py -i [path_to_txt_with_samples]
+```
+
+### Bayesian optimization
+
+Go to /optim
+
+### OptiMol
+
+Go to /cbas
  
 
 
