@@ -9,7 +9,6 @@ Required :
 - moses to get the data (pip install molsets)
 - rdkit
 - tqdm
- -ordered-sets ( pip install ordered-set )
  
  ymls are available for cpu or cuda10 usage
  ```
@@ -43,17 +42,6 @@ To compute selfies for another dataset stored in csv, with smiles in column enti
 python data_processing/get_selfies.py -i [path_to_my_csv_dataset]
 ```
 
-Chemical properties (QED, logP, molWt) can be computed for a csv dataset by running 
-```
-python data_processing/add_properties.py -i [path_to_csv_file]
-```
-Docking scores for DRD3 (DUDE target, Autodock Vina used) for 130k moses train molecules and 10k moses test molecules are stored in data/drd3_scores.zip. 
-First unzip to data/drd3_scores.pickle, then add as a new column to dataframes by running 
-```
-python data_processing/add_scores.py
-```
-
-
 ### Model training 
 
 To retrain the model on the moses train set, with default settings, run
@@ -65,6 +53,7 @@ To train the model on your own dataset (csv file), run
 ```
 python train.py --train [my_dataset.csv]
 ```
+The csv must contain columns entitled 'smiles' and 'selfies'
 
 ### Embedding molecules 
 
@@ -81,7 +70,6 @@ Arguments :
 - -d : Optional argument without input value, store true to decode the latent points into smiles
 
 
-
 ### Generating samples
 
 To generate N samples from the trained model, run : 
@@ -93,7 +81,6 @@ Arguments :
 - -m : path to .pth file containing trained model weights (default is 'saved_model_w/baseline.pth')
 - -v : 'smiles' or 'selfies', the type of output the model was trained for 
 - -o : path to write output text file. Default is './data/gen.txt'
-- -b : Optional argument: store true to use beam search decoding for smiles (slow!)
  
 
 

@@ -169,13 +169,12 @@ if __name__ == "__main__":
     print(found)
     """
     
-    N = 24
-    seed = 4264
+    N = 3
     
     # Plot : 2500 first : 
     optimol = pd.read_csv(os.path.join(script_dir,'..', 'cbas/slurm/results/big_new_lr/optimol_scored.csv'))
     optimol = optimol[:10000]
-    optimol = optimol.sample(N, random_state = seed)
+    optimol = optimol.sample(10)
     
     
     # Top molecules 
@@ -188,35 +187,16 @@ if __name__ == "__main__":
     sas = [calculateScore(m) for m in mols]
     scores = scores[:N]
     
-    smi_for_csv = smiles
-    scores_for_csv= scores
     
-    df = pd.DataFrame.from_dict({'smiles':smi_for_csv, 'score': scores_for_csv})
-    df.to_csv('plots/optimol_samples_smiles.csv')
+    img1 = Draw.MolsToGridImage(mols, molsPerRow= 1, useSVG=False, legends = [f'{sc:.2f}' for sc in scores])
+    img2 =  Draw.MolsToGridImage(mols, molsPerRow= 1, useSVG=False)
     
-    img = Draw.MolsToGridImage(mols, molsPerRow= 3, useSVG=True, legends = [f'{sc:.2f}, QED = {q:.2f}, SA = {s:.2f}' for sc,q,s in zip(scores,qeds, sas)])
-    svg2pdf(str(img),write_to='plots/optimol_samp.pdf')
+    svg2pdf(str(img),write_to='optimol_samp_2.pdf')
+    
+    """
+    ['Cc1ccccc1CCC(=O)OCC(=O)NCCc1ccc2ccccc2c1'
+     'COCC1CCCCN(C(=O)C(=O)NCc2cc3ccccc3c3ccccc23)C1'
+     'Cc1ccccc1CC1CCCN1C(=O)CC1Cc2ccccc2NC1=O']
+    """
 
-    # Top molecules multiobj
-    multiobj = pd.read_csv(os.path.join(script_dir,'..', 'cbas/slurm/results/multiobj_big/multiobj_scored.csv'))
-    multiobj = multiobj[:5000]
-    multiobj = multiobj.sample(N, random_state = seed)
-    
-    samples = multiobj.sort_values('score')
-    smiles, scores = samples.smile, samples.score
-    
-    smiles = smiles[:N]
-    mols = [Chem.MolFromSmiles(s) for s in smiles]
-    qeds = np.array([QED.default(m) for m in mols])
-    print(qeds[:3])
-    sas = [calculateScore(m) for m in mols]
-    scores = scores[:N]
-    
-    img = Draw.MolsToGridImage(mols, molsPerRow= 3, useSVG=True, legends = [f'{sc:.2f}, QED = {q:.2f}, SA = {s:.2f}' for sc,q,s in zip(scores,qeds,sas)])
-    svg2pdf(str(img),write_to='plots/multiobj_samp.pdf')
-    
-    smi_for_csv = smiles
-    scores_for_csv = scores
-    
-    df = pd.DataFrame.from_dict({'smiles':smi_for_csv, 'score': scores_for_csv})
-    df.to_csv('plots/multiobjective_samples_smiles.csv')
+

@@ -30,13 +30,14 @@ from data_processing.sascorer import calculateScore
 
     
 
-name = 'big_new_lr'
+name = 'clogp_adam_clamp_mid'
 
-norm_scores = False # set to true for clogp
+norm_scores = True # set to true for clogp
 
 # Plot individual run results 
 smiles = plot_csvs(f'../cbas/slurm/results/{name}/docking_results', ylim=(-13.5,-6), plot_best = True, return_best=True, 
-                   use_norm_score = norm_scores, obj = 'docking')
+                   use_norm_score = norm_scores, obj = 'clogp')
+"""
 scores = [t[1] for t in smiles]
 mols = [Chem.MolFromSmiles(t[0]) for t in smiles]
 qeds = np.array([Chem.QED.qed(m) for m in mols])
@@ -56,29 +57,35 @@ for step in np.arange(1,31,4):
     qeds = np.array([Chem.QED.qed(m) for m in mols])
     sns.distplot(qeds, label = f'step {step}', hist = False)
     plt.legend()
-
+"""
 
 # Top mols at step : 
+    
+save_smiles = {'smile':[]}
 
-step = 15
-N_top = 10
+step = 20
+N_top = 3
 
 samples = pd.read_csv(f'../cbas/slurm/results/{name}/docking_results/{step}.csv')
-samples = samples.sort_values('score')
+samples = samples.sort_values('norm_score')
 
 smiles = samples.smile
-scores = samples.score
+scores = samples.norm_score
 mols = [Chem.MolFromSmiles(s) for s in smiles]
-qeds = np.array([Chem.QED.qed(m) for m in mols])
 
-mols = mols[:N_top]
-scores = scores[:N_top]
-qeds = qeds[:N_top]
+mols = mols[-N_top:]
+scores = scores[-N_top:]
+
+save_smiles['smile']+= list(samples.smile[-N_top:])
 
 img=Draw.MolsToGridImage(mols, molsPerRow= 4, legends = [f'{sc:.2f}, {q:.2f}' for i,(sc,q) in enumerate(zip(scores,qeds))])
 
 soft_mkdir('plots')
 img.save(f'plots/cbas_{name}_mols_{step}.png')
+
+df = pd.DataFrame.from_dict(save_smiles)
+
+df.to_csv('clogp_smiles.csv')
 
 #=======
 
