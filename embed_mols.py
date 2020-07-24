@@ -43,8 +43,8 @@ if __name__ == '__main__':
 
     parser.add_argument('-i', '--input', help="path to csv containing molecules", type=str,
                         default='data/drd3_chembl.csv')
-    parser.add_argument('-n', "--cutoff", help="Number of molecules to embed. -1 for all", type=int, default=-1)
-    parser.add_argument('-name', '--name', type=str, default='inference_default')
+    parser.add_argument('-c', "--cutoff", help="Number of molecules to embed. -1 for all", type=int, default=-1)
+    parser.add_argument('-n', '--name', type=str, default='inference_default')
     parser.add_argument('-v', '--vocab', type=str, default='selfies')
     parser.add_argument('-d', '--decode', action='store_true')
     parser.add_argument('--pca', action='store_false')  # PCA space plot

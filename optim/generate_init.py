@@ -74,14 +74,14 @@ if __name__ == '__main__':
         smiles_df = pd.read_csv(path, index_col=0)
 
     # Initialize dataloader with empty dataset
-    dataloader = Loader(props=[], 
-                    targets=[], 
-                    csv_path = None,
-                    maps_path = '../../map_files',
-                    alphabet_name = alphabet,
-                    vocab='selfies', 
-                    num_workers = 0,
-                    test_only=True)
+    dataloader = Loader(props=[],
+                        targets=[],
+                        csv_path = None,
+                        maps_path ='../map_files',
+                        alphabet_name = alphabet,
+                        vocab='selfies',
+                        num_workers = 0,
+                        test_only=True)
 
     if not args.target_only:
         # embed molecules in latent space of dimension 64

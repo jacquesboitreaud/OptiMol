@@ -13,7 +13,7 @@ from rdkit.SimDivFilters.rdSimDivPickers import MaxMinPicker
 
 script_dir = os.path.dirname(os.path.realpath(__file__))
 if __name__ == '__main__':
-    sys.path.append(os.path.join(script_dir, '..', '..'))
+    sys.path.append(os.path.join(script_dir, '..'))
 
 from cbas.gen_prob import GenProb
 from utils import *
@@ -142,7 +142,7 @@ def main(prior_name, name, max_samples, diversity_picker, oracle, w_min):
 
     else:
         # Memoization, we split the list into already docked ones and dump a simili-docking csv
-        whole_path = os.path.join(script_dir, '..', '..', 'data', 'drd3_scores.pickle')
+        whole_path = os.path.join(script_dir, '..', 'data', 'drd3_scores.pickle')
         docking_whole_results = pickle.load(open(whole_path, 'rb'))
         filtered_smiles = list()
         already_smiles = list()

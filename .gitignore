@@ -7,6 +7,6 @@ data/
 results/
 docking/scores_archive
 docking/docking_results
-optim/theano_bo/results
+optim/results
 optim/results
 

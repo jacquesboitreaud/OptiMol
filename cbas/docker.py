@@ -16,7 +16,7 @@ from functools import partial
 
 script_dir = os.path.dirname(os.path.realpath(__file__))
 if __name__ == '__main__':
-    sys.path.append(os.path.join(script_dir, '..', '..'))
+    sys.path.append(os.path.join(script_dir, '..'))
 
 from docking.docking import dock, set_path
 from data_processing.comp_metrics import cLogP, cQED
@@ -221,7 +221,7 @@ def one_node_main(server, exhaustiveness, name, oracle):
         list_smiles = filtered_smiles
         input_array = np.vstack(filtered_fps)
         svm_model = pickle.load(
-            open(os.path.join(script_dir, '..', '..', 'results', 'saved_models', 'qsar_svm.pickle'), 'rb'))
+            open(os.path.join(script_dir, '..', 'results', 'saved_models', 'qsar_svm.pickle'), 'rb'))
         list_results = svm_model.predict_proba(input_array)[:, 1]
     elif oracle == 'docking':
         list_results = p.map(partial(one_dock,

@@ -153,12 +153,12 @@ y_test = y[ permutation ][ np.int(np.round(0.9 * n)) : ]
 # Loading the model : 
         
 # Loader for initial sample
-loader = Loader(props=[], 
-                targets=[], 
+loader = Loader(props=[],
+                targets=[],
                 csv_path = None,
-                maps_path = '../../map_files',
+                maps_path ='../map_files',
                 alphabet_name = alphabet,
-                vocab='selfies', 
+                vocab='selfies',
                 num_workers = 0,
                 test_only=True)
 

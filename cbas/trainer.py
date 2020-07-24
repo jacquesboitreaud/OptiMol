@@ -2,7 +2,7 @@ import os
 import sys
 
 script_dir = os.path.dirname(os.path.realpath(__file__))
-sys.path.append(os.path.join(script_dir, '..', '..'))
+sys.path.append(os.path.join(script_dir, '..'))
 
 import argparse
 import pickle
@@ -108,7 +108,7 @@ def main(iteration, quantile, uncertainty, prior_name, name, oracle):
     # Memoization of the sampled compounds, if they are docking scores
     if oracle == 'docking':
         print('doing memoization')
-        whole_path = os.path.join(script_dir, '..', '..', 'data', 'drd3_scores.pickle')
+        whole_path = os.path.join(script_dir, '..', 'data', 'drd3_scores.pickle')
         docking_whole_results = pickle.load(open(whole_path, 'rb'))
         # Only update memoization for successful dockings
         new_results = {key: value for key, value in score_dict.items() if value < 0}

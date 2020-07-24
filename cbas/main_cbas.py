@@ -9,7 +9,7 @@ import os
 import sys
 
 script_dir = os.path.dirname(os.path.realpath(__file__))
-sys.path.append(os.path.join(script_dir, '..', '..'))
+sys.path.append(os.path.join(script_dir, '..'))
 
 import argparse
 import torch
@@ -17,9 +17,9 @@ import torch
 from utils import Dumper, soft_mkdir
 from model import model_from_json
 
-from cbas.slurm.sampler import main as sampler_main
-from cbas.slurm.docker import one_node_main as docker_main
-from cbas.slurm.trainer import main as trainer_main
+from cbas.sampler import main as sampler_main
+from cbas.docker import one_node_main as docker_main
+from cbas.trainer import main as trainer_main
 
 if __name__ == '__main__':
 
@@ -61,7 +61,7 @@ if __name__ == '__main__':
     args, _ = parser.parse_known_args()
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-    assert args.oracle in ['qed','clogp','cqed', 'docking', 'qsar' ]
+    assert args.oracle in ['qed','clogp','cqed', 'docking', 'qsar']
 
 
     def setup():
