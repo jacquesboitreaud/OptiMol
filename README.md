@@ -25,7 +25,6 @@ pytorch, dgl, networkx, scikit-learn,rdkit, tqdm, ordered-sets, moses, pandas
 
 We use Molecular Sets (https://github.com/molecularsets/moses) 
 to train our model : 
-As a one step command, one can run 
 After installing the moses python library, the data can be reached by running 
 
 ```

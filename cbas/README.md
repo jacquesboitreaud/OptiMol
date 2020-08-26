@@ -1,8 +1,36 @@
-# cbas4docking
-Conditioning by Adaptive Sampling for lead generation
+## Molecular optimization
 
-Implementation of CbAS by David H. Brookes, Hahnbeom Park and Jennifer Listgarten: https://arxiv.org/pdf/1901.10060.pdf 
-Application to docking scores optimization of small molecules. 
+This tutorial enables using our tool to optimize certain properties.
+The method is flexible in the function that we are trying to optimize, and was 
+designed to compute properties that are long to get on a cpu. 
+The default setting uses VINA for docking on drd3. However it is very easy
+to adapt it to another receptor, just by changing the conf.txt and .pdbqt
+ that is saved in the root/docking/data_docking/ folder.
+
+To adapt OptiMol to other scoring functions or other docking tools, some coding
+is needed, but we designed the code for a maximum flexibility.
+One should implement an [EXAMPLE] function following the template 
+```
+def [EXAMPLE](list_smiles, name=name,unique_id=unique_id):
+    dirname = os.path.join(script_dir, 'results', name, 'docking_small_results')
+    dump_path = os.path.join(dirname, f"{unique_id}.csv")
+    """
+    do your calculations on the list here and dump results 
+    as a text file with one smile and one score per row,
+    at the dump_path address
+    """
+```
+and then add it as a switch in the docker.py main() function 
+```
+elif oracle == '[EXAMPLE]':
+    [EXAMPLE](list_data,
+              name=name,
+              unique_id=proc_id)
+``` 
+
+We have implemented a multi-core version for one node, but also one 
+ that can leverage a distributed network equipped with SLURM task manager.
+
 
 #### Docking
 
@@ -42,13 +70,13 @@ the intermediate models. To use these models, one should copy the selected weigh
 into OptiMol/results/saved_models/[your_name] and the .json file of the prior
 used for finetuning. Then it can be used as any other prior.
 
-For instance if [example] was trained over [example_prior] and one wants to use
-the model obtained after 10 iterations, these lines will make the model usable 
+For instance if [EXAMPLE] was trained over [example_prior] and one wants to use
+the model obtained after [10] iterations, these lines will make the model usable 
 
 ```
-mkdir ../results/saved_models/example
-cp results/weigths_10.pth ../results/saved_models/example/weights.pth
-cp ../results/saved_models/example_prior/params.json ../results/saved_models/example/
+mkdir ../results/saved_models/[EXAMPLE]
+cp results/[EXAMPLE]/weigths_[10].pth ../results/saved_models/[EXAMPLE]/weights.pth
+cp ../results/saved_models/[example_prior]/params.json ../results/saved_models/[EXAMPLE]/
 ```
 
 And then one can use the model 'example' from the root as explained in the root README.md
