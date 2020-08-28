@@ -22,7 +22,7 @@ from docking.docking import dock, set_path
 from data_processing.comp_metrics import cLogP, cQED
 
 
-def one_slurm(list_smiles, server, unique_id, name, parallel=True, exhaustiveness=16, mean=False,
+def one_slurm(list_smiles, server, unique_id, name, target='drd3', parallel=True, exhaustiveness=16, mean=False,
               load=False):
     """
 
@@ -45,7 +45,8 @@ def one_slurm(list_smiles, server, unique_id, name, parallel=True, exhaustivenes
         csv.writer(csvfile).writerow(header)
 
     for smile in list_smiles:
-        score_smile = dock(smile, unique_id=unique_id, parallel=parallel, exhaustiveness=exhaustiveness, mean=mean,
+        score_smile = dock(smile, target='drd3', unique_id=unique_id, parallel=parallel, exhaustiveness=exhaustiveness,
+                           mean=mean,
                            pythonsh=pythonsh, vina=vina, load=load)
         # score_smile = 0
         with open(dump_path, 'a', newline='') as csvfile:
@@ -77,7 +78,8 @@ def one_slurm_qed(list_smiles, unique_id, name):
         with open(dump_path, 'a', newline='') as csvfile:
             list_to_write = [smile, score_smile]
             csv.writer(csvfile).writerow(list_to_write)
-            
+
+
 def one_slurm_composite(list_smiles, unique_id, name, oracle):
     """
 
@@ -96,9 +98,9 @@ def one_slurm_composite(list_smiles, unique_id, name, oracle):
 
     for smile in list_smiles:
         if oracle == 'clogp':
-            score_smile = cLogP(smile, errorVal = -100) # invalid smiles get score -100
-        else :
-            score_smile = cQED(smile, errorVal = -20)
+            score_smile = cLogP(smile, errorVal=-100)  # invalid smiles get score -100
+        else:
+            score_smile = cQED(smile, errorVal=-20)
         with open(dump_path, 'a', newline='') as csvfile:
             list_to_write = [smile, score_smile]
             csv.writer(csvfile).writerow(list_to_write)
@@ -132,7 +134,7 @@ def one_slurm_qsar(list_smiles, unique_id, name):
             csv.writer(csvfile).writerow(list_to_write)
 
 
-def main(proc_id, num_procs, server, exhaustiveness, name, oracle):
+def main(proc_id, num_procs, server, exhaustiveness, name, oracle, target):
     # parse the docking task of the whole job array and split it
     dump_path = os.path.join(script_dir, 'results', name, 'docker_samples.p')
     list_smiles = pickle.load(open(dump_path, 'rb'))
@@ -149,13 +151,14 @@ def main(proc_id, num_procs, server, exhaustiveness, name, oracle):
     # Just use qed
     if oracle == 'qed':
         one_slurm_qed(list_data, proc_id, name)
-        
-    elif oracle in ['clogp', 'cqed']: # composite logp or composite qed
+
+    elif oracle in ['clogp', 'cqed']:  # composite logp or composite qed
         one_slurm_composite(list_data, proc_id, name, oracle)
-        
+
     # Do the docking and dump results
     elif oracle == 'docking':
         one_slurm(list_data,
+                  target=target,
                   name=name,
                   server=server,
                   unique_id=proc_id,
@@ -166,10 +169,10 @@ def main(proc_id, num_procs, server, exhaustiveness, name, oracle):
         raise ValueError(f'oracle {oracle} not implemented')
 
 
-def one_dock(smile, server, parallel=False, exhaustiveness=16, mean=False, load=False):
+def one_dock(smile, server, parallel=False, exhaustiveness=16, mean=False, load=False, target='drd3'):
     pythonsh, vina = set_path(server)
     score_smile = dock(smile, unique_id=smile, parallel=parallel, exhaustiveness=exhaustiveness, mean=mean,
-                       pythonsh=pythonsh, vina=vina, load=load)
+                       pythonsh=pythonsh, vina=vina, load=load, target=target)
 
     return score_smile
 
@@ -189,7 +192,7 @@ def one_fp(smile):
     return None
 
 
-def one_node_main(server, exhaustiveness, name, oracle):
+def one_node_main(server, exhaustiveness, name, oracle, target='drd3'):
     from multiprocessing import Pool
 
     # parse the docking task of the whole job array and split it
@@ -201,15 +204,15 @@ def one_node_main(server, exhaustiveness, name, oracle):
     if oracle == 'qed':
         list_results = p.map(one_qed, list_smiles)
         p.close()
-        
+
     elif oracle == 'clogp':
         list_results = p.map(cLogP, list_smiles)
         p.close()
-    
+
     elif oracle == 'cqed':
         list_results = p.map(cQED, list_smiles)
         p.close()
-        
+
     elif oracle == 'qsar':
         list_fps = p.map(one_fp, list_smiles)
         filtered_smiles = list()
@@ -229,7 +232,8 @@ def one_node_main(server, exhaustiveness, name, oracle):
                                      parallel=False,
                                      exhaustiveness=exhaustiveness,
                                      mean=True,
-                                     load=False), list_smiles)
+                                     load=False,
+                                     target=target), list_smiles)
     else:
         raise ValueError(f'oracle {oracle} not implemented')
 
@@ -246,6 +250,7 @@ if __name__ == '__main__':
     parser.add_argument("-ex", "--exhaustiveness", default=64, help="exhaustiveness parameter for vina")
     parser.add_argument("-n", "--name", default='search_vae', help="Name of the exp")
     parser.add_argument('--oracle', type=str)  # 'qed' or 'docking' or 'qsar'
+    parser.add_argument('--target', type=str, default='drd3')
     args, _ = parser.parse_known_args()
 
     try:
@@ -262,4 +267,5 @@ if __name__ == '__main__':
          server=args.server,
          exhaustiveness=args.exhaustiveness,
          name=args.name,
-         oracle=args.oracle)
+         oracle=args.oracle,
+         target=args.target)

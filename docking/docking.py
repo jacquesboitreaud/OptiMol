@@ -23,10 +23,6 @@ def soft_mkdir(path):
         os.mkdir(path)
 
 
-RECEPTOR_PATH = os.path.join(script_dir, 'data_docking/drd3.pdbqt')
-CONF_PATH = os.path.join(script_dir, 'data_docking/conf.txt')
-
-
 def set_path(computer):
     if computer == 'rup':
         PYTHONSH = '/home/mcb/users/jboitr/local/mgltools_x86_64Linux2_1.5.6/bin/pythonsh'
@@ -45,12 +41,14 @@ def set_path(computer):
     return PYTHONSH, VINA
 
 
-def prepare_receptor():
+def prepare_receptor(target):
     # just run pythonsh prepare_receptor4.py -r drd3.pdb -o drd3.pdbqt -A hydrogens
+    RECEPTOR_PATH = os.path.join(script_dir, f'data_docking/{target}.pdbqt')
     subprocess.run(f"{PYTHONSH} prepare_receptor4.py -r drd3.pdb -o {RECEPTOR_PATH} -A hydrogens".split())
 
 
-def dock(smile, unique_id, pythonsh=None, vina=None, parallel=True, exhaustiveness=16, mean=True, load=False):
+def dock(smile, unique_id, target='drd3', pythonsh=None, vina=None, parallel=True, exhaustiveness=16, mean=True,
+         load=False):
     """
     load if we want to check for possible existing score, we want a dict of results
     mean = False : returns list of top 10 poses scores. 
@@ -69,9 +67,12 @@ def dock(smile, unique_id, pythonsh=None, vina=None, parallel=True, exhaustivene
         global VINA
         vina = VINA
 
-    #soft_mkdir('tmp') # tmp is always there and never removed 
-    tmp_path = f'tmp/{unique_id}'
+    # soft_mkdir('tmp') # tmp is always there and never removed
+    tmp_path = os.path.join(script_dir, f'tmp/{unique_id}')
     soft_mkdir(tmp_path)
+
+    RECEPTOR_PATH = os.path.join(script_dir, f'data_docking/{target}.pdbqt')
+    CONF_PATH = os.path.join(script_dir, f'data_docking/{target}_conf.txt')
 
     try:
         pass
@@ -89,7 +90,7 @@ def dock(smile, unique_id, pythonsh=None, vina=None, parallel=True, exhaustivene
         start = time()
         # DOCK
         cmd = f'{vina} --receptor {RECEPTOR_PATH} --ligand {dump_pdbqt_path}' \
-            f' --config {CONF_PATH} --exhaustiveness {exhaustiveness} --log log.txt'
+              f' --config {CONF_PATH} --exhaustiveness {exhaustiveness} --log log.txt'
         if parallel:
             # print(cmd)
             subprocess.run(cmd.split(), timeout=1200)

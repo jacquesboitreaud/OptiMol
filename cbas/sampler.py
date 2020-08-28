@@ -20,6 +20,10 @@ from utils import *
 from model import model_from_json
 from data_processing.sascorer import calculateScore
 
+import torch
+import numpy as np
+np.random.seed(42)
+torch.manual_seed(42)
 
 def get_samples(prior_model, search_model, max, w_min):
     """
@@ -132,7 +136,7 @@ def main(prior_name, name, max_samples, diversity_picker, oracle, w_min):
         weights = [weights[i] for i in idces]
 
     # Since we don't maintain a dict for qed, we just give everything to the docker
-    if oracle != 'docking':
+    if oracle != 'docking' or True:
         dump_path = os.path.join(script_dir, 'results', name, 'docker_samples.p')
         pickle.dump(samples, open(dump_path, 'wb'))
 

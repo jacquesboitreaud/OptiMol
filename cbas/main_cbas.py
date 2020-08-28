@@ -39,8 +39,8 @@ if __name__ == '__main__':
     parser.add_argument('--cap_weights', type=float, default = -1)  # min value to cap weights. Ignored if set to -1.
 
     # DOCKER
-    parser.add_argument('--server', type=str, default='pasteur', help='server to run on')  
-    # server : 'rup', 'mac', 'pasteur', 'cedar'
+    parser.add_argument('--server', type=str, default='pasteur', help='server to run on') # server : 'rup', 'mac', 'pasteur', 'cedar'
+    parser.add_argument('--target', type=str, default='drd3', help='target to dock')
     parser.add_argument('--ex', type=int, default=16)  # Nbr of samples at each iter
 
     # TRAINER
@@ -111,7 +111,8 @@ if __name__ == '__main__':
         docker_main(server=args.server,
                     exhaustiveness=args.ex,
                     name=args.name,
-                    oracle=args.oracle)
+                    oracle=args.oracle,
+                    target=args.target)
 
         # AGGREGATION AND TRAINING
         trainer_main(prior_name=args.prior_name,

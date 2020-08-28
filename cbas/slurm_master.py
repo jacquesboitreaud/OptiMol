@@ -32,7 +32,8 @@ if __name__ == '__main__':
     parser.add_argument('--cap_weights', type=float, default=-1)  # clamping value to use
 
     # DOCKER
-    parser.add_argument('--server', type=str, default='pasteur', help='server to run on')  # the prior VAE (pretrained)
+    parser.add_argument('--server', type=str, default='pasteur', help='server to run on')
+    parser.add_argument('--target', type=str, default='drd3', help='target to dock')
     parser.add_argument('--ex', type=int, default=16)  # Nbr of samples at each iter
 
     # TRAINER
@@ -92,7 +93,8 @@ if __name__ == '__main__':
             f.write('#SBATCH --error=out_slurm/docker_%A.err\n')
             f.write('#SBATCH --cpus-per-task=1\n')
             f.write('#SBATCH --array=0-199\n')
-            f.write('python docker.py $SLURM_ARRAY_TASK_ID 200 --server $1 --exhaustiveness $2 --name $3 --oracle $4')
+            f.write('python docker.py $SLURM_ARRAY_TASK_ID 200 --server $1 --exhaustiveness $2 --name $3 --oracle $4'
+                    '--target $5')
         
         # Trainer
         with open(os.path.join(script_dir, 'slurm_trainer.sh'), 'w') as f :
@@ -149,7 +151,7 @@ if __name__ == '__main__':
         # DOCKING
         slurm_docker_path = os.path.join(script_dir, 'slurm_docker.sh')
         cmd = f'sbatch --depend=afterany:{id_sample} {slurm_docker_path}'
-        extra_args = f' {args.server} {args.ex} {args.name} {args.oracle}'
+        extra_args = f' {args.server} {args.ex} {args.name} {args.oracle} {args.target}'
         cmd = cmd + extra_args
         a = subprocess.run(cmd.split(), stdout=subprocess.PIPE).stdout.decode('utf-8')
         id_dock = a.split()[3]

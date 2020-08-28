@@ -120,8 +120,8 @@ def plot_csvs(dir_paths, ylim=(-12, -6), plot_best=False, return_best=False, use
     else:  # plot multiple
 
         # DEBUG for figure production
-        if True:
-            fig, ax = plt.subplots(1, len(dir_paths))
+        fig, ax = plt.subplots(1, len(dir_paths))
+        if False:
 
             bo, cbas = dir_paths
             iterations, mus, stds, batch_size, newslist, title, best_scores, best_smiles = plot_one(bo,
@@ -167,22 +167,20 @@ def plot_csvs(dir_paths, ylim=(-12, -6), plot_best=False, return_best=False, use
                                                                                                         successive=successive)
                 mus = np.array(mus)
                 stds = np.array(stds)
-                # ax[0, i].fill_between(iterations, mus - stds, mus + stds, alpha=.25)
-                # sns.lineplot(iterations, mus, ax=ax[0, i])
-                #
-                # if plot_best:
-                #     ax[0, i].plot(iterations, best_scores, 'r*')
-                # ax[0, i].set_ylim(*ylim)
-                # ax[0, i].set_xlim(1, iterations[-1] + 0.5)
-                # # ax[0, i].set_title(title)
-                #
-                # ax[1, i].set_ylim(0, batch_size + 100)
-                # ax[1, i].plot(iterations, newslist)
-                #
-                # ax[0].fill_between(iterations, mus + stds, mus - stds, alpha=.25)
-                # sns.lineplot(iterations, mus, ax=ax[0])
+                ax[0, i].fill_between(iterations, mus - stds, mus + stds, alpha=.25)
+                sns.lineplot(iterations, mus, ax=ax[0, i])
 
+                if plot_best:
+                    ax[0, i].plot(iterations, best_scores, 'r*')
+                ax[0, i].set_ylim(*ylim)
+                ax[0, i].set_xlim(1, iterations[-1] + 0.5)
+                # ax[0, i].set_title(title)
 
+                ax[1, i].set_ylim(0, batch_size + 100)
+                ax[1, i].plot(iterations, newslist)
+
+                ax[0].fill_between(iterations, mus + stds, mus - stds, alpha=.25)
+                sns.lineplot(iterations, mus, ax=ax[0])
 
     plt.savefig("cbas_fig.pdf", format="pdf")
     plt.show()
@@ -278,7 +276,7 @@ if __name__ == '__main__':
     # plot_csvs('plot/clogp_adam_small')
     # plot_csvs('plot/qed_ln_nosched_big_lesslr', ylim=(0.5, 1))
     # plot_csvs(['plot/robust_run2','plot/qed_ln_nosched_big'], ylim=(0.5, 1))
-    # plot_csvs(['plot/big_newlr2','plot/big_lnnosched'])
+    plot_csvs(['plot/big_newlr2','plot/big_newlr'])
     # plot_csvs('plot/big_lnnosched')
     # plot_csvs('plot/big_newlr2', successive=False)
     # plot_csvs('plot/clogp_adam_clamp_avged', plot_best=True)
@@ -290,4 +288,4 @@ if __name__ == '__main__':
     # plot_csvs('plot/multi',successive=False)
 
 
-    plot_csvs(['plot/bo_clogp', 'plot/cbas_clogp'],  ylim=(-6, 12.5), plot_best=True)
+    # plot_csvs(['plot/bo_clogp', 'plot/cbas_clogp'],  ylim=(-6, 12.5), plot_best=True)

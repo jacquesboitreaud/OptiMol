@@ -14,6 +14,11 @@ from cbas.oracles import deterministic_one, normal_cdf_oracle
 from model import model_from_json
 from utils import *
 
+import torch
+import numpy as np
+np.random.seed(42)
+torch.manual_seed(42)
+
 
 def gather_scores(iteration, name):
     """
