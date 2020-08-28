@@ -111,14 +111,14 @@ def main(iteration, quantile, uncertainty, prior_name, name, oracle):
     score_dict = gather_scores(iteration, name)
 
     # Memoization of the sampled compounds, if they are docking scores
-    if oracle == 'docking':
-        print('doing memoization')
-        whole_path = os.path.join(script_dir, '..', 'data', 'drd3_scores.pickle')
-        docking_whole_results = pickle.load(open(whole_path, 'rb'))
-        # Only update memoization for successful dockings
-        new_results = {key: value for key, value in score_dict.items() if value < 0}
-        docking_whole_results.update(new_results)
-        pickle.dump(docking_whole_results, open(whole_path, 'wb'))
+    # if oracle == 'docking':
+    #     print('doing memoization')
+    #     whole_path = os.path.join(script_dir, '..', 'data', 'drd3_scores.pickle')
+    #     docking_whole_results = pickle.load(open(whole_path, 'rb'))
+    #     # Only update memoization for successful dockings
+    #     new_results = {key: value for key, value in score_dict.items() if value < 0}
+    #     docking_whole_results.update(new_results)
+    #     pickle.dump(docking_whole_results, open(whole_path, 'wb'))
 
     # Reweight and discard wrong samples
     dump_path = os.path.join(script_dir, 'results', name, 'samples.p')
