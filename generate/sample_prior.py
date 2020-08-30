@@ -58,7 +58,7 @@ if __name__ == "__main__":
 
     set_compounds = set()
     cpt = 0
-    b=0
+    b = 0
 
     # keep order of compounds
     list_all = list()
@@ -70,7 +70,7 @@ if __name__ == "__main__":
 
         start = time.time()
         while b < 10 * n_batches and len(set_compounds) < args.n_mols:
-            b+=1
+            b += 1
             z = model.sample_z_prior(batch_size)
             gen_seq = model.decode(z)
 
@@ -82,6 +82,9 @@ if __name__ == "__main__":
 
             if args.vocab == 'selfies':
                 smiles = [decoder(s, bilocal_ring_function=True) for s in selfies]
+
+            # print(selfies[:10])
+            # print(smiles[:10])
 
             mols = [Chem.MolFromSmiles(s) for s in smiles]
             can_smile = list()
@@ -181,3 +184,4 @@ if __name__ == "__main__":
 
         print('Reencode failures : ', fail, '/', valid)
         print('Too long canonical selfies : ', too_long, '/', valid)
+

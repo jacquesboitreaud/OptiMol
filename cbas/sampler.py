@@ -20,10 +20,10 @@ from utils import *
 from model import model_from_json
 from data_processing.sascorer import calculateScore
 
-import torch
-import numpy as np
-np.random.seed(42)
-torch.manual_seed(42)
+# import torch
+# import numpy as np
+# np.random.seed(42)
+# torch.manual_seed(42)
 
 def get_samples(prior_model, search_model, max, w_min):
     """
