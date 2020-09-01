@@ -22,10 +22,60 @@ from sklearn.decomposition import PCA
 rc = {'figure.figsize': (10, 5),
       'axes.facecolor': 'white',
       'axes.grid': True,
-      'lines.linewidth': 4,
+      'lines.linewidth': 2.5,
       'grid.color': '.8',
       'font.size': 12}
 plt.rcParams.update(rc)
+
+
+def plot_one(dir_path, use_norm_score=False, obj='logp', successive=False):
+    # 2,3,23 not 2,23,3
+    names = os.listdir(dir_path)
+    numbers = [int(name.split('_')[-1].split('.')[0]) for name in names]
+    asort = np.argsort(np.array(numbers))
+    iterations = np.array(numbers)[asort][:21]
+    sorted_names = np.array(names)[asort][:21]
+
+    batch_size = None  # default
+    mus, stds, best, best_smiles = list(), list(), list(), list()
+    olds = set()
+    newslist = list()
+    for name in sorted_names:
+        # Check scores
+        news = 0
+        df = pd.read_csv(os.path.join(dir_path, name))
+        df = df[df['score'] != 0]
+        if use_norm_score:
+            values = df['norm_score']
+        else:
+            values = df['score']
+        mus.append(np.mean(values))
+        stds.append(np.std(values))
+        if obj == 'docking':  # lowest docking score is better
+            i_best = np.argmin(values)
+            best.append(np.min(values))
+        else:
+            i_best = np.argmax(values)
+            best.append(np.max(values))
+
+        # Check novelty
+        smiles = df['smile']
+        # print(values[3])
+        # print(smiles)
+        best_smiles.append((smiles[i_best], values[i_best]))
+        for smile in smiles:
+            if smile not in olds:
+                olds.add(smile)
+                news += 1
+        newslist.append(news)
+        if successive:
+            olds = set(smiles)
+    if batch_size is None:
+        batch_size = 1000  # default
+    newslist = [min(batch_size, new_ones) for new_ones in newslist]
+    title = dir_path.split("/")[-1]
+
+    return iterations, mus, stds, batch_size, newslist, title, best, best_smiles
 
 
 def plot_csvs(dir_paths, ylim=(-12, -6), plot_best=False, return_best=False, use_norm_score=False, obj='logp',
@@ -40,55 +90,6 @@ def plot_csvs(dir_paths, ylim=(-12, -6), plot_best=False, return_best=False, use
     :param path:
     :return:
     """
-
-    def plot_one(dir_path, use_norm_score=False, obj='logp', successive=successive):
-        # 2,3,23 not 2,23,3
-        names = os.listdir(dir_path)
-        numbers = [int(name.split('_')[-1].split('.')[0]) for name in names]
-        asort = np.argsort(np.array(numbers))
-        iterations = np.array(numbers)[asort][:21]
-        sorted_names = np.array(names)[asort][:21]
-
-        batch_size = None  # default
-        mus, stds, best, best_smiles = list(), list(), list(), list()
-        olds = set()
-        newslist = list()
-        for name in sorted_names:
-            # Check scores
-            news = 0
-            df = pd.read_csv(os.path.join(dir_path, name))
-            df = df[df['score'] != 0]
-            if use_norm_score:
-                values = df['norm_score']
-            else:
-                values = df['score']
-            mus.append(np.mean(values))
-            stds.append(np.std(values))
-            if obj == 'docking':  # lowest docking score is better
-                i_best = np.argmin(values)
-                best.append(np.min(values))
-            else:
-                i_best = np.argmax(values)
-                best.append(np.max(values))
-
-            # Check novelty
-            smiles = df['smile']
-            # print(values[3])
-            # print(smiles)
-            best_smiles.append((smiles[i_best], values[i_best]))
-            for smile in smiles:
-                if smile not in olds:
-                    olds.add(smile)
-                    news += 1
-            newslist.append(news)
-            if successive:
-                olds = set(smiles)
-        if batch_size is None:
-            batch_size = 1000  # default
-        newslist = [min(batch_size, new_ones) for new_ones in newslist]
-        title = dir_path.split("/")[-1]
-
-        return iterations, mus, stds, batch_size, newslist, title, best, best_smiles
 
     if not isinstance(dir_paths, list):  # plot only one cbas
         print(dir_paths)
@@ -159,7 +160,7 @@ def plot_csvs(dir_paths, ylim=(-12, -6), plot_best=False, return_best=False, use
 
             # fig.tight_layout(pad=2.0)
             fig.align_labels()
-        else :
+        else:
             for i, dir_path in enumerate(dir_paths):
                 iterations, mus, stds, batch_size, newslist, title, best_scores, best_smiles = plot_one(dir_path,
                                                                                                         use_norm_score,
@@ -188,6 +189,54 @@ def plot_csvs(dir_paths, ylim=(-12, -6), plot_best=False, return_best=False, use
 
     if return_best:
         return best_smiles
+
+
+def figure_cbas(dir_path=('plot/wee1_noseed', 'plot/big_newlr'),
+                ylim=(-12, -6), plot_best=False,
+                return_best=False,
+                use_norm_score=False, obj='logp',
+                successive=False):
+    fig, ax = plt.subplots(1, 2)
+
+    wee1, drd3 = dir_path
+
+    iterations, mus, stds, batch_size, newslist, title, best_scores, best_smiles = plot_one(drd3,
+                                                                                            use_norm_score,
+                                                                                            obj,
+                                                                                            successive=successive)
+    print(newslist)
+    mus = np.array(mus)
+    stds = np.array(stds)
+    ax[0].fill_between(iterations, mus + stds, mus - stds, alpha=.25)
+    sns.lineplot(iterations, mus, ax=ax[0], label='DRD3')
+    ax[1].plot(iterations, newslist, label='DRD3')
+
+    iterations, mus, stds, batch_size, newslist, title, best_scores, best_smiles = plot_one(wee1,
+                                                                                            use_norm_score,
+                                                                                            obj,
+                                                                                            successive=successive)
+    print(newslist)
+    mus = np.array(mus)
+    stds = np.array(stds)
+    ax[0].fill_between(iterations, mus + stds, mus - stds, alpha=.25)
+    sns.lineplot(iterations, mus, ax=ax[0], label='WEE1')
+    # sns.lineplot(iterations, mus, ax=ax[0], label='WEE1',size=2)
+    ax[1].plot(iterations, newslist, label='WEE1')
+
+    ax[0].set_ylim(ylim[0], ylim[1])
+    ax[0].set_xlim(1, iterations[-1] + 0.2)
+    ax[1].set_ylim(0, batch_size + 100)
+
+    sns.despine()
+    ax[0].set_xlabel('Iterations')
+    ax[0].set_ylabel('Docking Score (kcal/mol)')
+    ax[1].set_xlabel('Iterations')
+    ax[1].set_ylabel('Novel samples')
+    ax[1].legend()
+    fig.tight_layout(pad=2.0)
+    fig.align_labels()
+    plt.savefig("cbas_fig2.pdf", format="pdf")
+    plt.show()
 
 
 def plot_kde(z):
@@ -277,7 +326,7 @@ if __name__ == '__main__':
     # plot_csvs('plot/clogp_adam_small')
     # plot_csvs('plot/qed_ln_nosched_big_lesslr', ylim=(0.5, 1))
     # plot_csvs(['plot/robust_run2','plot/qed_ln_nosched_big'], ylim=(0.5, 1))
-    plot_csvs('plot/wee1')
+    # plot_csvs('plot/wee1_noseed')
     # plot_csvs('plot/big_newlr')
     # plot_csvs(['plot/big_newlr2','plot/big_newlr'])
     # plot_csvs('plot/big_lnnosched')
@@ -290,5 +339,6 @@ if __name__ == '__main__':
     # plot_csvs('plot/big_newlr2')
     # plot_csvs('plot/multi',successive=False)
 
-
     # plot_csvs(['plot/bo_clogp', 'plot/cbas_clogp'],  ylim=(-6, 12.5), plot_best=True)
+
+    figure_cbas()
