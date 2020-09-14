@@ -64,5 +64,7 @@ dependencies:
     - tqdm==4.45.0
     - urllib3==1.25.9
     - werkzeug==1.0.1
+    - openbabel
+    - ordered-set
 prefix: /Users/vincent/anaconda3/envs/optimol
 

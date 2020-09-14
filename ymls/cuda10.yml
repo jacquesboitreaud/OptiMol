@@ -79,5 +79,7 @@ dependencies:
     - seaborn==0.10.1
     - selfies==0.2.4
     - tqdm==4.45.0
+    - openbabel
+    - ordered-set
 prefix: /c7/home/vmallet/anaconda3/envs/optimol
 

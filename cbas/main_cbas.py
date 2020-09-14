@@ -34,7 +34,7 @@ if __name__ == '__main__':
     # SAMPLER
     parser.add_argument('--max_samples', type=int, default=1000)  # Nbr of samples at each iter
     parser.add_argument('--diversity_picker', type=int, default=-1)  # Select a number of diverse samples in max_samples. 
-    # if diversity_picker == max_samples, default behaviour of cbas: finetuning on all samples 
+    # if diversity_picker == -1, default behaviour of cbas: finetuning on all samples 
     
     parser.add_argument('--cap_weights', type=float, default = -1)  # min value to cap weights. Ignored if set to -1.
 
@@ -51,17 +51,17 @@ if __name__ == '__main__':
     parser.add_argument('--procs', type=int, default=10)  # Number of processes for VAE dataloading
     parser.add_argument('--epochs', type=int, default=1)  # Number of iterations
     parser.add_argument('--learning_rate', type=float, default=1e-4)  # Number of iterations
-    parser.add_argument('--beta', type=float, default=0.5)  # KL weight in loss function
+    parser.add_argument('--beta', type=float, default=0.5)  # KL weight in VAE loss function
     parser.add_argument('--clip_grad_norm', type=float, default=5.0)  # quantile of scores accepted
-    parser.add_argument('--opti', type=str, default='adam')  # the mode of the oracle
-    parser.add_argument('--sched', type=str, default='none')  # the mode of the oracle
+    parser.add_argument('--opti', type=str, default='adam')  # optimizer used for VAE finetuning : adam or sgd
+    parser.add_argument('--sched', type=str, default='none')  # Scheduler for learning rate
 
     # =======
 
     args, _ = parser.parse_known_args()
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-    assert args.oracle in ['qed','clogp','cqed', 'docking', 'qsar']
+    assert args.oracle in ['qed','clogp','cqed', 'docking', 'qsar'] 
 
 
     def setup():
