@@ -1,14 +1,8 @@
-generate_around.py : script to sample around a molecule in latent space 
+## Sample from trained generative model :
+
+`sample_prior.py` : script to sample from normal prior in latent space and decode.
 usage : 
-generate_around.py -s [smiles of seed compound] -n [number of molecules to sample] -o [name of output file]
 
-generate_prior.py: script to generate molecules from normal prior. (TODO)
-usage : 
-generate_around.py -s [smiles of seed compound] -n [number of molecules to sample] -o [name of output file]
-
-novelty.py : 
-functions to assess novelty of generated compounds;
-- filter those who appear in training sets 
-- filter with undesirable properties / weird molecules (long carbon chain etc...)
-- tanimoto similarity to retrieve most similar compounds in given set 
-
+```
+sample_prior.py --name [model_name] -n [number of molecules to sample] -o [name of output file] -b [to use beam search decoding]
+```

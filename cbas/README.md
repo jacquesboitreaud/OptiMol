@@ -10,8 +10,9 @@ to adapt it to another receptor, just by changing the conf.txt and .pdbqt
 To adapt OptiMol to other scoring functions or other docking tools, some coding
 is needed, but we designed the code for a maximum flexibility.
 One should implement an [EXAMPLE] function following the template 
-```
-def [EXAMPLE](list_smiles, name=name,unique_id=unique_id):
+
+```python
+def [EXAMPLE](smiles_list : List[str], name: str, unique_id: str) -> None :
     dirname = os.path.join(script_dir, 'results', name, 'docking_small_results')
     dump_path = os.path.join(dirname, f"{unique_id}.csv")
     """
@@ -20,10 +21,12 @@ def [EXAMPLE](list_smiles, name=name,unique_id=unique_id):
     at the dump_path address
     """
 ```
+
 and then add it as a switch in the docker.py main() function 
-```
+
+```python
 elif oracle == '[EXAMPLE]':
-    [EXAMPLE](list_data,
+    [EXAMPLE](smiles_list,
               name=name,
               unique_id=proc_id)
 ``` 

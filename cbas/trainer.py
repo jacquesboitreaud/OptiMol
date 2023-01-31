@@ -8,6 +8,7 @@ import argparse
 import pickle
 import pandas as pd
 import shutil
+from typing import List, Tuple
 
 from cbas.gen_train import GenTrain
 from cbas.oracles import deterministic_one, normal_cdf_oracle
@@ -30,7 +31,7 @@ def gather_scores(iteration, name):
     dirname = os.path.join(script_dir, 'results', name, 'docking_small_results')
     dfs = [pd.read_csv(os.path.join(dirname, csv_file)) for csv_file in os.listdir(dirname)]
     merged = pd.concat(dfs)
-    # remove zero scored molecules : 
+    # remove zero scored molecules :
     merged = merged[merged['score']!=0]
     dump_path = os.path.join(script_dir, 'results', name, 'docking_results', f'{iteration}.csv')
     merged.to_csv(dump_path)
@@ -52,7 +53,7 @@ def gather_scores(iteration, name):
 
 
 def process_samples(score_dict, samples, weights, quantile, prev_gamma=-1000, uncertainty='binary', threshold=0.05,
-                    oracle='qed'):
+                    oracle='qed') -> Tuple[List[str], List[float], List[float]]:
     """
     reweight samples using docking scores
     :return:

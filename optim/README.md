@@ -1,5 +1,6 @@
-# Bayesian optimization in chemical space 
+# Bayesian optimization in chemical space :
 
+We use Bayesian Optimization in latent space as a baseline molecular optimization process.
 To reproduce the Bayesian Optimization benchmarks on clogP optimization :
 
 unzip the 250k zinc molecules dataset in /data : unzip 250k_zinc.zip
