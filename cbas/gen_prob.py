@@ -5,7 +5,7 @@ Created on Wed May  6 17:08:41 2020
 @author: jacqu
 
 
-Proba to generate a sample given a model 
+Proba to generate a sample given a model
 """
 
 import torch
@@ -16,7 +16,7 @@ def GenProb(x, z, model):
     """
     Inputs :
         x : array indices. Shape batch_size * seq_len
-        z : latent point 
+        z : latent point
         model : vae (requires .decode function)
     """
     with torch.no_grad():
@@ -24,7 +24,7 @@ def GenProb(x, z, model):
         sigma = nn.LogSoftmax(dim=1)  # shape is (N, num_chars_in_alphbabet, sequence_len)
         logprob = sigma(out)
 
-        # logprob of x 
+        # logprob of x
         one_hot = torch.nn.functional.one_hot(x, model.voc_size)
         one_hot = one_hot.transpose(2, 1).float()  # to shape N, n_chars, sequence_len
 
@@ -36,7 +36,6 @@ def GenProb(x, z, model):
 
 if __name__ == '__main__':
     from utils import *
-    from dgl_utils import send_graph_to_device
     from model import model_from_json
     import numpy as np
 

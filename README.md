@@ -6,20 +6,16 @@ This repo introduces two things :
 
 - A new Variational Auto-Encoder (VAE) architecture that goes from a molecular
 graph to a sequence representation (and especially SELFIEs).
-- An optimization pipeline that optimizes a scoring function that includes 
-docking
+- An optimization pipeline to iteratively shift a prior distribution to maximize a black-box scoring function.
+In our implemntation, this back-box function is the score returned by a docking software.
 
-The necessary packages are packaged as ymls available for cpu or cuda10 usage.
+The necessary packages are packaged as yml files available for cpu or cuda10 usage.
 
  ```
 conda env create -f ymls/cpu.yml 
 ```
 
-Otherwise one should manually install the following packages :
-
-pytorch, dgl, networkx, scikit-learn,rdkit, tqdm, ordered-sets, moses, pandas
-
-## Prior model training
+## Prior model training: learning a distribution in molecules space
 
 #### Data loading
 
@@ -57,7 +53,7 @@ The column containing the smiles/selfies should be labeled 'smiles'.
 
 To generate samples from a trained model, run : 
 ```
-python generate/sample_prior.py -N [number_of_samples] --name [name_of_the_model]
+python generate/sample_prior.py -N [number_of_samples] --name [name_of_the_model] -b [use beam search decoding]
 ```
 
 #### Moses metrics 
@@ -73,9 +69,9 @@ python eval/moses_metrics.py -i [path_to_txt_with_samples]
 This is mostly an efficient implementation of the CbAS algorithm for docking.
 there is also two implementations for BO in /optim
 
-#### OptiMol
+## OptiMol : Iteratively learning a distribution over molecules space, conditioned on desired properties
 
-Go to /cbas
+Go to `/cbas`
  
 
 
