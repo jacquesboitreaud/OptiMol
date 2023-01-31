@@ -63,16 +63,10 @@ To compute the Moses benchmark metrics for the samples (recommended 30k samples)
 python eval/moses_metrics.py -i [path_to_txt_with_samples]
 ```
 
-## Scoring function optimization
+## OptiMol: Generating samples that maximize a black-box objective function : 
 
-
-This is mostly an efficient implementation of the CbAS algorithm for docking.
-there is also two implementations for BO in /optim
-
-## OptiMol : Iteratively learning a distribution over molecules space, conditioned on desired properties
-
-Go to `/cbas`
- 
+- The Bayesian Optimization baseline : `/optim`
+- Our implementation of Conditioning By Adaptive Sampling (https://arxiv.org/abs/1901.10060): `/cbas`
 
 
 
