@@ -1,11 +1,14 @@
-## Molecular optimization
+## OptiMol : Iteratively learning a distribution over molecules space, conditioned on desired properties
 
-This tutorial enables using our tool to optimize certain properties.
-The method is flexible in the function that we are trying to optimize, and was 
-designed to compute properties that are long to get on a cpu. 
-The default setting uses VINA for docking on drd3. However it is very easy
-to adapt it to another receptor, just by changing the conf.txt and .pdbqt
- that is saved in the root/docking/data_docking/ folder.
+
+We show how to use our VAE + CbAS implementation to optimize a black-box oracle. 
+
+The method is flexible in the function that we are trying to optimize, and the code was 
+designed to support distributed computation of the objective function on a cluster. 
+
+The default setting uses VINA for docking on a structure of human DRD3. 
+However it is very easy to adapt it to another receptor, 
+just by changing the conf.txt and .pdbqt that is saved in the root/docking/data_docking/ folder.
 
 To adapt OptiMol to other scoring functions or other docking tools, some coding
 is needed, but we designed the code for a maximum flexibility.
